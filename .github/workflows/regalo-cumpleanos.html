@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Un secreto para Wendy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Jost:wght@300;400;500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#120e1c;
+    --bg-2:#231533;
+    --bg-3:#0a0712;
+    --lilac:#b98ee6;
+    --lilac-light:#e3cdfb;
+    --lilac-deep:#6d4a99;
+    --lilac-dim:#8f76ab;
+    --parchment:#f1e9fb;
+    --parchment-dim:#b7a7cc;
+    --ok:#9ecb9e;
+    --err:#d98a9a;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #3a235c 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 100%, #1f1030 0%, transparent 50%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-3) 60%, #060409);
+    color:var(--parchment);
+    font-family:'Jost', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  .stars{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(227,205,251,.55), transparent),
+      radial-gradient(1px 1px at 70% 20%, rgba(227,205,251,.4), transparent),
+      radial-gradient(1px 1px at 40% 70%, rgba(227,205,251,.3), transparent),
+      radial-gradient(1.5px 1.5px at 85% 60%, rgba(227,205,251,.4), transparent),
+      radial-gradient(1px 1px at 60% 85%, rgba(227,205,251,.3), transparent),
+      radial-gradient(1px 1px at 10% 80%, rgba(227,205,251,.35), transparent);
+    background-repeat:repeat;
+    background-size:600px 600px;
+    opacity:.6;
+  }
+
+  .stage{
+    position:relative;
+    max-width:640px;
+    margin:0 auto;
+    padding:min(10vh,80px) 24px 90px;
+    text-align:center;
+  }
+
+  /* --- Flor de lila (elemento distintivo) --- */
+  .seal-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:28px;
+  }
+  .seal{
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    position:relative;
+    background:
+      radial-gradient(circle at 32% 28%, #1d1428, #0f0a17 65%, #05030a 100%);
+    box-shadow:
+      0 0 0 1px rgba(185,142,230,.3),
+      0 10px 34px -8px rgba(109,74,153,.55),
+      inset 0 2px 4px rgba(255,255,255,.06),
+      inset 0 -6px 10px rgba(0,0,0,.5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    animation:breathe 4.5s ease-in-out infinite;
+  }
+  .seal svg{ width:46px; height:46px; }
+  @keyframes breathe{
+    0%,100%{ transform:scale(1); filter:drop-shadow(0 0 6px rgba(185,142,230,.25)); }
+    50%{ transform:scale(1.045); filter:drop-shadow(0 0 14px rgba(185,142,230,.55)); }
+  }
+
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:11px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:var(--lilac);
+    margin:0 0 10px;
+  }
+
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:clamp(30px,6vw,46px);
+    line-height:1.15;
+    margin:0 0 12px;
+    color:var(--parchment);
+  }
+  h1 em{
+    font-style:italic;
+    color:var(--lilac-light);
+  }
+
+  .subtext{
+    font-size:15px;
+    color:var(--parchment-dim);
+    max-width:420px;
+    margin:0 auto 46px;
+    line-height:1.6;
+  }
+
+  /* --- Conteo --- */
+  .countdown-line{
+    font-family:'Jost', sans-serif;
+    font-size:clamp(15px,3.4vw,18px);
+    color:var(--parchment-dim);
+    margin-bottom:22px;
+  }
+
+  .grid{
+    display:flex;
+    justify-content:center;
+    gap:clamp(8px,3vw,18px);
+    margin-bottom:48px;
+    flex-wrap:wrap;
+  }
+  .cell{
+    background:linear-gradient(160deg, rgba(185,142,230,.08), rgba(185,142,230,.02));
+    border:1px solid rgba(185,142,230,.28);
+    border-radius:10px;
+    padding:16px 10px 12px;
+    width:78px;
+    backdrop-filter:blur(2px);
+  }
+  .cell .num{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:clamp(24px,6vw,32px);
+    color:var(--parchment);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.02em;
+  }
+  .cell .lbl{
+    display:block;
+    margin-top:4px;
+    font-size:10px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--lilac-dim);
+  }
+
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    color:var(--lilac-dim);
+    margin:0 0 40px;
+  }
+  .divider::before,.divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:linear-gradient(90deg, transparent, rgba(185,142,230,.45), transparent);
+  }
+  .divider span{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:14px;
+  }
+
+  /* --- Pregunta secreta --- */
+  .question-card{
+    border:1px solid rgba(185,142,230,.3);
+    border-radius:14px;
+    padding:30px 26px 28px;
+    background:linear-gradient(160deg, rgba(185,142,230,.06), rgba(0,0,0,.1));
+  }
+  .question-card p.q{
+    font-family:'Cormorant Garamond', serif;
+    font-size:clamp(19px,3.6vw,23px);
+    font-style:italic;
+    color:var(--parchment);
+    margin:0 0 20px;
+    line-height:1.4;
+  }
+  form{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  input[type="text"]{
+    flex:1 1 220px;
+    background:rgba(0,0,0,.3);
+    border:1px solid rgba(185,142,230,.35);
+    color:var(--parchment);
+    font-family:'Jost', sans-serif;
+    font-size:15px;
+    padding:12px 14px;
+    border-radius:8px;
+    outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  input[type="text"]::placeholder{ color:rgba(241,233,251,.35); }
+  input[type="text"]:focus{
+    border-color:var(--lilac);
+    box-shadow:0 0 0 3px rgba(185,142,230,.2);
+  }
+  button{
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    letter-spacing:.04em;
+    background:linear-gradient(160deg, var(--lilac-light), var(--lilac-deep));
+    color:#160f22;
+    border:none;
+    padding:12px 22px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:500;
+    transition:transform .15s, filter .15s;
+  }
+  button:hover{ filter:brightness(1.1); }
+  button:active{ transform:scale(.97); }
+  button:focus-visible, input:focus-visible{
+    outline:2px solid var(--lilac);
+    outline-offset:2px;
+  }
+
+  .feedback{
+    min-height:20px;
+    margin-top:14px;
+    font-size:13px;
+  }
+  .feedback.err{ color:var(--err); }
+  .feedback.ok{ color:var(--ok); }
+
+  .shake{ animation:shake .4s; }
+  @keyframes shake{
+    10%,90%{ transform:translateX(-2px); }
+    20%,80%{ transform:translateX(4px); }
+    30%,50%,70%{ transform:translateX(-7px); }
+    40%,60%{ transform:translateX(7px); }
+  }
+
+  /* --- Vista desbloqueada --- */
+  #unlocked-view{
+    animation:reveal 1.1s ease;
+  }
+  @keyframes reveal{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .unlocked-card{
+    border:1px solid rgba(185,142,230,.35);
+    border-radius:16px;
+    padding:44px 30px;
+    background:linear-gradient(160deg, rgba(185,142,230,.08), rgba(0,0,0,.15));
+  }
+  .unlocked-card h2{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:clamp(24px,5vw,30px);
+    color:var(--lilac-light);
+    margin:0 0 14px;
+  }
+  .unlocked-card p{
+    color:var(--parchment-dim);
+    line-height:1.7;
+    font-size:15px;
+  }
+
+  [hidden]{ display:none !important; }
+
+  @media (prefers-reduced-motion: reduce){
+    .seal, #unlocked-view, .shake{ animation:none !important; }
+  }
+
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:rgba(183,167,204,.45);
+    padding-bottom:30px;
+    letter-spacing:.04em;
+  }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<div class="stage">
+
+  <div class="seal-wrap">
+    <div class="seal" aria-hidden="true">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="petalGrad" cx="50%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="#e3cdfb"/>
+            <stop offset="55%" stop-color="#b98ee6"/>
+            <stop offset="100%" stop-color="#6d4a99"/>
+          </radialGradient>
+        </defs>
+        <g fill="url(#petalGrad)">
+          <ellipse cx="50" cy="27" rx="13" ry="21"/>
+          <ellipse cx="50" cy="27" rx="13" ry="21" transform="rotate(72 50 50)"/>
+          <ellipse cx="50" cy="27" rx="13" ry="21" transform="rotate(144 50 50)"/>
+          <ellipse cx="50" cy="27" rx="13" ry="21" transform="rotate(216 50 50)"/>
+          <ellipse cx="50" cy="27" rx="13" ry="21" transform="rotate(288 50 50)"/>
+        </g>
+        <circle cx="50" cy="50" r="8" fill="#f1e9fb"/>
+      </svg>
+    </div>
+  </div>
+
+  <p class="eyebrow">Un secreto para Wendy</p>
+  <h1>Wendy, hay una <em>sorpresa</em><br>esperando su momento</h1>
+  <p class="subtext">Esta página tiene su propia fecha. Hasta entonces, se queda cerrada — a menos que sepas la palabra correcta.</p>
+
+  <div id="locked-view">
+
+    <p class="countdown-line" id="countdown-line">Calculando…</p>
+
+    <div class="grid">
+      <div class="cell"><span class="num" id="d">--</span><span class="lbl">Días</span></div>
+      <div class="cell"><span class="num" id="h">--</span><span class="lbl">Horas</span></div>
+      <div class="cell"><span class="num" id="m">--</span><span class="lbl">Minutos</span></div>
+      <div class="cell"><span class="num" id="s">--</span><span class="lbl">Segundos</span></div>
+    </div>
+
+    <div class="divider"><span>o adelántate</span></div>
+
+    <div class="question-card">
+      <p class="q" id="question-text"><!-- se llena por JS --></p>
+      <form id="unlock-form" autocomplete="off">
+        <input type="text" id="answer-input" placeholder="Tu respuesta…" aria-label="Respuesta">
+        <button type="submit">Desbloquear</button>
+      </form>
+      <p class="feedback" id="feedback" role="status"></p>
+    </div>
+
+  </div>
+
+  <div id="unlocked-view" hidden>
+    <div class="unlocked-card">
+      <h2 id="unlocked-title">¡Lo lograste!</h2>
+      <p id="unlocked-text"><!-- se llena por JS --></p>
+    </div>
+  </div>
+
+</div>
+
+<footer>hecho con paciencia, un día a la vez</footer>
+
+<script>
+/* =========================================================
+   ZONA DE EDICIÓN — cambia solo lo que hay aquí abajo
+   ========================================================= */
+
+// Fecha objetivo: 26 de junio de 2027, medianoche (hora local de quien la vea)
+const TARGET_DATE = new Date(2027, 5, 26, 0, 0, 0);
+
+// La pregunta secreta que ella debe responder para desbloquear antes de tiempo
+const QUESTION = "¿Cuál fue la primera película que vimos juntas?";
+
+// Respuestas válidas (todo en minúsculas, sin tildes es más seguro).
+// Puedes poner varias formas de escribir lo mismo.
+const VALID_ANSWERS = [
+  "respuesta de ejemplo"
+];
+
+// Mensaje que aparece SOLO si acierta la pregunta antes de la fecha
+const UNLOCKED_BY_ANSWER_TITLE = "La encontraste 🌸";
+const UNLOCKED_BY_ANSWER_TEXT = "Aquí va tu sorpresa, Wendy… (todavía la estoy preparando — vuelve pronto).";
+
+// Mensaje que aparece cuando llega la fecha (26 de junio) sin haber respondido
+const UNLOCKED_BY_DATE_TITLE = "Feliz cumpleaños, Wendy";
+const UNLOCKED_BY_DATE_TEXT = "Aquí va tu sorpresa… (todavía la estoy preparando — vuelve pronto).";
+
+/* =========================================================
+   Fin de la zona de edición. No hace falta tocar lo de abajo.
+   ========================================================= */
+
+const STORAGE_KEY = "regalo-cumple-2027-unlocked";
+
+const $ = (id) => document.getElementById(id);
+const lockedView = $("locked-view");
+const unlockedView = $("unlocked-view");
+
+function normalize(str){
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // quita tildes
+}
+
+function showUnlocked(reason){
+  lockedView.hidden = true;
+  unlockedView.hidden = false;
+  if(reason === "answer"){
+    $("unlocked-title").textContent = UNLOCKED_BY_ANSWER_TITLE;
+    $("unlocked-text").textContent = UNLOCKED_BY_ANSWER_TEXT;
+  } else {
+    $("unlocked-title").textContent = UNLOCKED_BY_DATE_TITLE;
+    $("unlocked-text").textContent = UNLOCKED_BY_DATE_TEXT;
+  }
+}
+
+// Si ya se desbloqueó antes en este navegador, saltamos directo
+try {
+  if (localStorage.getItem(STORAGE_KEY) === "true") {
+    showUnlocked("answer");
+  }
+} catch(e) { /* almacenamiento no disponible, seguimos sin persistencia */ }
+
+// Pintar la pregunta
+$("question-text").textContent = QUESTION;
+
+// Conteo regresivo
+function tick(){
+  const now = new Date();
+  const diff = TARGET_DATE - now;
+
+  if (diff <= 0){
+    showUnlocked("date");
+    clearInterval(timer);
+    return;
+  }
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  $("d").textContent = days;
+  $("h").textContent = String(hours).padStart(2,"0");
+  $("m").textContent = String(minutes).padStart(2,"0");
+  $("s").textContent = String(seconds).padStart(2,"0");
+
+  $("countdown-line").textContent =
+    `Faltan ${days} día${days === 1 ? "" : "s"}, ${hours} hora${hours === 1 ? "" : "s"}, ` +
+    `${minutes} minuto${minutes === 1 ? "" : "s"} y ${seconds} segundo${seconds === 1 ? "" : "s"} ` +
+    `para que la página se desbloquee`;
+}
+tick();
+const timer = setInterval(tick, 1000);
+
+// Formulario de la pregunta
+$("unlock-form").addEventListener("submit", function(e){
+  e.preventDefault();
+  const input = $("answer-input");
+  const feedback = $("feedback");
+  const given = normalize(input.value);
+
+  const correct = VALID_ANSWERS.some(a => normalize(a) === given);
+
+  if (correct){
+    try { localStorage.setItem(STORAGE_KEY, "true"); } catch(e) {}
+    feedback.textContent = "";
+    clearInterval(timer);
+    showUnlocked("answer");
+  } else {
+    feedback.textContent = "No es eso… inténtalo de nuevo.";
+    feedback.className = "feedback err";
+    const card = document.querySelector(".question-card");
+    card.classList.remove("shake");
+    void card.offsetWidth;
+    card.classList.add("shake");
+    input.select();
+  }
+});
+</script>
+
+</body>
+</html>

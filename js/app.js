@@ -18,7 +18,10 @@
       this.initModals();
       this.initWrappedSystem();
       window.storage.subscribe((key) => {
-        if (key === window.CONFIG.storageKeys.memories) this.renderMemories();
+        if (key === window.CONFIG.storageKeys.memories) {
+          this.renderMemories();
+          this.renderAnnualCalendar();
+        }
         if (key === window.CONFIG.storageKeys.movies) this.renderMovies();
         if (key === window.CONFIG.storageKeys.songs) this.renderSongs();
         if (key === window.CONFIG.storageKeys.notes) this.renderNotes();
@@ -152,6 +155,7 @@
     }
     // --- Inicialización de secciones interactivas ---
     initSections() {
+      this.initAnnualCalendar();
       this.renderMemories();
       this.renderMovies();
       this.renderSongs();
@@ -486,6 +490,153 @@
     }
 
     // --- 6. Recuerdos (Campo de Girasoles) ---
+    // --- 6. Recuerdos y Calendario Anual 🌻 ---
+    initAnnualCalendar() {
+      this.currentCalendarYear = 2026;
+      this.annualHolidays = {
+        2024: {
+          '2024-01-01': 'Año Nuevo', '2024-01-08': 'Reyes Magos', '2024-03-25': 'Día de San José',
+          '2024-03-28': 'Jueves Santo', '2024-03-29': 'Viernes Santo', '2024-05-01': 'Día del Trabajo',
+          '2024-05-13': 'Ascensión del Señor', '2024-06-03': 'Corpus Christi', '2024-06-10': 'Sagrado Corazón',
+          '2024-07-01': 'San Pedro y San Pablo', '2024-07-20': 'Independencia de Colombia', '2024-08-07': 'Batalla de Boyacá',
+          '2024-08-19': 'Asunción de la Virgen', '2024-10-14': 'Día de la Raza', '2024-11-04': 'Todos los Santos',
+          '2024-11-11': 'Independencia de Cartagena', '2024-12-08': 'Inmaculada Concepción', '2024-12-25': 'Navidad'
+        },
+        2025: {
+          '2025-01-01': 'Año Nuevo', '2025-01-06': 'Reyes Magos', '2025-03-24': 'Día de San José',
+          '2025-04-17': 'Jueves Santo', '2025-04-18': 'Viernes Santo', '2025-05-01': 'Día del Trabajo',
+          '2025-06-02': 'Ascensión del Señor', '2025-06-23': 'Corpus Christi', '2025-06-30': 'Sagrado Corazón',
+          '2025-07-20': 'Independencia de Colombia', '2025-08-07': 'Batalla de Boyacá', '2025-08-18': 'Asunción de la Virgen',
+          '2025-10-13': 'Día de la Raza', '2025-11-03': 'Todos los Santos', '2025-11-17': 'Independencia de Cartagena',
+          '2025-12-08': 'Inmaculada Concepción', '2025-12-25': 'Navidad'
+        },
+        2026: {
+          '2026-01-01': 'Año Nuevo', '2026-01-12': 'Reyes Magos', '2026-03-23': 'Día de San José',
+          '2026-04-02': 'Jueves Santo', '2026-04-03': 'Viernes Santo', '2026-05-01': 'Día del Trabajo',
+          '2026-05-18': 'Ascensión del Señor', '2026-06-08': 'Corpus Christi', '2026-06-15': 'Sagrado Corazón',
+          '2026-06-29': 'San Pedro y San Pablo', '2026-07-20': 'Independencia de Colombia', '2026-08-07': 'Batalla de Boyacá',
+          '2026-08-17': 'Asunción de la Virgen', '2026-10-12': 'Día de la Raza', '2026-11-02': 'Todos los Santos',
+          '2026-11-16': 'Independencia de Cartagena', '2026-12-08': 'Inmaculada Concepción', '2026-12-25': 'Navidad'
+        }
+      };
+
+      const yearButtons = document.querySelectorAll("#calendar-year-pills .year-pill-btn");
+      yearButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          yearButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          this.currentCalendarYear = parseInt(btn.dataset.year, 10) || 2026;
+          this.renderAnnualCalendar();
+        });
+      });
+
+      this.renderAnnualCalendar();
+    }
+
+    renderAnnualCalendar() {
+      const container = document.getElementById("annual-months-container");
+      if (!container) return;
+
+      const year = this.currentCalendarYear || 2026;
+      const monthNames = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      const weekdays = ["L", "M", "M", "J", "V", "S", "D"];
+
+      const memories = window.storage.getMemories();
+      const memoriesByDate = {};
+      memories.forEach(m => {
+        if (!memoriesByDate[m.date]) memoriesByDate[m.date] = [];
+        memoriesByDate[m.date].push(m);
+      });
+
+      const holidays = this.annualHolidays[year] || {};
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      let monthsHtml = "";
+
+      for (let month = 0; month < 12; month++) {
+        const firstDay = new Date(year, month, 1);
+        let startingDay = firstDay.getDay() - 1; // Lunes=0 ... Domingo=6
+        if (startingDay === -1) startingDay = 6;
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        let daysGridHtml = "";
+
+        // Días vacíos previos
+        for (let e = 0; e < startingDay; e++) {
+          daysGridHtml += `<div class="mini-day-cell empty"></div>`;
+        }
+
+        // Días del mes
+        for (let day = 1; day <= totalDays; day++) {
+          const monthPad = String(month + 1).padStart(2, "0");
+          const dayPad = String(day).padStart(2, "0");
+          const dateStr = `${year}-${monthPad}-${dayPad}`;
+
+          const isHoliday = holidays[dateStr];
+          const isToday = dateStr === todayStr;
+          const dayMemories = memoriesByDate[dateStr] || [];
+          const hasMemories = dayMemories.length > 0;
+
+          let classes = ["mini-day-cell"];
+          if (isToday) classes.push("today");
+          if (isHoliday) classes.push("holiday");
+          if (hasMemories) classes.push("has-memory");
+
+          let dotsHtml = "";
+          if (hasMemories) {
+            dotsHtml = `<div class="mini-day-memory-dots">${dayMemories.slice(0, 3).map(m => `
+              <span class="mini-memory-dot" style="background-color: ${m.color || '#F4C542'}; color: ${m.color || '#F4C542'};"></span>
+            `).join("")}</div>`;
+          }
+
+          const tooltip = isHoliday ? `${day} de ${monthNames[month]}: ${isHoliday}` : (hasMemories ? `${dayMemories.length} recuerdo(s) en esta fecha` : `${day} de ${monthNames[month]}`);
+
+          daysGridHtml += `
+            <div class="${classes.join(" ")}" data-date="${dateStr}" title="${window.Utils.sanitizeHTML(tooltip)}">
+              <span>${day}</span>
+              ${dotsHtml}
+            </div>
+          `;
+        }
+
+        monthsHtml += `
+          <div class="mini-month-card">
+            <div class="mini-month-header">${monthNames[month]}</div>
+            <div class="mini-weekdays-row">${weekdays.map(w => `<span>${w}</span>`).join("")}</div>
+            <div class="mini-days-grid">${daysGridHtml}</div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = monthsHtml;
+
+      // Event listeners para clics en días del calendario
+      container.querySelectorAll(".mini-day-cell:not(.empty)").forEach(cell => {
+        cell.addEventListener("click", () => {
+          const date = cell.dataset.date;
+          const dayMemories = memoriesByDate[date];
+          if (dayMemories && dayMemories.length > 0) {
+            const targetEl = document.getElementById(`mem-node-${dayMemories[0].id}`);
+            if (targetEl) {
+              targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+              targetEl.style.transition = "transform 0.4s ease, box-shadow 0.4s ease";
+              targetEl.style.transform = "scale(1.03)";
+              targetEl.style.boxShadow = `0 0 30px ${dayMemories[0].color || '#F4C542'}`;
+              setTimeout(() => {
+                targetEl.style.transform = "";
+                targetEl.style.boxShadow = "";
+              }, 1800);
+            }
+          } else {
+            this.openMemoryModal({ date });
+          }
+        });
+      });
+    }
+
     renderMemories() {
       const container = document.getElementById("memories-trail-list");
       const sortOrder = document.getElementById("select-sort-memories")?.value || "desc";
@@ -499,29 +650,151 @@
       });
 
       if (list.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-text-secondary);">Aún no hay recuerdos guardados. ¡Crea el primero! 🌻</div>`;
+        container.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">Aún no hay recuerdos guardados. ¡Crea el primero o toca una fecha en el calendario! 🌻</div>`;
         return;
       }
 
-      container.innerHTML = `<div class="trail-line"></div>` + list.map(m => `
-        <div class="memory-node" data-id="${m.id}">
-          <div class="sunflower-pin" title="Abrir recuerdo">🌻</div>
-          <div class="glass-card memory-card-body">
-            <div class="memory-date">
-              <span>📅 ${window.Utils.formatDateES(m.date)}</span>
-              ${m.isDemo ? `<span class="demo-badge">Dato de ejemplo</span>` : ""}
-              ${m.status === "Destacado" ? `<span style="color: var(--color-sunflower-gold);">⭐ Destacado</span>` : ""}
+      const currentUser = window.storage.getCurrentUser();
+
+      container.innerHTML = `<div class="trail-line"></div>` + list.map(m => {
+        const memColor = m.color || "#F4C542";
+        const author = m.author || "Kevin";
+        const authorInitial = author.charAt(0).toUpperCase();
+        const authorClass = author.toLowerCase() === "wendy" ? "wendy" : "kevin";
+        const comments = Array.isArray(m.comments) ? m.comments : [];
+        const gallery = Array.isArray(m.gallery) ? m.gallery : [];
+
+        let coverHtml = "";
+        if (m.coverMedia) {
+          const isVideo = m.coverType === "video" || m.coverMedia.match(/\.(mp4|webm|ogg|mov)$/i) || m.coverMedia.startsWith("data:video/");
+          if (isVideo) {
+            coverHtml = `
+              <div class="memory-cover-wrapper">
+                <video src="${window.Utils.sanitizeHTML(m.coverMedia)}" controls class="memory-cover-video"></video>
+              </div>
+            `;
+          } else {
+            coverHtml = `
+              <div class="memory-cover-wrapper">
+                <img src="${window.Utils.sanitizeHTML(m.coverMedia)}" alt="${window.Utils.sanitizeHTML(m.title)}" class="memory-cover-img" onerror="this.parentElement.style.display='none'">
+              </div>
+            `;
+          }
+        }
+
+        let galleryHtml = "";
+        if (gallery.length > 0) {
+          galleryHtml = `
+            <div class="memory-gallery-strip">
+              ${gallery.map(itemUrl => {
+                const isItemVideo = itemUrl.match(/\.(mp4|webm|ogg|mov)$/i) || itemUrl.startsWith("data:video/");
+                if (isItemVideo) {
+                  return `<video src="${window.Utils.sanitizeHTML(itemUrl)}" class="gallery-preview-item" title="Video adjunto"></video>`;
+                }
+                return `<img src="${window.Utils.sanitizeHTML(itemUrl)}" alt="Foto adjunta" class="gallery-preview-item" onerror="this.style.display='none'">`;
+              }).join("")}
             </div>
-            <h3 class="memory-title">${window.Utils.sanitizeHTML(m.title)}</h3>
-            <p class="memory-desc">${window.Utils.sanitizeHTML(m.description)}</p>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.75rem;">
-              <button type="button" class="btn-secondary btn-edit-memory" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">Editar</button>
-              <button type="button" class="btn-secondary btn-delete-memory" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);">Eliminar</button>
+          `;
+        }
+
+        return `
+          <div class="memory-node" id="mem-node-${m.id}" data-id="${m.id}">
+            <div class="sunflower-pin" style="border-color: ${memColor}; box-shadow: 0 0 15px ${memColor};" title="Fecha: ${window.Utils.formatDateES(m.date)}">🌻</div>
+            
+            <div class="glass-card memory-card-body" style="border-left: 4px solid ${memColor};">
+              <div class="memory-date">
+                <span style="color: ${memColor};">📅 ${window.Utils.formatDateES(m.date)}</span>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                  ${m.isDemo ? `<span class="demo-badge">Ejemplo</span>` : ""}
+                  ${m.status === "Destacado" ? `<span style="color: var(--color-sunflower-gold); font-size: 0.82rem;">⭐ Destacado</span>` : ""}
+                </div>
+              </div>
+
+              ${coverHtml}
+
+              <h3 class="memory-title">${window.Utils.sanitizeHTML(m.title)}</h3>
+              <p class="memory-desc">${window.Utils.sanitizeHTML(m.description)}</p>
+
+              ${galleryHtml}
+
+              <!-- Pie con Autor e Hilo de Comentarios -->
+              <div class="memory-footer-bar">
+                <div class="memory-author-badge" title="Añadido por ${window.Utils.sanitizeHTML(author)}">
+                  <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
+                  <span>Por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn-secondary btn-toggle-comments" data-id="${m.id}" style="padding: 0.3rem 0.8rem; font-size: 0.82rem;">
+                    💬 Comentarios (${comments.length})
+                  </button>
+                  <button type="button" class="btn-secondary btn-edit-memory" data-id="${m.id}" style="padding: 0.3rem 0.7rem; font-size: 0.82rem;">✏️</button>
+                  <button type="button" class="btn-secondary btn-delete-memory" data-id="${m.id}" style="padding: 0.3rem 0.7rem; font-size: 0.82rem; color: var(--color-danger);">🗑️</button>
+                </div>
+              </div>
+
+              <!-- Hilo de comentarios desplegable -->
+              <div class="memory-comments-container" id="comments-box-${m.id}" style="display: none;">
+                <div class="comments-list-box" id="comments-list-${m.id}">
+                  ${comments.length === 0 ? `<p style="font-size: 0.82rem; color: var(--color-text-secondary); margin: 0.3rem 0;">Aún no hay comentarios. ¡Sé el primero en escribir algo!</p>` : ''}
+                  ${comments.map(c => {
+                    const cAuthor = c.author || 'Kevin';
+                    const cClass = cAuthor.toLowerCase() === 'wendy' ? 'wendy-comment' : '';
+                    return `
+                      <div class="comment-bubble ${cClass}">
+                        <div class="comment-bubble-header">
+                          <strong>${window.Utils.sanitizeHTML(cAuthor)}</strong>
+                          <span>${window.Utils.formatDateTimeES(c.createdAt)}</span>
+                        </div>
+                        <div class="comment-bubble-text">${window.Utils.sanitizeHTML(c.message)}</div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+
+                <form class="memory-add-comment-box" data-id="${m.id}">
+                  <input type="text" class="comment-input-field" placeholder="Escribe un comentario como ${window.Utils.sanitizeHTML(currentUser)}..." required />
+                  <button type="submit" class="btn-send-comment">Comentar 💌</button>
+                </form>
+              </div>
+
             </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
 
+      // Listeners de comentarios
+      container.querySelectorAll(".btn-toggle-comments").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const memId = btn.dataset.id;
+          const box = document.getElementById(`comments-box-${memId}`);
+          if (box) {
+            const isHidden = box.style.display === "none";
+            box.style.display = isHidden ? "block" : "none";
+          }
+        });
+      });
+
+      container.querySelectorAll(".memory-add-comment-box").forEach(form => {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const memId = form.dataset.id;
+          const input = form.querySelector(".comment-input-field");
+          const msg = input.value.trim();
+          if (!msg) return;
+
+          window.storage.addMemoryComment(memId, {
+            author: window.storage.getCurrentUser(),
+            message: msg
+          });
+
+          input.value = "";
+          this.renderMemories();
+          window.Utils.showToast("Comentario añadido 💬", "success");
+        });
+      });
+
+      // Listeners de edición y borrado
       container.querySelectorAll(".btn-edit-memory").forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -538,6 +811,7 @@
           if (confirm("¿Seguro que deseas eliminar este recuerdo?")) {
             window.storage.deleteMemory(id);
             this.renderMemories();
+            this.renderAnnualCalendar();
             window.Utils.showToast("Recuerdo eliminado", "info");
           }
         });
@@ -548,12 +822,84 @@
 
     openMemoryModal(mem = null) {
       const modal = document.getElementById("modal-memory");
-      document.getElementById("mem-id").value = mem ? mem.id : "";
-      document.getElementById("mem-date").value = mem ? mem.date : new Date().toISOString().split("T")[0];
-      document.getElementById("mem-title").value = mem ? mem.title : "";
-      document.getElementById("mem-desc").value = mem ? mem.description : "";
-      document.getElementById("mem-status").value = mem ? mem.status : "Guardado";
+      const titleEl = document.getElementById("modal-memory-title");
+      const currentUser = window.storage.getCurrentUser();
+
+      titleEl.textContent = mem && mem.id ? "Editar Recuerdo 🌻" : "Nuevo Recuerdo 🌻";
+      document.getElementById("mem-id").value = mem && mem.id ? mem.id : "";
+      document.getElementById("mem-date").value = mem && mem.date ? mem.date : new Date().toISOString().split("T")[0];
+      document.getElementById("mem-title").value = mem && mem.title ? mem.title : "";
+      document.getElementById("mem-desc").value = mem && mem.description ? mem.description : "";
+      document.getElementById("mem-status").value = mem && mem.status ? mem.status : "Guardado";
+
+      // Autor automático
+      const author = mem && mem.author ? mem.author : currentUser;
+      document.getElementById("mem-author-name").textContent = author;
+      const authorBadge = document.getElementById("mem-author-badge");
+      if (authorBadge) {
+        authorBadge.textContent = author.charAt(0).toUpperCase();
+        authorBadge.className = "author-badge-circle " + (author.toLowerCase() === "wendy" ? "wendy" : "kevin");
+      }
+
+      // Color Swatch
+      const colorVal = mem && mem.color ? mem.color : "#F4C542";
+      const radio = document.querySelector(`input[name="mem-color"][value="${colorVal}"]`);
+      if (radio) radio.checked = true;
+
+      // Portada
+      const coverUrl = mem && mem.coverMedia ? mem.coverMedia : "";
+      document.getElementById("mem-cover-url").value = coverUrl;
+      this.updateCoverPreview(coverUrl);
+
+      // Galería
+      this.modalGalleryItems = mem && Array.isArray(mem.gallery) ? [...mem.gallery] : [];
+      this.renderModalGallery();
+
       modal.classList.add("active");
+    }
+
+    updateCoverPreview(url) {
+      const previewBox = document.getElementById("mem-cover-preview");
+      if (!previewBox) return;
+      if (!url) {
+        previewBox.style.display = "none";
+        previewBox.innerHTML = "";
+        return;
+      }
+      const isVideo = url.match(/\.(mp4|webm|ogg|mov)$/i) || url.startsWith("data:video/");
+      previewBox.style.display = "block";
+      if (isVideo) {
+        previewBox.innerHTML = `<video src="${window.Utils.sanitizeHTML(url)}" controls style="max-height: 180px; width: 100%; border-radius: 8px;"></video>`;
+      } else {
+        previewBox.innerHTML = `<img src="${window.Utils.sanitizeHTML(url)}" alt="Vista previa" style="max-height: 180px; border-radius: 8px; object-fit: cover;" onerror="this.parentElement.style.display='none'">`;
+      }
+    }
+
+    renderModalGallery() {
+      const listEl = document.getElementById("mem-gallery-list");
+      if (!listEl) return;
+      if (!this.modalGalleryItems || this.modalGalleryItems.length === 0) {
+        listEl.innerHTML = `<span style="font-size: 0.82rem; color: var(--color-text-muted);">No hay fotos ni videos adicionales adjuntos.</span>`;
+        return;
+      }
+
+      listEl.innerHTML = this.modalGalleryItems.map((url, idx) => {
+        const isVideo = url.match(/\.(mp4|webm|ogg|mov)$/i) || url.startsWith("data:video/");
+        return `
+          <div class="gallery-thumb-item">
+            ${isVideo ? `<video src="${window.Utils.sanitizeHTML(url)}"></video>` : `<img src="${window.Utils.sanitizeHTML(url)}" alt="Foto">`}
+            <button type="button" class="gallery-thumb-del" data-index="${idx}" title="Eliminar">&times;</button>
+          </div>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll(".gallery-thumb-del").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idx = parseInt(e.currentTarget.dataset.index, 10);
+          this.modalGalleryItems.splice(idx, 1);
+          this.renderModalGallery();
+        });
+      });
     }
 
     // --- 7. Películas (Nuestro Cine) ---
@@ -845,19 +1191,91 @@
         }
       });
 
+      // Controles del formulario de Recuerdos
+      document.querySelectorAll(".btn-quick-date").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const type = btn.dataset.val;
+          const dateInput = document.getElementById("mem-date");
+          if (!dateInput) return;
+          const now = new Date();
+          if (type === "today") {
+            dateInput.value = now.toISOString().split("T")[0];
+          } else if (type === "yesterday") {
+            now.setDate(now.getDate() - 1);
+            dateInput.value = now.toISOString().split("T")[0];
+          }
+        });
+      });
+
+      document.getElementById("mem-cover-url")?.addEventListener("input", (e) => {
+        this.updateCoverPreview(e.target.value.trim());
+      });
+
+      document.getElementById("mem-cover-file")?.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = ev.target.result;
+          document.getElementById("mem-cover-url").value = dataUrl;
+          this.updateCoverPreview(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById("btn-add-gallery-item")?.addEventListener("click", () => {
+        const input = document.getElementById("mem-gallery-item-input");
+        const url = input ? input.value.trim() : "";
+        if (!url) return;
+        if (!this.modalGalleryItems) this.modalGalleryItems = [];
+        this.modalGalleryItems.push(url);
+        input.value = "";
+        this.renderModalGallery();
+      });
+
+      document.getElementById("mem-gallery-file")?.addEventListener("change", (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        if (!this.modalGalleryItems) this.modalGalleryItems = [];
+
+        let remaining = files.length;
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            this.modalGalleryItems.push(ev.target.result);
+            remaining--;
+            if (remaining === 0) {
+              this.renderModalGallery();
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
       document.getElementById("form-memory")?.addEventListener("submit", (e) => {
         e.preventDefault();
+        const coverVal = document.getElementById("mem-cover-url").value.trim();
+        const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
+        const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
+
         const memData = {
-          id: document.getElementById("mem-id").value,
+          id: document.getElementById("mem-id").value || undefined,
           date: document.getElementById("mem-date").value,
-          title: document.getElementById("mem-title").value,
-          description: document.getElementById("mem-desc").value,
-          status: document.getElementById("mem-status").value
+          title: document.getElementById("mem-title").value.trim(),
+          description: document.getElementById("mem-desc").value.trim(),
+          color: selectedColor,
+          coverMedia: coverVal,
+          coverType: isVideo ? "video" : "image",
+          gallery: this.modalGalleryItems || [],
+          status: document.getElementById("mem-status").value,
+          author: window.storage.getCurrentUser()
         };
+
         window.storage.saveMemory(memData);
         document.getElementById("modal-memory").classList.remove("active");
         this.renderMemories();
-        window.Utils.showToast("Recuerdo guardado con éxito 🌻", "success");
+        this.renderAnnualCalendar();
+        window.Utils.showToast("¡Recuerdo guardado con éxito! 🌻", "success");
       });
       document.getElementById("form-password")?.addEventListener("submit", async (e) => {
         e.preventDefault();

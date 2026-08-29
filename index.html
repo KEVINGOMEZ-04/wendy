@@ -453,12 +453,43 @@
       <!-- RECUERDOS -->
       <section id="section-recuerdos" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <h2 class="section-title">Campo de girasoles</h2>
+          <h2 class="section-title">Campo de girasoles 🌻</h2>
           <p class="section-quote">«Cada recuerdo florece como un girasol en nuestro camino.»</p>
         </div>
-        <div class="trail-controls">
+
+        <!-- CALENDARIO ANUAL INTERACTIVO -->
+        <div class="glass-card annual-calendar-card" id="annual-calendar-widget">
+          <div class="calendar-header-bar">
+            <div class="calendar-title-group">
+              <span class="calendar-icon">📅</span>
+              <div>
+                <h3 class="calendar-heading">Calendario de Recuerdos</h3>
+                <p class="calendar-subtext">Selecciona un año para explorar momentos, festivos y fechas especiales:</p>
+              </div>
+            </div>
+            
+            <div class="calendar-year-pills" id="calendar-year-pills">
+              <button type="button" class="year-pill-btn" data-year="2024">2024</button>
+              <button type="button" class="year-pill-btn" data-year="2025">2025</button>
+              <button type="button" class="year-pill-btn active" data-year="2026">2026</button>
+            </div>
+          </div>
+
+          <div class="calendar-legend-bar">
+            <div class="legend-item"><span class="legend-dot holiday-dot"></span><span>Festivos oficiales</span></div>
+            <div class="legend-item"><span class="legend-dot memory-dot"></span><span>Días con recuerdos (por color)</span></div>
+            <div class="legend-item"><span class="legend-dot today-dot"></span><span>Hoy</span></div>
+          </div>
+
+          <!-- Cuadrícula de 12 Meses del Año -->
+          <div class="annual-months-grid" id="annual-months-container">
+            <!-- Se llena dinámicamente con los 12 meses -->
+          </div>
+        </div>
+
+        <div class="trail-controls" style="margin-top: 2rem;">
           <button type="button" class="btn-primary" id="btn-new-memory"><span>+ Nuevo recuerdo</span> 🌻</button>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <label for="select-sort-memories" style="font-size: 0.85rem; color: var(--color-text-secondary);">Orden:</label>
             <select id="select-sort-memories" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
               <option value="desc">Más recientes primero</option>
@@ -466,6 +497,7 @@
             </select>
           </div>
         </div>
+
         <div class="trail-container" id="memories-trail-list">
           <div class="trail-line"></div>
         </div>
@@ -617,22 +649,120 @@
     </div>
   </div>
 
-  <!-- MODAL RECUERDO -->
+  <!-- MODAL RECUERDO MEJORADO -->
   <div id="modal-memory" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-memory-title">
-    <div class="modal-box">
+    <div class="modal-box modal-box-large">
       <div class="modal-header">
         <h3 id="modal-memory-title">Nuevo Recuerdo 🌻</h3>
         <button type="button" class="modal-close-btn" data-close-modal="modal-memory" aria-label="Cerrar">&times;</button>
       </div>
       <form id="form-memory">
         <input type="hidden" id="mem-id" />
-        <div class="form-group"><label for="mem-date">Fecha del recuerdo *</label><input type="date" id="mem-date" class="form-control" required /></div>
-        <div class="form-group"><label for="mem-title">Título *</label><input type="text" id="mem-title" class="form-control" placeholder="Ej. Nuestro primer picnic" required /></div>
-        <div class="form-group"><label for="mem-desc">Descripción *</label><textarea id="mem-desc" class="form-control" placeholder="Describe lo vivido..." required></textarea></div>
-        <div class="form-group"><label for="mem-status">Estado</label><select id="mem-status" class="form-control"><option value="Guardado">Guardado</option><option value="Destacado">Destacado ⭐</option></select></div>
+        
+        <!-- Fecha con selector desprendible / atajos rápidos -->
+        <div class="form-group">
+          <label for="mem-date">Fecha del recuerdo *</label>
+          <div class="date-input-wrapper">
+            <input type="date" id="mem-date" class="form-control custom-date-input" required />
+            <div class="date-quick-buttons">
+              <button type="button" class="btn-quick-date" data-val="today">Hoy</button>
+              <button type="button" class="btn-quick-date" data-val="yesterday">Ayer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="mem-title">Título del recuerdo *</label>
+          <input type="text" id="mem-title" class="form-control" placeholder="Ej. Nuestro picnic bajo el sol" required />
+        </div>
+
+        <div class="form-group">
+          <label for="mem-desc">Descripción / Historia *</label>
+          <textarea id="mem-desc" class="form-control" rows="3" placeholder="Describe lo que vivimos, anécdotas, risas..." required></textarea>
+        </div>
+
+        <!-- Selector de Color para el Calendario y Tarjeta -->
+        <div class="form-group">
+          <label>Color en el Calendario y Diario</label>
+          <div class="color-picker-group" id="memory-color-picker">
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#F4C542" checked>
+              <span class="color-swatch" style="background: #F4C542;" title="Girasol Dorado 🌻"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#B98EE6">
+              <span class="color-swatch" style="background: #B98EE6;" title="Violeta Noche 💜"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#F48FB1">
+              <span class="color-swatch" style="background: #F48FB1;" title="Rosa Amor 💖"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#81C784">
+              <span class="color-swatch" style="background: #81C784;" title="Esmeralda Esperanza 🌿"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#64B5F6">
+              <span class="color-swatch" style="background: #64B5F6;" title="Azul Cielo 🌌"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#FFA726">
+              <span class="color-swatch" style="background: #FFA726;" title="Ámbar Cálido 🍯"></span>
+            </label>
+            <label class="color-swatch-label">
+              <input type="radio" name="mem-color" value="#EC407A">
+              <span class="color-swatch" style="background: #EC407A;" title="Magenta Dulce 🌸"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Multimedia de Portada (Foto o Video) -->
+        <div class="form-group">
+          <label for="mem-cover-url">Foto o Video de Portada</label>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="url" id="mem-cover-url" class="form-control" style="flex: 1; min-width: 220px;" placeholder="URL de imagen o video (https://...)" />
+            <label class="btn-secondary" style="white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+              📁 Subir archivo
+              <input type="file" id="mem-cover-file" accept="image/*,video/*" style="display: none;">
+            </label>
+          </div>
+          <div id="mem-cover-preview" class="media-preview-box" style="display: none; margin-top: 0.5rem;"></div>
+        </div>
+
+        <!-- Fotos y Videos Adicionales Guardados -->
+        <div class="form-group">
+          <label>Fotos y Videos Adicionales (Galería)</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <input type="url" id="mem-gallery-item-input" class="form-control" style="flex: 1; min-width: 220px;" placeholder="Añadir enlace URL de foto o video..." />
+            <button type="button" class="btn-secondary" id="btn-add-gallery-item">+ Añadir enlace</button>
+            <label class="btn-secondary" style="white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+              📁 Subir archivos
+              <input type="file" id="mem-gallery-file" accept="image/*,video/*" multiple style="display: none;">
+            </label>
+          </div>
+          <div id="mem-gallery-list" class="gallery-thumbs-grid"></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="mem-status">Estado</label>
+            <select id="mem-status" class="form-control">
+              <option value="Guardado">Guardado 🌱</option>
+              <option value="Destacado">Destacado ⭐</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Añadido automáticamente por</label>
+            <div id="mem-author-display" class="form-control" style="background: rgba(109, 74, 153, 0.25); font-weight: 600; color: var(--color-sunflower-gold); display: flex; align-items: center; gap: 0.5rem;">
+              <span class="author-badge-circle" id="mem-author-badge">K</span>
+              <span id="mem-author-name">Kevin</span>
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" data-close-modal="modal-memory">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar recuerdo</button>
+          <button type="submit" class="btn-primary">Guardar recuerdo 🌻</button>
         </div>
       </form>
     </div>

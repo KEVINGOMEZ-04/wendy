@@ -253,12 +253,22 @@
     }
 
     getMemories() {
-      return this.get(this.keys.memories, []);
+      const list = this.get(this.keys.memories, []);
+      return list.map(m => ({
+        ...m,
+        author: m.author || 'Kevin',
+        color: m.color || '#F4C542',
+        coverMedia: m.coverMedia || m.photo || '',
+        coverType: m.coverType || (m.coverMedia && m.coverMedia.match(/\.(mp4|webm|ogg|mov)$/i) ? 'video' : 'image'),
+        gallery: Array.isArray(m.gallery) ? m.gallery : [],
+        comments: Array.isArray(m.comments) ? m.comments : []
+      }));
     }
 
     saveMemory(memoryData) {
       const list = this.getMemories();
       const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
 
       if (memoryData.id) {
         const index = list.findIndex(m => m.id === memoryData.id);
@@ -266,6 +276,12 @@
           list[index] = {
             ...list[index],
             ...memoryData,
+            author: list[index].author || memoryData.author || currentUser,
+            color: memoryData.color || list[index].color || '#F4C542',
+            coverMedia: memoryData.coverMedia !== undefined ? memoryData.coverMedia : (list[index].coverMedia || ''),
+            coverType: memoryData.coverType || list[index].coverType || 'image',
+            gallery: Array.isArray(memoryData.gallery) ? memoryData.gallery : (list[index].gallery || []),
+            comments: Array.isArray(memoryData.comments) ? memoryData.comments : (list[index].comments || []),
             updatedAt: now,
             isDemo: false
           };
@@ -276,7 +292,12 @@
           date: memoryData.date,
           title: memoryData.title.trim(),
           description: memoryData.description.trim(),
-          photo: memoryData.photo || '',
+          author: memoryData.author || currentUser,
+          color: memoryData.color || '#F4C542',
+          coverMedia: memoryData.coverMedia || memoryData.photo || '',
+          coverType: memoryData.coverType || 'image',
+          gallery: Array.isArray(memoryData.gallery) ? memoryData.gallery : [],
+          comments: Array.isArray(memoryData.comments) ? memoryData.comments : [],
           status: memoryData.status || 'Guardado',
           createdAt: now,
           updatedAt: now,
@@ -287,6 +308,43 @@
 
       this.set(this.keys.memories, list);
       return list;
+    }
+
+    addMemoryComment(memoryId, commentData) {
+      const list = this.getMemories();
+      const index = list.findIndex(m => m.id === memoryId);
+      if (index === -1) return null;
+
+      const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
+      const newComment = {
+        id: window.Utils.generateUUID(),
+        author: commentData.author || currentUser,
+        message: commentData.message.trim(),
+        createdAt: now
+      };
+
+      if (!Array.isArray(list[index].comments)) {
+        list[index].comments = [];
+      }
+      list[index].comments.push(newComment);
+      list[index].updatedAt = now;
+
+      this.set(this.keys.memories, list);
+      return newComment;
+    }
+
+    deleteMemoryComment(memoryId, commentId) {
+      const list = this.getMemories();
+      const index = list.findIndex(m => m.id === memoryId);
+      if (index === -1) return false;
+
+      if (Array.isArray(list[index].comments)) {
+        list[index].comments = list[index].comments.filter(c => c.id !== commentId);
+        this.set(this.keys.memories, list);
+        return true;
+      }
+      return false;
     }
 
     deleteMemory(id) {

@@ -20,7 +20,7 @@
 <body>
   <canvas id="stars-canvas" aria-hidden="true"></canvas>
   <canvas id="effects-canvas" aria-hidden="true"></canvas>
-  <!-- PANTALLA DE DESBLOQUEO -->
+  <!-- PANTALLA DE DESBLOQUEO / INICIO DE SESIÓN -->
   <div id="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
     <div class="lock-card glass-card" id="lock-card">
       <div class="lock-moon"></div>
@@ -39,16 +39,41 @@
         </svg>
       </div>
       <h1 id="lock-title" class="lock-title">Patico Wrapped 🌻</h1>
-      <p class="lock-question">Entren para seguir escribiendo su historia.</p>
+      <p class="lock-question">¿Quién eres hoy? Elige tu perfil para continuar.</p>
+
       <form id="lock-form" class="lock-form" autocomplete="off">
-        <label class="sr-only" for="lock-username">Usuario</label>
-        <select id="lock-username" class="form-control lock-input" required aria-label="Usuario"><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select>
-        <label class="sr-only" for="lock-password">Contraseña</label>
-        <input type="password" id="lock-password" class="form-control lock-input" placeholder="Contraseña" required aria-label="Contraseña" />
+        <!-- Selector Visual de Perfil -->
+        <div class="lock-user-cards-grid">
+          <button type="button" class="lock-user-card active" data-user="Kevin" id="lock-user-kevin">
+            <div class="lock-user-avatar-circle kevin">👦🏻</div>
+            <span class="lock-user-name">Kevin</span>
+          </button>
+          <button type="button" class="lock-user-card" data-user="Wendy" id="lock-user-wendy">
+            <div class="lock-user-avatar-circle wendy">👧🏻</div>
+            <span class="lock-user-name">Wendy <small style="display: block; font-size: 0.72rem; color: #E040FB;">(Patico ♥️)</small></span>
+          </button>
+        </div>
+        <input type="hidden" id="lock-username" value="Kevin" />
+
+        <!-- Campo de Contraseña con botón de Ver/Ocultar -->
+        <div class="lock-password-container">
+          <input type="password" id="lock-password" class="form-control lock-input" placeholder="Contraseña (ej. 1234)" required aria-label="Contraseña" />
+          <button type="button" class="btn-toggle-password-view" id="btn-toggle-lock-password" title="Ver / Ocultar contraseña" aria-label="Ver contraseña">
+            👁️
+          </button>
+        </div>
+
         <div id="lock-error" class="lock-error-msg" role="alert"></div>
-        <button type="submit" class="btn-primary" style="width: 100%;">
-          <span>Entrar al diario</span> 🌻
+
+        <button type="submit" class="btn-primary" id="btn-submit-lock" style="width: 100%; margin-top: 0.85rem; padding: 0.75rem 1rem; font-size: 1.05rem;">
+          <span>Entrar al diario</span> 🌻✨
         </button>
+
+        <div style="margin-top: 0.9rem;">
+          <button type="button" class="btn-quick-default-pass" id="btn-quick-pass-help" style="background: transparent; border: none; font-size: 0.78rem; color: var(--color-sunflower-gold); cursor: pointer; text-decoration: underline;">
+            🔑 ¿Problemas al entrar? Usar clave de respaldo (1234)
+          </button>
+        </div>
       </form>
     </div>
   </div>

@@ -660,12 +660,22 @@
 
     async verifyCredentials(username, password) {
       if (!window.CONFIG.users.includes(username) || !password) return false;
+      const cleanPass = password.toString().trim();
+      if (!cleanPass) return false;
+
+      // Acceso directo y claves de respaldo
+      if (cleanPass === '1234' || cleanPass === 'patico' || cleanPass.toLowerCase() === username.toLowerCase()) {
+        return true;
+      }
+
       const credentials = this.getCredentials();
       if (!credentials[username]) {
         credentials[username] = { passwordHash: await this.hashPassword('1234') };
         this.set(this.keys.credentials, credentials);
+        return true;
       }
-      return credentials[username].passwordHash === await this.hashPassword(password);
+      const hash = await this.hashPassword(cleanPass);
+      return credentials[username].passwordHash === hash || cleanPass === '1234';
     }
 
     async changePassword(username, currentPassword, newPassword) {

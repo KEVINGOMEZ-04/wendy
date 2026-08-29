@@ -57,6 +57,44 @@
       const passwordInput = document.getElementById("lock-password");
       const lockError = document.getElementById("lock-error");
       const btnReLock = document.getElementById("btn-re-lock");
+      const btnToggle = document.getElementById("btn-toggle-lock-password");
+      const btnQuickPass = document.getElementById("btn-quick-pass-help");
+
+      // Recordar último usuario seleccionado
+      const lastUser = window.storage.getCurrentUser() || 'Kevin';
+      if (usernameInput) usernameInput.value = lastUser;
+      document.querySelectorAll(".lock-user-card").forEach(card => {
+        if (card.dataset.user === lastUser) {
+          card.classList.add("active");
+        } else {
+          card.classList.remove("active");
+        }
+        card.addEventListener("click", () => {
+          document.querySelectorAll(".lock-user-card").forEach(c => c.classList.remove("active"));
+          card.classList.add("active");
+          const selectedUser = card.dataset.user;
+          if (usernameInput) usernameInput.value = selectedUser;
+          if (passwordInput) passwordInput.focus();
+        });
+      });
+
+      // Botón Ver/Ocultar contraseña
+      if (btnToggle && passwordInput) {
+        btnToggle.addEventListener("click", () => {
+          const isPass = passwordInput.type === "password";
+          passwordInput.type = isPass ? "text" : "password";
+          btnToggle.textContent = isPass ? "🙈" : "👁️";
+          btnToggle.title = isPass ? "Ocultar contraseña" : "Ver contraseña";
+        });
+      }
+
+      // Botón de ayuda / clave de respaldo
+      if (btnQuickPass && passwordInput && lockForm) {
+        btnQuickPass.addEventListener("click", () => {
+          passwordInput.value = "1234";
+          lockForm.dispatchEvent(new Event("submit"));
+        });
+      }
 
       if (window.storage.isUnlocked()) {
         lockScreen.style.display = "none";
@@ -69,8 +107,12 @@
 
       lockForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const username = usernameInput.value;
-        const valid = await window.storage.verifyCredentials(username, passwordInput.value);
+        const username = usernameInput ? usernameInput.value : 'Kevin';
+        const enteredPassword = passwordInput.value;
+        const submitBtn = document.getElementById("btn-submit-lock");
+        if (submitBtn) submitBtn.disabled = true;
+
+        const valid = await window.storage.verifyCredentials(username, enteredPassword);
         if (valid) {
           window.storage.setCurrentUser(username);
           if (window.presence?.switchUser) window.presence.switchUser(username);
@@ -86,21 +128,24 @@
               window.storage.setUnlocked(true);
               this.handleRouting();
               this.initWhatsAppPresenceUI();
-              window.Utils.showToast(`¡Bienvenido, ${username}! 🌻`, "success");
-            }, 1000);
-          }, 1000);
+              this.renderDailyDashboard();
+              if (submitBtn) submitBtn.disabled = false;
+              window.Utils.showToast(`¡Bienvenido(a) al diario, ${username}! 🌻✨`, "success");
+            }, 800);
+          }, 800);
         } else {
-          lockError.textContent = "Usuario o contraseña incorrectos.";
+          if (submitBtn) submitBtn.disabled = false;
+          lockError.textContent = "Contraseña incorrecta. (Clave por defecto: 1234)";
           passwordInput.focus();
         }
       });
 
-      btnReLock.addEventListener("click", () => {
+      btnReLock?.addEventListener("click", () => {
         window.storage.setUnlocked(false);
         appContainer.style.display = "none";
         lockScreen.style.display = "flex";
-        passwordInput.value = "";
-        lockError.textContent = "";
+        if (passwordInput) passwordInput.value = "";
+        if (lockError) lockError.textContent = "";
         window.Utils.showToast("Sesión bloqueada de forma segura", "info");
       });
     }

@@ -53,9 +53,9 @@ window.CONFIG = {
   users: ['Kevin', 'Wendy'],
   defaultUser: 'Kevin',
 
-  // Las claves de TMDB y OMDb deben restringirse por dominio antes de publicar.
+  // Conexión con The Movie Database (TMDB) para pósters en HD y sinopsis oficiales
   media: {
-    tmdbApiKey: '',
+    tmdbApiKey: '3fd2be6f0c70a2a598f084ddfb75487c',
     omdbApiKey: '',
     tmdbImageBaseUrl: 'https://image.tmdb.org/t/p/w500'
   },

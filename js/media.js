@@ -124,22 +124,29 @@ window.MediaService = {
     const q = query.trim();
     const tmdbKey = window.CONFIG?.media?.tmdbApiKey;
 
-    // 1. Si hay clave de TMDB configurada, usar TMDB
+    // 1. Motor Oficial: The Movie Database (TMDB) en Español Latino / Castellano
     if (tmdbKey) {
       try {
-        const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(tmdbKey)}&language=es-ES&query=${encodeURIComponent(q)}`);
+        const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(tmdbKey)}&language=es-MX&include_adult=false&query=${encodeURIComponent(q)}`);
         if (response.ok) {
           const data = await response.json();
           if (data.results && data.results.length) {
-            return data.results.slice(0, 8).map(movie => ({
-              tmdbId: movie.id,
-              title: movie.title || movie.original_title,
-              year: (movie.release_date || '').slice(0, 4) || (new Date().getFullYear()),
-              poster: movie.poster_path ? (window.CONFIG.media.tmdbImageBaseUrl || 'https://image.tmdb.org/t/p/w500') + movie.poster_path : '',
-              synopsis: movie.overview || 'Sin sinopsis disponible.',
-              imdbRating: movie.vote_average ? movie.vote_average.toFixed(1) : '',
-              platforms: ['Cine', 'Streaming']
-            }));
+            // Ordenar por popularidad y votos
+            const sortedResults = data.results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+            return sortedResults.slice(0, 10).map(movie => {
+              const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
+              const year = (movie.release_date || '').slice(0, 4) || new Date().getFullYear();
+              return {
+                tmdbId: movie.id,
+                title: movie.title || movie.original_title,
+                year,
+                poster,
+                synopsis: movie.overview || 'Película disponible en catálogo oficial.',
+                imdbRating: movie.vote_average ? movie.vote_average.toFixed(1) : '',
+                platforms: ['Cine', 'Streaming'],
+                imdbUrl: `https://www.imdb.com/find/?q=${encodeURIComponent(`${movie.title || movie.original_title} ${year}`)}`
+              };
+            });
           }
         }
       } catch (e) {
@@ -237,38 +244,38 @@ window.MediaService = {
     if (tmdbKey && movie.tmdbId) {
       try {
         const [detailsRes, providersRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/movie/${movie.tmdbId}?api_key=${encodeURIComponent(tmdbKey)}&language=es-ES`),
+          fetch(`https://api.themoviedb.org/3/movie/${movie.tmdbId}?api_key=${encodeURIComponent(tmdbKey)}&language=es-MX`),
           fetch(`https://api.themoviedb.org/3/movie/${movie.tmdbId}/watch/providers?api_key=${encodeURIComponent(tmdbKey)}`)
         ]);
 
         if (detailsRes.ok) {
           const details = await detailsRes.json();
-          enriched.poster = details.poster_path ? (window.CONFIG.media.tmdbImageBaseUrl + details.poster_path) : enriched.poster;
+          if (details.poster_path) {
+            enriched.poster = `https://image.tmdb.org/t/p/w500${details.poster_path}`;
+          }
           enriched.synopsis = details.overview || enriched.synopsis;
+          if (details.genres && details.genres.length) {
+            enriched.genre = details.genres.map(g => g.name).join(', ');
+          }
+          if (details.vote_average) {
+            enriched.imdbRating = details.vote_average.toFixed(1);
+          }
           if (details.imdb_id) {
             enriched.imdbUrl = `https://www.imdb.com/title/${details.imdb_id}/`;
-            if (window.CONFIG?.media?.omdbApiKey) {
-              try {
-                const omdb = await fetch(`https://www.omdbapi.com/?apikey=${encodeURIComponent(window.CONFIG.media.omdbApiKey)}&i=${details.imdb_id}`);
-                if (omdb.ok) {
-                  const omdbData = await omdb.json();
-                  if (omdbData.imdbRating && omdbData.imdbRating !== 'N/A') {
-                    enriched.imdbRating = omdbData.imdbRating;
-                  }
-                }
-              } catch (e) {
-                console.warn('Error consultando OMDb:', e);
-              }
-            } else if (details.vote_average) {
-              enriched.imdbRating = details.vote_average.toFixed(1);
-            }
           }
         }
 
         if (providersRes.ok) {
           const providers = await providersRes.json();
           const country = providers.results?.CO || providers.results?.MX || providers.results?.ES || providers.results?.US || {};
-          const streamPlatforms = (country.flatrate || []).map(p => p.provider_name);
+          const streamPlatforms = (country.flatrate || []).map(p => {
+            const name = p.provider_name || '';
+            if (name.includes('Disney')) return 'Disney+';
+            if (name.includes('Amazon') || name.includes('Prime')) return 'Prime Video';
+            if (name.includes('HBO') || name.includes('Max')) return 'Max';
+            if (name.includes('Apple')) return 'Apple TV';
+            return name;
+          });
           const rentBuyPlatforms = [...(country.rent || []), ...(country.buy || [])].map(p => p.provider_name);
           const allPlatforms = Array.from(new Set([...streamPlatforms, ...rentBuyPlatforms]));
           if (allPlatforms.length) {

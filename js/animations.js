@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Patico Wrapped 🌻 - Motor de Animaciones y Canvas
  */
 
@@ -7,26 +7,40 @@
     constructor(canvasId) {
       this.canvas = document.getElementById(canvasId);
       if (!this.canvas) return;
-      this.ctx = this.canvas.getContext('2d');
+      this.ctx = this.canvas.getContext('2d', { alpha: true });
       this.stars = [];
       this.particles = [];
-      this.numStars = 120;
-      this.numParticles = 25;
+      this.isMobile = window.innerWidth <= 768;
+      this.numStars = this.isMobile ? 35 : 90;
+      this.numParticles = this.isMobile ? 6 : 18;
       this.animationFrameId = null;
+      this.isRunning = false;
 
       this.resize = this.resize.bind(this);
       this.animate = this.animate.bind(this);
 
-      window.addEventListener('resize', this.resize);
+      window.addEventListener('resize', this.resize, { passive: true });
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          this.stop();
+        } else {
+          this.start();
+        }
+      });
+
       this.resize();
       this.createElements();
-      this.animate();
+      this.start();
     }
 
     resize() {
       if (!this.canvas) return;
-      this.canvas.width = window.innerWidth;
+      this.isMobile = window.innerWidth <= 768;
+      this.numStars = this.isMobile ? 35 : 90;
+      this.numParticles = this.isMobile ? 6 : 18;
+      this.canvas.width = Math.min(window.innerWidth, 1920);
       this.canvas.height = window.innerHeight;
+      this.createElements();
     }
 
     createElements() {
@@ -35,9 +49,9 @@
         this.stars.push({
           x: Math.random() * this.canvas.width,
           y: Math.random() * this.canvas.height,
-          size: Math.random() * 1.8 + 0.5,
-          alpha: Math.random() * 0.8 + 0.2,
-          twinkleSpeed: Math.random() * 0.02 + 0.005,
+          size: Math.random() * (this.isMobile ? 1.2 : 1.6) + 0.4,
+          alpha: Math.random() * 0.7 + 0.2,
+          twinkleSpeed: Math.random() * 0.015 + 0.005,
           twinkleDir: Math.random() > 0.5 ? 1 : -1
         });
       }
@@ -47,23 +61,38 @@
         this.particles.push({
           x: Math.random() * this.canvas.width,
           y: Math.random() * this.canvas.height,
-          size: Math.random() * 2.5 + 1,
-          speedX: (Math.random() - 0.5) * 0.4,
-          speedY: -Math.random() * 0.5 - 0.2,
-          alpha: Math.random() * 0.6 + 0.2,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.3,
+          speedY: -Math.random() * 0.4 - 0.15,
+          alpha: Math.random() * 0.5 + 0.2,
           color: Math.random() > 0.4 ? 'rgba(244, 197, 66, ' : 'rgba(185, 142, 230, '
         });
       }
     }
 
+    start() {
+      if (!this.isRunning) {
+        this.isRunning = true;
+        this.animate();
+      }
+    }
+
+    stop() {
+      this.isRunning = false;
+      if (this.animationFrameId) {
+        cancelAnimationFrame(this.animationFrameId);
+        this.animationFrameId = null;
+      }
+    }
+
     animate() {
-      if (!this.ctx) return;
+      if (!this.isRunning || !this.ctx) return;
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       for (let star of this.stars) {
         star.alpha += star.twinkleSpeed * star.twinkleDir;
-        if (star.alpha > 0.95) {
-          star.alpha = 0.95;
+        if (star.alpha > 0.9) {
+          star.alpha = 0.9;
           star.twinkleDir = -1;
         } else if (star.alpha < 0.15) {
           star.alpha = 0.15;
@@ -73,11 +102,8 @@
         this.ctx.beginPath();
         this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         this.ctx.fillStyle = `rgba(241, 233, 251, ${star.alpha})`;
-        this.ctx.shadowBlur = star.size > 1.2 ? 6 : 2;
-        this.ctx.shadowColor = '#F8D96B';
         this.ctx.fill();
       }
-      this.ctx.shadowBlur = 0;
 
       for (let p of this.particles) {
         p.x += p.speedX;

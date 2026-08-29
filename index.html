@@ -9,6 +9,8 @@
   <title>Patico Wrapped 🌻 — Kevin & Wendy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://patico-diario-default-rtdb.firebaseio.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Jost:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -59,9 +61,9 @@
         <span id="active-user-label" class="active-user-label"></span>
       </div>
       <div class="header-actions">
-        <button type="button" class="btn-lock" id="btn-open-sync" title="Sincronización en la nube y multidispositivo"><span>☁️</span> Sincronizar</button>
-        <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña">⚙️ Contraseña</button>
-        <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span> Bloquear</button>
+        <button type="button" class="btn-lock" id="btn-open-sync" title="Sincronización en la nube y multidispositivo"><span>☁️</span><span class="btn-lock-text"> Sincronizar</span></button>
+        <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña"><span>⚙️</span><span class="btn-lock-text"> Contraseña</span></button>
+        <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span><span class="btn-lock-text"> Bloquear</span></button>
       </div>
     </header>
     <nav class="app-nav" aria-label="Navegación principal del Wrapped">

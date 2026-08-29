@@ -12,7 +12,9 @@
     init() {
       new window.StarfieldBackground("stars-canvas");
       this.initUnlockSystem();
-      this.initPresenceUI();
+      this.initWhatsAppPresenceUI();
+      this.initProfilesModal();
+      this.initNudgeFeature();
       this.initNavigation();
       this.initSections();
       this.initModals();
@@ -26,6 +28,10 @@
         if (key === window.CONFIG.storageKeys.songs) this.renderSongs();
         if (key === window.CONFIG.storageKeys.notes) this.renderNotes();
         if (key === window.CONFIG.storageKeys.dreams) this.renderDreams();
+        if (key === window.CONFIG.storageKeys.profiles) {
+          this.initWhatsAppPresenceUI();
+          this.renderDailyDashboard();
+        }
         this.renderDailyDashboard();
       });
 
@@ -37,6 +43,7 @@
         this.renderNotes();
         this.renderDreams();
         this.renderDailyDashboard();
+        this.initWhatsAppPresenceUI();
       };
     }
 
@@ -66,7 +73,7 @@
         const valid = await window.storage.verifyCredentials(username, passwordInput.value);
         if (valid) {
           window.storage.setCurrentUser(username);
-          window.presence.switchUser(username);
+          if (window.presence?.switchUser) window.presence.switchUser(username);
           lockError.textContent = "";
           lockCard.classList.add("blooming");
           setTimeout(() => {
@@ -78,6 +85,7 @@
               appContainer.style.display = "flex";
               window.storage.setUnlocked(true);
               this.handleRouting();
+              this.initWhatsAppPresenceUI();
               window.Utils.showToast(`¡Bienvenido, ${username}! 🌻`, "success");
             }, 1000);
           }, 1000);
@@ -96,23 +104,149 @@
         window.Utils.showToast("Sesión bloqueada de forma segura", "info");
       });
     }
-    // --- 2. Presencia Compartida UI ---
-    initPresenceUI() {
-      const summaryText = document.getElementById("presence-summary-text");
-      const presenceDot = document.getElementById("presence-dot");
-      const activeUser = document.getElementById("active-user-label");
 
-      window.presence.subscribe((state) => {
-        summaryText.textContent = state.summary;
-        if (state.isLocal) {
-          presenceDot.className = "presence-status-dot local-mode";
-        } else {
-          const anyOnline = state.users.Kevin?.online || state.users.Wendy?.online;
-          presenceDot.className = "presence-status-dot " + (anyOnline ? "online" : "");
+    // --- 2. Barra de Presencia en Tiempo Real Estilo WhatsApp ---
+    formatWhatsAppLastSeen(timestamp) {
+      if (!timestamp) return 'desconectado(a)';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      
+      if (diffMs < 75000) return 'en línea';
+
+      const isToday = date.getDate() === now.getDate() &&
+                      date.getMonth() === now.getMonth() &&
+                      date.getFullYear() === now.getFullYear();
+
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const isYesterday = date.getDate() === yesterday.getDate() &&
+                          date.getMonth() === yesterday.getMonth() &&
+                          date.getFullYear() === yesterday.getFullYear();
+
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'p. m.' : 'a. m.';
+      hours = hours % 12 || 12;
+      const timeStr = `${hours}:${minutes} ${ampm}`;
+
+      if (isToday) {
+        return `últ. vez hoy a las ${timeStr}`;
+      } else if (isYesterday) {
+        return `últ. vez ayer a las ${timeStr}`;
+      } else {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        return `últ. vez el ${day}/${month} a las ${timeStr}`;
+      }
+    }
+
+    initWhatsAppPresenceUI() {
+      const updatePresenceBar = () => {
+        const currentUser = window.storage.getCurrentUser();
+        const profiles = window.storage.getProfiles();
+        const presence = window.storage.presenceState || {};
+
+        const kevinProfile = profiles.Kevin || { name: 'Kevin', nickname: 'Kevin', avatar: '' };
+        const wendyProfile = profiles.Wendy || { name: 'Wendy', nickname: 'Patico ♥️', avatar: '' };
+
+        // 1. Nombres de la pareja en la barra
+        const namesEl = document.getElementById('whatsapp-couple-names');
+        if (namesEl) {
+          namesEl.textContent = `${kevinProfile.nickname} & ${wendyProfile.nickname}`;
         }
 
-        activeUser.textContent = `Sesión: ${state.currentUser}`;
-      });
+        // 2. Avatares
+        const kevinImg = document.getElementById('header-avatar-kevin-img');
+        const kevinFallback = document.getElementById('header-avatar-kevin-fallback');
+        if (kevinProfile.avatar) {
+          kevinImg.src = kevinProfile.avatar;
+          kevinImg.style.display = 'block';
+          kevinFallback.style.display = 'none';
+        } else {
+          kevinImg.style.display = 'none';
+          kevinFallback.style.display = 'flex';
+          kevinFallback.textContent = kevinProfile.nickname ? kevinProfile.nickname.charAt(0).toUpperCase() : 'K';
+        }
+
+        const wendyImg = document.getElementById('header-avatar-wendy-img');
+        const wendyFallback = document.getElementById('header-avatar-wendy-fallback');
+        if (wendyProfile.avatar) {
+          wendyImg.src = wendyProfile.avatar;
+          wendyImg.style.display = 'block';
+          wendyFallback.style.display = 'none';
+        } else {
+          wendyImg.style.display = 'none';
+          wendyFallback.style.display = 'flex';
+          wendyFallback.textContent = wendyProfile.nickname ? wendyProfile.nickname.charAt(0).toUpperCase() : 'W';
+        }
+
+        // 3. Puntos de conexión (Verde brillante)
+        const kevinOnline = presence.Kevin?.online === true || (presence.Kevin?.lastSeen && (Date.now() - presence.Kevin.lastSeen < 75000));
+        const wendyOnline = presence.Wendy?.online === true || (presence.Wendy?.lastSeen && (Date.now() - presence.Wendy.lastSeen < 75000));
+
+        const kevinDot = document.getElementById('header-dot-kevin');
+        if (kevinDot) {
+          kevinDot.className = 'whatsapp-online-dot ' + (kevinOnline ? 'online' : '');
+          kevinDot.title = `Kevin: ${kevinOnline ? 'En línea' : this.formatWhatsAppLastSeen(presence.Kevin?.lastSeen)}`;
+        }
+
+        const wendyDot = document.getElementById('header-dot-wendy');
+        if (wendyDot) {
+          wendyDot.className = 'whatsapp-online-dot ' + (wendyOnline ? 'online' : '');
+          wendyDot.title = `Wendy: ${wendyOnline ? 'En línea' : this.formatWhatsAppLastSeen(presence.Wendy?.lastSeen)}`;
+        }
+
+        // 4. Subtítulo con estado de la otra persona estilo WhatsApp
+        const statusEl = document.getElementById('whatsapp-status-text');
+        if (!statusEl) return;
+
+        const otherUser = currentUser.toLowerCase() === 'wendy' ? 'Kevin' : 'Wendy';
+        const otherProfile = otherUser === 'Kevin' ? kevinProfile : wendyProfile;
+        const otherOnline = otherUser === 'Kevin' ? kevinOnline : wendyOnline;
+        const otherLastSeen = otherUser === 'Kevin' ? presence.Kevin?.lastSeen : presence.Wendy?.lastSeen;
+
+        if (kevinOnline && wendyOnline) {
+          statusEl.innerHTML = `<span class="status-online-text">🟢 ¡Ambos en línea ahora! 💖</span>`;
+        } else if (otherOnline) {
+          statusEl.innerHTML = `<span class="status-online-text">🟢 ${window.Utils.sanitizeHTML(otherProfile.nickname)} en línea</span>`;
+        } else {
+          const lastSeenStr = this.formatWhatsAppLastSeen(otherLastSeen);
+          statusEl.innerHTML = `<span class="status-offline-text">${window.Utils.sanitizeHTML(otherProfile.nickname)} ${window.Utils.sanitizeHTML(lastSeenStr)}</span>`;
+        }
+      };
+
+      if (window.storage) {
+        window.storage.onPresenceUpdate = () => updatePresenceBar();
+        window.storage.onProfilesChange = () => {
+          updatePresenceBar();
+          this.renderDailyDashboard();
+        };
+        window.storage.onNudgeReceived = (nudge) => this.showNudgeReceivedAnimation(nudge);
+      }
+
+      if (!this.presenceInterval) {
+        this.presenceInterval = setInterval(updatePresenceBar, 15000);
+      }
+      updatePresenceBar();
+    }
+
+    showNudgeReceivedAnimation(nudge) {
+      const floater = document.createElement('div');
+      floater.className = 'nudge-floater';
+      floater.innerHTML = `<span>🌻</span><span>¡<strong>${window.Utils.sanitizeHTML(nudge.fromNickname || nudge.from)}</strong> te envió un toquecito de amor!</span><span>💖</span>`;
+      document.body.appendChild(floater);
+
+      if (window.confetti) {
+        window.confetti({
+          particleCount: 50,
+          spread: 80,
+          origin: { y: 0.2 },
+          colors: ['#F4C542', '#E040FB', '#00E5FF', '#FF4081']
+        });
+      }
+
+      setTimeout(() => floater.remove(), 5500);
     }
 
     // --- 3. Navegación y Enrutamiento Hash ---
@@ -256,8 +390,10 @@
       const summary = document.getElementById('daily-summary');
       if (!summary) return;
       const currentUser = window.storage.getCurrentUser();
-      const userAgeStr = currentUser.toLowerCase() === 'wendy' ? 'Wendy (Patico ♥️) 👧🏻' : 'Kevin 👦🏻';
-      document.getElementById('dashboard-user').textContent = userAgeStr;
+      const profiles = window.storage.getProfiles();
+      const userProfile = profiles[currentUser] || {};
+      const userDisplayName = userProfile.nickname || (currentUser.toLowerCase() === 'wendy' ? 'Wendy (Patico ♥️) 👧🏻' : 'Kevin 👦🏻');
+      document.getElementById('dashboard-user').textContent = userDisplayName;
       const values = [
         ['🌻', window.storage.getMemories().length, 'recuerdos'],
         ['🎵', window.storage.getSongs().length, 'canciones'],
@@ -1654,26 +1790,6 @@
       });
     }
 
-    updateSyncModalUI() {
-      const statusText = document.getElementById("sync-modal-status-text");
-      const timeText = document.getElementById("sync-modal-last-time");
-      const dot = document.getElementById("sync-modal-dot");
-      if (!statusText || !timeText || !dot) return;
-
-      if (window.storage && window.storage.isSyncing) {
-        statusText.textContent = "Sincronizando con la nube…";
-        dot.className = "sync-indicator-dot syncing";
-      } else if (window.storage && window.storage.lastCloudSyncTime) {
-        statusText.textContent = "Sincronizado con la nube ☁️";
-        timeText.textContent = `Última sincronización: ${window.Utils.formatDateTimeES(window.storage.lastCloudSyncTime)}`;
-        dot.className = "sync-indicator-dot online";
-      } else {
-        statusText.textContent = "Conectado a la nube ☁️";
-        timeText.textContent = "Sincronización automática activa en segundo plano.";
-        dot.className = "sync-indicator-dot online";
-      }
-    }
-
     openDreamModal(d = null) {
       const modal = document.getElementById("modal-dream");
       document.getElementById("dream-id").value = d ? d.id : "";
@@ -1692,125 +1808,156 @@
       document.getElementById("btn-change-password")?.addEventListener("click", () => document.getElementById("modal-password").classList.add("active"));
       document.getElementById("music-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMusic(document.getElementById('music-search-input').value); });
       document.getElementById("movie-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMovies(document.getElementById('movie-search-input').value); });
+    }
 
-      // Sincronización en la Nube y Multidispositivo
-      document.getElementById("btn-open-sync")?.addEventListener("click", () => {
-        const modal = document.getElementById("modal-sync");
-        this.updateSyncModalUI();
-        modal.classList.add("active");
-      });
+    initProfilesModal() {
+      const modal = document.getElementById('modal-profiles');
+      const form = document.getElementById('form-profiles');
+      if (!modal || !form) return;
 
-      if (window.storage) {
-        window.storage.onSyncStateChange = () => this.updateSyncModalUI();
-      }
+      const kevinNicknameInput = document.getElementById('profile-kevin-nickname');
+      const kevinUrlInput = document.getElementById('profile-kevin-avatar-url');
+      const kevinFileInput = document.getElementById('profile-kevin-avatar-file');
+      const kevinPreviewImg = document.getElementById('kevin-avatar-preview-img');
+      const kevinPreviewFallback = document.getElementById('kevin-avatar-preview-fallback');
 
-      document.getElementById("btn-force-cloud-sync")?.addEventListener("click", async () => {
-        const btn = document.getElementById("btn-force-cloud-sync");
-        btn.disabled = true;
-        btn.textContent = "Sincronizando… ⏳";
-        
-        const pullRes = await window.storage.syncCloudPull();
-        const pushRes = await window.storage.syncCloudPush();
+      const wendyNicknameInput = document.getElementById('profile-wendy-nickname');
+      const wendyUrlInput = document.getElementById('profile-wendy-avatar-url');
+      const wendyFileInput = document.getElementById('profile-wendy-avatar-file');
+      const wendyPreviewImg = document.getElementById('wendy-avatar-preview-img');
+      const wendyPreviewFallback = document.getElementById('wendy-avatar-preview-fallback');
 
-        btn.disabled = false;
-        btn.textContent = "🔄 Sincronizar Ahora";
-        this.renderMemories();
-        this.renderAnnualCalendar();
-        this.renderDailyDashboard();
-        this.updateSyncModalUI();
+      let kevinAvatarData = '';
+      let wendyAvatarData = '';
 
-        if (pullRes && pullRes.success) {
-          window.Utils.showToast("¡Datos sincronizados con la nube! ☁️✨", "success");
+      const populateModal = () => {
+        const profiles = window.storage.getProfiles();
+        kevinNicknameInput.value = profiles.Kevin?.nickname || 'Kevin';
+        kevinUrlInput.value = profiles.Kevin?.avatar?.startsWith('data:') ? '' : (profiles.Kevin?.avatar || '');
+        kevinAvatarData = profiles.Kevin?.avatar || '';
+        if (kevinAvatarData) {
+          kevinPreviewImg.src = kevinAvatarData;
+          kevinPreviewImg.style.display = 'block';
+          kevinPreviewFallback.style.display = 'none';
         } else {
-          window.Utils.showToast("Sincronización completada localmente.", "info");
+          kevinPreviewImg.style.display = 'none';
+          kevinPreviewFallback.style.display = 'flex';
+          kevinPreviewFallback.textContent = profiles.Kevin?.nickname ? profiles.Kevin.nickname.charAt(0).toUpperCase() : 'K';
         }
-      });
 
-      document.getElementById("btn-copy-sync-code")?.addEventListener("click", () => {
-        const code = window.storage.exportTransferCode();
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(code).then(() => {
-            window.Utils.showToast("¡Código copiado! 📋 Pégalo en tu teléfono.", "success");
-          }).catch(() => {
-            const input = document.getElementById("sync-code-input");
-            if (input) input.value = code;
-            window.Utils.showToast("Código generado en la caja. Cópialo.", "info");
-          });
+        wendyNicknameInput.value = profiles.Wendy?.nickname || 'Patico ♥️';
+        wendyUrlInput.value = profiles.Wendy?.avatar?.startsWith('data:') ? '' : (profiles.Wendy?.avatar || '');
+        wendyAvatarData = profiles.Wendy?.avatar || '';
+        if (wendyAvatarData) {
+          wendyPreviewImg.src = wendyAvatarData;
+          wendyPreviewImg.style.display = 'block';
+          wendyPreviewFallback.style.display = 'none';
         } else {
-          const input = document.getElementById("sync-code-input");
-          if (input) input.value = code;
-          window.Utils.showToast("Código generado en la caja. Cópialo.", "info");
+          wendyPreviewImg.style.display = 'none';
+          wendyPreviewFallback.style.display = 'flex';
+          wendyPreviewFallback.textContent = profiles.Wendy?.nickname ? profiles.Wendy.nickname.charAt(0).toUpperCase() : 'W';
+        }
+      };
+
+      document.getElementById('btn-open-profiles')?.addEventListener('click', () => {
+        populateModal();
+        modal.classList.add('active');
+      });
+
+      document.getElementById('whatsapp-presence-bar')?.addEventListener('click', () => {
+        populateModal();
+        modal.classList.add('active');
+      });
+
+      kevinUrlInput?.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          kevinAvatarData = val;
+          kevinPreviewImg.src = val;
+          kevinPreviewImg.style.display = 'block';
+          kevinPreviewFallback.style.display = 'none';
         }
       });
 
-      document.getElementById("btn-apply-sync-code")?.addEventListener("click", () => {
-        const input = document.getElementById("sync-code-input");
-        const code = input ? input.value.trim() : "";
-        if (!code) {
-          window.Utils.showToast("Por favor pega un código de sincronización.", "error");
-          return;
-        }
-        const res = window.storage.importTransferCode(code);
-        if (res && res.success) {
-          input.value = "";
-          this.initSections();
-          window.Utils.showToast(`¡${res.count} elementos sincronizados en este dispositivo! 🌻✨`, "success");
-        } else {
-          window.Utils.showToast("El código no es válido o está incompleto.", "error");
-        }
-      });
-
-      document.getElementById("btn-export-backup-json")?.addEventListener("click", () => {
-        const data = {
-          exportDate: new Date().toISOString(),
-          app: "Patico Wrapped",
-          memories: window.storage.getMemories(),
-          movies: window.storage.getMovies(),
-          notes: window.storage.getNotes(),
-          dreams: window.storage.getDreams(),
-          songs: window.storage.getSongs()
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `patico-recuerdos-respaldo-${new Date().toISOString().split("T")[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        window.Utils.showToast("Archivo de respaldo descargado 💾", "success");
-      });
-
-      document.getElementById("input-restore-backup-file")?.addEventListener("change", (e) => {
+      kevinFileInput?.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          try {
-            const imported = JSON.parse(ev.target.result);
-            if (imported.memories && Array.isArray(imported.memories)) {
-              window.storage.set(window.CONFIG.storageKeys.memories, window.storage.mergeDataLists(window.storage.getMemories(), imported.memories));
-            }
-            if (imported.movies && Array.isArray(imported.movies)) {
-              window.storage.set(window.CONFIG.storageKeys.movies, window.storage.mergeDataLists(window.storage.getMovies(), imported.movies));
-            }
-            if (imported.notes && Array.isArray(imported.notes)) {
-              window.storage.set(window.CONFIG.storageKeys.notes, window.storage.mergeDataLists(window.storage.getNotes(), imported.notes));
-            }
-            if (imported.dreams && Array.isArray(imported.dreams)) {
-              window.storage.set(window.CONFIG.storageKeys.dreams, window.storage.mergeDataLists(window.storage.getDreams(), imported.dreams));
-            }
-            if (imported.songs && Array.isArray(imported.songs)) {
-              window.storage.set(window.CONFIG.storageKeys.songs, window.storage.mergeDataLists(window.storage.getSongs(), imported.songs));
-            }
-            window.storage.scheduleCloudPush();
-            this.initSections();
-            window.Utils.showToast("¡Copia de seguridad restaurada con éxito! 🌻", "success");
-          } catch(err) {
-            window.Utils.showToast("Error al leer el archivo de respaldo.", "error");
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            kevinAvatarData = evt.target.result;
+            kevinPreviewImg.src = kevinAvatarData;
+            kevinPreviewImg.style.display = 'block';
+            kevinPreviewFallback.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      wendyUrlInput?.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          wendyAvatarData = val;
+          wendyPreviewImg.src = val;
+          wendyPreviewImg.style.display = 'block';
+          wendyPreviewFallback.style.display = 'none';
+        }
+      });
+
+      wendyFileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            wendyAvatarData = evt.target.result;
+            wendyPreviewImg.src = wendyAvatarData;
+            wendyPreviewImg.style.display = 'block';
+            wendyPreviewFallback.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const updated = {
+          Kevin: {
+            nickname: kevinNicknameInput.value.trim() || 'Kevin',
+            avatar: kevinAvatarData
+          },
+          Wendy: {
+            nickname: wendyNicknameInput.value.trim() || 'Patico ♥️',
+            avatar: wendyAvatarData
           }
         };
-        reader.readAsText(file);
+
+        window.storage.saveProfiles(updated);
+        modal.classList.remove('active');
+        this.initWhatsAppPresenceUI();
+        this.renderDailyDashboard();
+        window.Utils.showToast('¡Perfiles y apodos actualizados! 💖🌻', 'success');
       });
+    }
+
+    initNudgeFeature() {
+      document.getElementById('btn-send-nudge')?.addEventListener('click', () => {
+        const currentUser = window.storage.getCurrentUser();
+        const profiles = window.storage.getProfiles();
+        const otherUser = currentUser.toLowerCase() === 'wendy' ? 'Kevin' : 'Wendy';
+        const otherNickname = profiles[otherUser]?.nickname || otherUser;
+
+        window.storage.sendNudge();
+        window.Utils.showToast(`¡Le enviaste un toquecito de amor a ${otherNickname}! 🌻💖`, 'success');
+
+        if (window.confetti) {
+          window.confetti({
+            particleCount: 45,
+            spread: 70,
+            origin: { y: 0.15 },
+            colors: ['#F4C542', '#E040FB', '#00E5FF', '#FF4081']
+          });
+        }
+      });
+    }
 
       document.querySelectorAll("[data-close-modal]").forEach(btn => {
         btn.addEventListener("click", (e) => {

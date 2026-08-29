@@ -55,13 +55,34 @@
   <div id="app-container" style="display: none;">
     <header class="app-header">
       <a href="#inicio" class="header-brand" aria-label="Ir al inicio"><span class="sunflower-icon">🌻</span><span>Patico</span></a>
-      <div class="presence-capsule" id="presence-badge" aria-live="polite">
-        <span class="presence-status-dot local-mode" id="presence-dot"></span>
-        <span id="presence-summary-text">Modo local: presencia compartida no configurada</span>
-        <span id="active-user-label" class="active-user-label"></span>
+      
+      <!-- BARRA DE CONEXIÓN ESTILO WHATSAPP -->
+      <div class="whatsapp-presence-bar" id="whatsapp-presence-bar" title="Toca para ver o personalizar perfiles y apodos" role="button" tabindex="0">
+        <div class="whatsapp-avatars-group">
+          <div class="whatsapp-avatar-wrapper" id="header-avatar-kevin-wrapper">
+            <img id="header-avatar-kevin-img" src="" class="whatsapp-avatar-img" style="display: none;" alt="Kevin">
+            <span id="header-avatar-kevin-fallback" class="whatsapp-avatar-fallback kevin">K</span>
+            <span class="whatsapp-online-dot" id="header-dot-kevin" title="Kevin"></span>
+          </div>
+          <div class="whatsapp-avatar-wrapper" id="header-avatar-wendy-wrapper">
+            <img id="header-avatar-wendy-img" src="" class="whatsapp-avatar-img" style="display: none;" alt="Wendy">
+            <span id="header-avatar-wendy-fallback" class="whatsapp-avatar-fallback wendy">W</span>
+            <span class="whatsapp-online-dot" id="header-dot-wendy" title="Wendy"></span>
+          </div>
+        </div>
+        <div class="whatsapp-info-col">
+          <div class="whatsapp-title-row">
+            <span class="whatsapp-names" id="whatsapp-couple-names">Kevin & Patico ♥️</span>
+          </div>
+          <div class="whatsapp-status-row" id="whatsapp-status-text">
+            <span class="status-offline-text">Conectando en tiempo real…</span>
+          </div>
+        </div>
       </div>
+
       <div class="header-actions">
-        <button type="button" class="btn-lock" id="btn-open-sync" title="Sincronización en la nube y multidispositivo"><span>☁️</span><span class="btn-lock-text"> Sincronizar</span></button>
+        <button type="button" class="btn-lock btn-nudge" id="btn-send-nudge" title="Enviar un toquecito de amor con girasoles 🌻✨"><span>🌻</span><span class="btn-lock-text"> Toquecito</span></button>
+        <button type="button" class="btn-lock" id="btn-open-profiles" title="Personalizar fotos de perfil y apodos"><span>👤</span><span class="btn-lock-text"> Perfiles</span></button>
         <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña"><span>⚙️</span><span class="btn-lock-text"> Contraseña</span></button>
         <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span><span class="btn-lock-text"> Bloquear</span></button>
       </div>
@@ -914,77 +935,81 @@
     </div>
   </div>
 
-  <!-- MODAL SINCRONIZACIÓN Y NUBE MULTIDISPOSITIVO -->
-  <div id="modal-sync" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-sync-title">
+  <!-- MODAL PERFILES Y APODOS -->
+  <div id="modal-profiles" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-profiles-title">
     <div class="modal-box modal-box-large">
       <div class="modal-header">
-        <h3 id="modal-sync-title">Sincronización en la Nube y Dispositivos ☁️</h3>
-        <button type="button" class="modal-close-btn" data-close-modal="modal-sync" aria-label="Cerrar">&times;</button>
+        <h3 id="modal-profiles-title">Perfiles y Apodos 👤💖</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-profiles" aria-label="Cerrar">&times;</button>
       </div>
+      <form id="form-profiles">
+        <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 1.25rem;">
+          Personalicen sus fotos de perfil y sus nombres o apodos especiales. Se sincronizan en tiempo real en la barra de conexión y en todo el diario compartido.
+        </p>
 
-      <div class="sync-modal-body" style="padding-top: 0.5rem;">
-        <!-- Estado de la Nube -->
-        <div class="glass-card sync-status-card" style="margin-bottom: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem; color: var(--color-sunflower-gold);">
-                <span class="sync-indicator-dot" id="sync-modal-dot"></span>
-                <span id="sync-modal-status-text">Conectado a la nube</span>
-              </div>
-              <p style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 0.25rem;" id="sync-modal-last-time">
-                Sincronizando automáticamente en segundo plano...
-              </p>
+        <!-- SECCIÓN PERFIL KEVIN -->
+        <div class="glass-card" style="padding: 1.2rem; margin-bottom: 1.2rem; border-color: rgba(0, 229, 255, 0.35);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.85rem;">
+            <div class="profile-avatar-preview-box">
+              <img id="kevin-avatar-preview-img" src="" style="display: none;" class="profile-avatar-img-round" alt="Kevin" />
+              <span id="kevin-avatar-preview-fallback" class="whatsapp-avatar-fallback kevin" style="width: 52px; height: 52px; font-size: 1.4rem;">K</span>
             </div>
-            <button type="button" class="btn-primary" id="btn-force-cloud-sync" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
-              🔄 Sincronizar Ahora
-            </button>
+            <div>
+              <h4 style="margin: 0; color: #00E5FF; font-size: 1.1rem;">Perfil de Kevin 👦🏻</h4>
+              <span style="font-size: 0.78rem; color: var(--color-text-muted);">Foto de avatar y apodo especial</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="profile-kevin-nickname">Apodo para Kevin</label>
+            <input type="text" id="profile-kevin-nickname" class="form-control" placeholder="Ej. Kevin 👦🏻" required />
+          </div>
+
+          <div class="form-group">
+            <label for="profile-kevin-avatar-url">Enlace URL de foto (opcional)</label>
+            <input type="url" id="profile-kevin-avatar-url" class="form-control" placeholder="https://... o sube una imagen abajo" />
+          </div>
+
+          <div class="form-group">
+            <label for="profile-kevin-avatar-file" style="font-size: 0.8rem; color: var(--color-text-secondary);">O sube una foto desde este dispositivo:</label>
+            <input type="file" id="profile-kevin-avatar-file" accept="image/*" class="form-control" style="padding: 0.35rem;" />
           </div>
         </div>
 
-        <!-- Transferencia Rápida entre Dispositivos -->
-        <div class="glass-card" style="margin-bottom: 1.25rem;">
-          <h4 style="color: var(--color-light-yellow); font-size: 0.98rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>📲</span> Transferencia Rápida entre Teléfono y PC
-          </h4>
-          <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4; margin-bottom: 0.75rem;">
-            Copia el código desde tu dispositivo con recuerdos y pégalo en tu teléfono (o viceversa) para transferir todo al instante:
-          </p>
-
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
-            <button type="button" class="btn-secondary" id="btn-copy-sync-code" style="font-size: 0.82rem;">
-              📋 1. Copiar Código de este Dispositivo
-            </button>
+        <!-- SECCIÓN PERFIL WENDY -->
+        <div class="glass-card" style="padding: 1.2rem; margin-bottom: 1.2rem; border-color: rgba(224, 64, 251, 0.35);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.85rem;">
+            <div class="profile-avatar-preview-box">
+              <img id="wendy-avatar-preview-img" src="" style="display: none;" class="profile-avatar-img-round" alt="Wendy" />
+              <span id="wendy-avatar-preview-fallback" class="whatsapp-avatar-fallback wendy" style="width: 52px; height: 52px; font-size: 1.4rem;">W</span>
+            </div>
+            <div>
+              <h4 style="margin: 0; color: #E040FB; font-size: 1.1rem;">Perfil de Wendy 👧🏻 (Patico ♥️)</h4>
+              <span style="font-size: 0.78rem; color: var(--color-text-muted);">Foto de avatar y apodo especial</span>
+            </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 0.5rem;">
-            <textarea id="sync-code-input" class="form-control" rows="2" style="font-size: 0.78rem; font-family: monospace;" placeholder="Pega aquí el código copiado desde tu otro dispositivo..."></textarea>
+          <div class="form-group">
+            <label for="profile-wendy-nickname">Apodo para Wendy</label>
+            <input type="text" id="profile-wendy-nickname" class="form-control" placeholder="Ej. Patico ♥️" required />
           </div>
 
-          <button type="button" class="btn-secondary" id="btn-apply-sync-code" style="font-size: 0.82rem; color: var(--color-sunflower-gold);">
-            📥 2. Importar y Aplicar en este Dispositivo
-          </button>
-        </div>
+          <div class="form-group">
+            <label for="profile-wendy-avatar-url">Enlace URL de foto (opcional)</label>
+            <input type="url" id="profile-wendy-avatar-url" class="form-control" placeholder="https://... o sube una imagen abajo" />
+          </div>
 
-        <!-- Respaldo en Archivo JSON -->
-        <div class="glass-card">
-          <h4 style="color: var(--color-text-main); font-size: 0.95rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>💾</span> Copia de Seguridad en Archivo
-          </h4>
-          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;">
-            <button type="button" class="btn-secondary" id="btn-export-backup-json" style="font-size: 0.82rem;">
-              📥 Descargar Archivo JSON
-            </button>
-            <label class="btn-secondary" style="font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
-              📤 Restaurar desde Archivo JSON
-              <input type="file" id="input-restore-backup-file" accept=".json" style="display: none;">
-            </label>
+          <div class="form-group">
+            <label for="profile-wendy-avatar-file" style="font-size: 0.8rem; color: var(--color-text-secondary);">O sube una foto desde este dispositivo:</label>
+            <input type="file" id="profile-wendy-avatar-file" accept="image/*" class="form-control" style="padding: 0.35rem;" />
           </div>
         </div>
 
-        <div class="form-actions" style="margin-top: 1.25rem;">
-          <button type="button" class="btn-primary" data-close-modal="modal-sync">Entendido / Cerrar</button>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-profiles">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar perfiles 💖🌻</button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 

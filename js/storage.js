@@ -462,7 +462,11 @@
       if (config.provider !== 'firebase' || !config.firebaseConfig?.databaseURL || !window.firebase) return;
       try {
         if (!firebase.apps.length) firebase.initializeApp(config.firebaseConfig);
-        this.remoteRef = firebase.database().ref(`rooms/${config.roomId}/journal`);
+        const db = firebase.database();
+        this.remoteRef = db.ref(`rooms/${config.roomId}/journal`);
+        this.profilesRef = db.ref(`rooms/${config.roomId}/profiles`);
+        this.presenceRef = db.ref(`rooms/${config.roomId}/presence`);
+        this.nudgeRef = db.ref(`rooms/${config.roomId}/nudge`);
         
         // Handshake inicial
         this.remoteRef.once('value').then(snapshot => {
@@ -490,7 +494,7 @@
           }
         }).catch(error => console.error('No se pudo iniciar Firebase Realtime Database:', error));
 
-        // Escucha activa en tiempo real
+        // Escucha activa en tiempo real de datos del diario
         this.remoteRef.on('value', snapshot => {
           const data = snapshot.val();
           if (!data) return;
@@ -508,10 +512,118 @@
           this.notifySyncState('synced');
           if (this.onRemoteReady) this.onRemoteReady();
         });
+
+        // Escucha de perfiles y apodos
+        this.profilesRef.on('value', snapshot => {
+          const remoteProfiles = snapshot.val();
+          if (remoteProfiles) {
+            localStorage.setItem(this.keys.profiles, JSON.stringify(remoteProfiles));
+            this.notify(this.keys.profiles);
+            if (this.onProfilesChange) this.onProfilesChange(remoteProfiles);
+          }
+        });
+
+        // Escucha de Presencia estilo WhatsApp (Online / Última vez)
+        this.initPresenceListeners();
+
+        // Escucha de Toquecito de Amor (Nudge)
+        let lastNudgeTime = Date.now();
+        this.nudgeRef.on('value', snapshot => {
+          const nudge = snapshot.val();
+          if (nudge && nudge.timestamp && nudge.timestamp > lastNudgeTime) {
+            lastNudgeTime = nudge.timestamp;
+            if (nudge.from && nudge.from !== this.getCurrentUser()) {
+              if (this.onNudgeReceived) this.onNudgeReceived(nudge);
+            }
+          }
+        });
+
       } catch (error) {
         console.error('Firebase no pudo inicializarse:', error);
         this.remoteRef = null;
       }
+    }
+
+    initPresenceListeners() {
+      if (!window.firebase || !window.CONFIG.presence?.firebaseConfig) return;
+      const db = firebase.database();
+      const config = window.CONFIG.presence;
+      const connectedRef = db.ref('.info/connected');
+
+      connectedRef.on('value', snap => {
+        if (snap.val() === true) {
+          const currentUser = this.getCurrentUser();
+          const myPresenceRef = db.ref(`rooms/${config.roomId}/presence/${currentUser}`);
+          
+          myPresenceRef.onDisconnect().set({
+            online: false,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+          }).then(() => {
+            myPresenceRef.set({
+              online: true,
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+          });
+        }
+      });
+
+      // Escuchar presencia de Kevin y Wendy
+      this.presenceRef.on('value', snap => {
+        const presence = snap.val() || {};
+        this.presenceState = presence;
+        if (this.onPresenceUpdate) this.onPresenceUpdate(presence);
+      });
+    }
+
+    sendNudge() {
+      if (!this.nudgeRef) return false;
+      const currentUser = this.getCurrentUser();
+      const profiles = this.getProfiles();
+      const senderNickname = profiles[currentUser]?.nickname || currentUser;
+
+      const nudgeData = {
+        from: currentUser,
+        fromNickname: senderNickname,
+        timestamp: Date.now(),
+        id: window.Utils.generateUUID()
+      };
+      this.nudgeRef.set(nudgeData).catch(e => console.warn('Error enviando toquecito:', e));
+      return true;
+    }
+
+    getProfiles() {
+      const defaultProfiles = {
+        Kevin: {
+          name: 'Kevin',
+          nickname: 'Kevin',
+          avatar: '',
+          color: '#00E5FF'
+        },
+        Wendy: {
+          name: 'Wendy',
+          nickname: 'Patico ♥️',
+          avatar: '',
+          color: '#E040FB'
+        }
+      };
+      const stored = this.get(this.keys.profiles, defaultProfiles);
+      return {
+        Kevin: { ...defaultProfiles.Kevin, ...(stored?.Kevin || {}) },
+        Wendy: { ...defaultProfiles.Wendy, ...(stored?.Wendy || {}) }
+      };
+    }
+
+    saveProfiles(profilesData) {
+      const current = this.getProfiles();
+      const updated = {
+        Kevin: { ...current.Kevin, ...(profilesData.Kevin || {}) },
+        Wendy: { ...current.Wendy, ...(profilesData.Wendy || {}) }
+      };
+      this.set(this.keys.profiles, updated);
+      if (this.profilesRef) {
+        this.profilesRef.set(updated).catch(e => console.warn('Error guardando perfiles en Firebase:', e));
+      }
+      return updated;
     }
 
     isUnlocked() {

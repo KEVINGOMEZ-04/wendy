@@ -15,6 +15,7 @@ window.CONFIG = {
     dreams: 'patico_dreams_v1',
     songs: 'patico_songs_v1',
     credentials: 'patico_credentials_v1',
+    profiles: 'patico_profiles_v1',
     localPresence: 'patico_presence_local_v1',
     remoteConfig: 'patico_presence_remote_config_v1'
   },

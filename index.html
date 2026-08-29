@@ -650,8 +650,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="song-proposed">Recomendada por</label>
-          <select id="song-proposed" class="form-control"><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select>
+          <label>Recomendada automáticamente por</label>
+          <div id="song-author-display" class="form-control" style="background: rgba(109, 74, 153, 0.25); font-weight: 600; color: var(--color-sunflower-gold); display: flex; align-items: center; gap: 0.5rem;">
+            <span class="author-badge-circle" id="song-author-badge">K</span>
+            <span id="song-author-name">Kevin</span>
+          </div>
+          <input type="hidden" id="song-proposed" value="Kevin" />
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary" data-close-modal="modal-song">Cancelar</button>

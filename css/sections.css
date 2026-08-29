@@ -2483,6 +2483,15 @@
   color: var(--color-sunflower-gold);
   margin-bottom: 0.3rem;
 }
+.song-badge-rating {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-sunflower-gold);
+  background: rgba(244, 197, 66, 0.15);
+  border: 1px solid rgba(244, 197, 66, 0.35);
+  border-radius: var(--radius-full);
+  padding: 0.1rem 0.5rem;
+}
 .song-title {
   font-family: var(--font-heading);
   font-size: 1.25rem;

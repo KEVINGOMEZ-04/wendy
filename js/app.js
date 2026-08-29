@@ -342,14 +342,26 @@
           return `<button type="button" class="star-btn ${isFilled ? 'active' : ''}" data-song-id="${song.id}" data-rating="${starNum}" title="Calificar con ${starNum} estrella${starNum > 1 ? 's' : ''}">★</button>`;
         }).join("");
 
+        // Promedio o resumen para la etiqueta
+        let ratingSummaryBadge = "";
+        if (kevinRating > 0 && wendyRating > 0) {
+          const avg = ((kevinRating + wendyRating) / 2).toFixed(1);
+          ratingSummaryBadge = `<span class="song-badge-rating" title="Promedio de Kevin y Wendy">⭐ ${avg}/5</span>`;
+        } else if (activeUserRating > 0) {
+          ratingSummaryBadge = `<span class="song-badge-rating" title="Tu calificación">⭐ ${activeUserRating}/5</span>`;
+        }
+
         return `
           <article class="glass-card song-card" data-id="${song.id}">
             <div class="song-header-row">
               ${song.cover ? `<img src="${window.Utils.sanitizeHTML(song.cover)}" alt="Portada de ${window.Utils.sanitizeHTML(song.title)}" class="song-card-cover" onerror="this.style.display='none'">` : '<div class="song-card-cover-placeholder">🎵</div>'}
               <div class="song-main-info">
-                <div class="song-author-badge" title="Recomendada por ${window.Utils.sanitizeHTML(author)}">
-                  <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
-                  <span>Por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <div class="song-author-badge" title="Recomendada automáticamente por ${window.Utils.sanitizeHTML(author)}">
+                    <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
+                    <span>Recomendada por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+                  </div>
+                  ${ratingSummaryBadge}
                 </div>
                 <h3 class="song-title">${window.Utils.sanitizeHTML(song.title)}</h3>
                 <p class="song-artist">${window.Utils.sanitizeHTML(song.artist)} ${song.year ? `<span class="song-year">(${song.year})</span>` : ''}</p>
@@ -364,33 +376,37 @@
               </div>
             ` : ''}
 
-            <!-- Calificación de Estrellas Interactiva -->
-            <div class="song-rating-section">
-              <div class="song-rating-stars-bar">
-                <span class="rating-label">Tu nota (${currentUser}):</span>
-                <div class="interactive-stars-group">
-                  ${starsHtml}
-                </div>
-                <span class="rating-number">${activeUserRating > 0 ? `${activeUserRating}/5 ⭐` : 'Toca para calificar'}</span>
-              </div>
-              <div class="song-rating-scores-breakdown">
-                <span class="score-pill ${kevinRating > 0 ? 'rated' : ''}">👦🏻 Kevin: <strong>${kevinRating > 0 ? `${kevinRating}/5 ★` : '—'}</strong></span>
-                <span class="score-pill ${wendyRating > 0 ? 'rated' : ''}">👧🏻 Wendy: <strong>${wendyRating > 0 ? `${wendyRating}/5 ★` : '—'}</strong></span>
-              </div>
-            </div>
-
             <!-- Botones de Acción y Reproducción -->
             <div class="media-links">
               ${song.spotifyUrl ? `<a href="${window.Utils.sanitizeHTML(song.spotifyUrl)}" target="_blank" rel="noopener" class="btn-song-spotify" title="Escuchar en Spotify">🟢 Spotify</a>` : ''}
               ${song.youtubeUrl ? `<a href="${window.Utils.sanitizeHTML(song.youtubeUrl)}" target="_blank" rel="noopener" class="btn-song-youtube" title="Ver en YouTube">🔴 YouTube</a>` : ''}
               <button type="button" class="btn-song-lyrics btn-view-lyrics" data-id="${song.id}" title="${hasLyrics ? 'Leer letra' : 'Ver / Añadir letra'}">📜 ${hasLyrics ? 'Letra' : 'Letra +'}</button>
-              <button type="button" class="btn-secondary btn-toggle-song-comments" data-id="${song.id}">💬 Comentarios (${comments.length})</button>
+              <button type="button" class="btn-secondary btn-toggle-song-comments" data-id="${song.id}">
+                ⭐ Calificación y Comentarios (${comments.length})
+              </button>
               <button type="button" class="btn-edit-song" data-id="${song.id}" title="Editar canción">✏️</button>
               <button type="button" class="btn-delete-song" data-id="${song.id}" style="color: var(--color-danger);" title="Eliminar canción">🗑️</button>
             </div>
 
-            <!-- Hilo de comentarios de la canción -->
+            <!-- Hilo de Calificaciones y Comentarios de la canción -->
             <div class="song-comments-container" id="song-comments-box-${song.id}" style="display: none;">
+              
+              <!-- Calificación de Estrellas Integrada en Comentarios -->
+              <div class="song-rating-section">
+                <div class="song-rating-stars-bar">
+                  <span class="rating-label">Tu nota (${currentUser}):</span>
+                  <div class="interactive-stars-group">
+                    ${starsHtml}
+                  </div>
+                  <span class="rating-number">${activeUserRating > 0 ? `${activeUserRating}/5 ⭐` : 'Toca para calificar'}</span>
+                </div>
+                <div class="song-rating-scores-breakdown">
+                  <span class="score-pill ${kevinRating > 0 ? 'rated' : ''}">👦🏻 Kevin: <strong>${kevinRating > 0 ? `${kevinRating}/5 ★` : 'Pendiente'}</strong></span>
+                  <span class="score-pill ${wendyRating > 0 ? 'rated' : ''}">👧🏻 Wendy: <strong>${wendyRating > 0 ? `${wendyRating}/5 ★` : 'Pendiente'}</strong></span>
+                </div>
+              </div>
+
+              <!-- Lista de comentarios -->
               <div class="song-comments-list" id="song-comments-list-${song.id}">
                 ${comments.length === 0 ? `<p class="empty-comments-hint">Aún no hay comentarios en esta canción. ¡Escribe qué te hace sentir o qué te recuerda!</p>` : ''}
                 ${comments.map(c => {
@@ -411,6 +427,7 @@
                 }).join("")}
               </div>
 
+              <!-- Formulario para agregar comentario -->
               <form class="song-add-comment-form" data-id="${song.id}">
                 <input type="text" class="form-control song-comment-input" placeholder="Comenta algo sobre esta canción como ${window.Utils.sanitizeHTML(currentUser)}..." required />
                 <button type="submit" class="btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; white-space: nowrap;">Comentar 💌</button>
@@ -585,6 +602,9 @@
 
     openSongModal(song = null) {
       const modal = document.getElementById("modal-song");
+      const currentUser = window.storage.getCurrentUser();
+      const author = song && song.proposedBy ? song.proposedBy : currentUser;
+
       document.getElementById("song-id").value = song ? (song.id || '') : '';
       document.getElementById("song-title").value = song ? (song.title || '') : '';
       document.getElementById("song-artist").value = song ? (song.artist || '') : '';
@@ -592,8 +612,16 @@
       document.getElementById("song-lyrics").value = song ? (song.lyrics || '') : '';
       document.getElementById("song-spotify").value = song ? (song.spotifyUrl || '') : '';
       document.getElementById("song-youtube").value = song ? (song.youtubeUrl || '') : '';
-      document.getElementById("song-proposed").value = song ? (song.proposedBy || window.storage.getCurrentUser()) : window.storage.getCurrentUser();
+      document.getElementById("song-proposed").value = author;
       
+      const authorNameEl = document.getElementById("song-author-name");
+      if (authorNameEl) authorNameEl.textContent = author;
+      const authorBadgeEl = document.getElementById("song-author-badge");
+      if (authorBadgeEl) {
+        authorBadgeEl.textContent = author.charAt(0).toUpperCase();
+        authorBadgeEl.className = "author-badge-circle " + (author.toLowerCase() === "wendy" ? "wendy" : "kevin");
+      }
+
       const kevinScore = document.getElementById("song-kevin-score");
       if (kevinScore) {
         kevinScore.value = song && song.kevinRating !== undefined ? song.kevinRating : 5;

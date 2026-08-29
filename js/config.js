@@ -19,20 +19,20 @@ window.CONFIG = {
     remoteConfig: 'patico_presence_remote_config_v1'
   },
 
-  // Configuración de Presencia Compartida
+  // Configuración de Presencia Compartida y Sincronización en Tiempo Real
   presence: {
-    provider: 'local', // Cambiar a 'firebase' al completar firebaseConfig.
+    provider: 'firebase',
     roomId: 'kevin-wendy-wrapped-room',
     heartbeatIntervalMs: 15000,
     presenceTimeoutMs: 60000,
     firebaseConfig: {
-      apiKey: '',
-      authDomain: '',
-      databaseURL: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
+      apiKey: "AIzaSyB4unckqqD22fDXpgicoogBJn2K00MgbDI",
+      authDomain: "patico-diario.firebaseapp.com",
+      databaseURL: "https://patico-diario-default-rtdb.firebaseio.com",
+      projectId: "patico-diario",
+      storageBucket: "patico-diario.firebasestorage.app",
+      messagingSenderId: "209914552110",
+      appId: "1:209914552110:web:fc718cd6fd49356b14e4bf"
     }
   },
 

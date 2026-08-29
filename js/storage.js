@@ -459,20 +459,29 @@
         if (!firebase.apps.length) firebase.initializeApp(config.firebaseConfig);
         this.remoteRef = firebase.database().ref(`rooms/${config.roomId}/journal`);
         this.remoteRef.once('value').then(snapshot => {
-          if (snapshot.val()) return;
-          const initial = {};
-          this.remoteKeys.forEach(name => { initial[name] = this.get(this.keys[name], []); });
-          return this.remoteRef.set(initial);
+          const val = snapshot.val();
+          if (!val) {
+            const initial = {};
+            this.remoteKeys.forEach(name => { initial[name] = this.get(this.keys[name], []); });
+            return this.remoteRef.set(initial);
+          }
         }).catch(error => console.error('No se pudo iniciar la base de datos:', error));
+
         this.remoteRef.on('value', snapshot => {
           const data = snapshot.val();
           if (!data) return;
           this.remoteKeys.forEach(name => {
             if (Array.isArray(data[name])) {
-              localStorage.setItem(this.keys[name], JSON.stringify(data[name]));
-              this.notify(this.keys[name]);
+              const currentLocal = this.get(this.keys[name], []);
+              const merged = this.mergeDataLists(currentLocal, data[name]);
+              if (JSON.stringify(currentLocal) !== JSON.stringify(merged)) {
+                localStorage.setItem(this.keys[name], JSON.stringify(merged));
+                this.notify(this.keys[name]);
+              }
             }
           });
+          this.lastCloudSyncTime = new Date();
+          this.notifySyncState('synced');
         });
       } catch (error) { console.error('Firebase no pudo inicializarse:', error); this.remoteRef = null; }
     }

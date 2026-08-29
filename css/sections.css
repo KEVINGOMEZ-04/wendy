@@ -2564,6 +2564,193 @@
 
 /* Responsive Overrides */
 @media (max-width: 768px) {
+  /* Wrapped Container & Hero */
+  .wrapped-container {
+    margin-top: 2rem;
+    gap: 1.25rem;
+  }
+
+  .wrapped-hero-banner {
+    padding: 1.5rem 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .wrapped-main-title {
+    font-size: 1.85rem;
+  }
+
+  .wrapped-lead-quote {
+    font-size: 1.05rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .btn-launch-wrapped {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem 1.4rem;
+    font-size: 0.95rem;
+  }
+
+  /* Wrapped Grids & Cards */
+  .wrapped-stats-grid {
+    gap: 1rem;
+  }
+
+  .wrapped-card {
+    padding: 1.2rem 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .giant-number {
+    font-size: 2.6rem;
+  }
+
+  .chat-ratio-container {
+    padding: 0.6rem;
+  }
+
+  .top-days-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .top-days-table {
+    min-width: 320px;
+    font-size: 0.85rem;
+  }
+
+  /* Calendario Anual Interactivo */
+  .annual-calendar-card {
+    padding: 1.1rem 0.8rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+  }
+
+  .calendar-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .calendar-year-pills {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .year-pill-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .calendar-legend-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .annual-months-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .mini-month-card {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .mini-day-cell {
+    font-size: 0.82rem;
+    border-radius: 4px;
+  }
+
+  /* Recuerdos & Línea de Tiempo */
+  .trail-line {
+    left: 18px;
+  }
+
+  .memory-node:nth-child(odd), .memory-node:nth-child(even) {
+    padding-left: 44px;
+    padding-right: 0;
+    justify-content: flex-start;
+  }
+
+  .sunflower-pin {
+    left: 18px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .memory-card {
+    width: 100%;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .memory-media-container {
+    max-height: 260px;
+    border-radius: var(--radius-sm);
+  }
+
+  .memory-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 0.35rem;
+  }
+
+  .memory-comments-section {
+    padding: 0.75rem;
+  }
+
+  .comment-form-row {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .comment-form-row button {
+    width: 100%;
+  }
+
+  /* Story Mode Pantalla Completa en Móvil */
+  .story-modal-overlay {
+    padding: 0;
+  }
+
+  .story-player-card {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 1.5rem 1rem 2rem 1rem;
+  }
+
+  .story-content {
+    padding: 1rem 0;
+  }
+
+  /* Muro de Notas & Sueños */
+  .paper-notes-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .paper-note {
+    padding: 1.1rem;
+  }
+
+  .dreams-stats-banner {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+
+  .dream-item-card {
+    padding: 0.9rem 1rem;
+    gap: 0.6rem;
+  }
+
+  /* Multimedia */
   .media-search { flex-direction: column; }
   .media-search.compact { width: 100%; }
   .trail-controls { align-items: stretch; }
@@ -2572,22 +2759,56 @@
   .media-result { align-items: flex-start; }
   .media-result .btn-secondary { padding: .45rem .65rem; }
   .song-card { align-items: flex-start; }
-  .trail-line {
-    left: 24px;
-  }
-  .memory-node:nth-child(odd), .memory-node:nth-child(even) {
-    padding-left: 60px;
-    padding-right: 0;
-    justify-content: flex-start;
-  }
-  .sunflower-pin {
-    left: 24px;
-  }
+
   .night-timeline {
     flex-direction: column;
     gap: 0.75rem;
   }
   .night-timeline::before {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .wrapped-hero-banner {
+    padding: 1.2rem 0.75rem;
+  }
+
+  .wrapped-main-title {
+    font-size: 1.6rem;
+  }
+
+  .wrapped-badge-updated {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .giant-number {
+    font-size: 2.2rem;
+  }
+
+  .col-12, .col-8, .col-7, .col-6, .col-5, .col-4 {
+    grid-column: span 12;
+  }
+
+  .words-cloud-container {
+    min-height: 280px;
+  }
+
+  .word-center {
+    font-size: 2.2rem;
+  }
+
+  .word-petal {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .mini-day-cell {
+    font-size: 0.75rem;
+  }
+
+  .dreams-stats-banner {
+    grid-template-columns: 1fr;
   }
 }

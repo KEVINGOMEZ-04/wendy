@@ -167,10 +167,10 @@
         this.notify(key);
         const remoteName = Object.keys(this.keys).find(name => this.keys[name] === key);
         if (this.remoteRef && this.remoteKeys.includes(remoteName)) {
-          this.remoteRef.child(remoteName).set(value).catch(error => console.error('No se pudo sincronizar:', error));
+          this.remoteRef.child(remoteName).set(value).catch(error => console.error('Error al sincronizar con Firebase:', error));
         }
-        // Programar subida automática a la nube en segundo plano
-        if (this.remoteKeys.includes(remoteName) && this.scheduleCloudPush) {
+        // Solo programar subida a GitHub si Firebase NO está activo
+        if (window.CONFIG.presence?.provider !== 'firebase' && this.remoteKeys.includes(remoteName) && this.scheduleCloudPush) {
           this.scheduleCloudPush();
         }
         return true;
@@ -190,6 +190,11 @@
       this.isSyncing = false;
       this.lastFileSha = null;
       this.pendingPushTimeout = null;
+
+      // Si Firebase está activo, Firebase maneja el tiempo real. No hacemos polling redundante a GitHub.
+      if (window.CONFIG.presence?.provider === 'firebase') {
+        return;
+      }
 
       // Cargar datos de la nube inmediatamente
       setTimeout(() => {
@@ -458,32 +463,55 @@
       try {
         if (!firebase.apps.length) firebase.initializeApp(config.firebaseConfig);
         this.remoteRef = firebase.database().ref(`rooms/${config.roomId}/journal`);
+        
+        // Handshake inicial
         this.remoteRef.once('value').then(snapshot => {
           const val = snapshot.val();
           if (!val) {
             const initial = {};
             this.remoteKeys.forEach(name => { initial[name] = this.get(this.keys[name], []); });
             return this.remoteRef.set(initial);
+          } else {
+            let hasNew = false;
+            this.remoteKeys.forEach(name => {
+              if (Array.isArray(val[name])) {
+                const currentStr = localStorage.getItem(this.keys[name]);
+                const newStr = JSON.stringify(val[name]);
+                if (currentStr !== newStr) {
+                  localStorage.setItem(this.keys[name], newStr);
+                  this.notify(this.keys[name]);
+                  hasNew = true;
+                }
+              }
+            });
+            this.lastCloudSyncTime = new Date();
+            this.notifySyncState('synced');
+            if (this.onRemoteReady) this.onRemoteReady();
           }
-        }).catch(error => console.error('No se pudo iniciar la base de datos:', error));
+        }).catch(error => console.error('No se pudo iniciar Firebase Realtime Database:', error));
 
+        // Escucha activa en tiempo real
         this.remoteRef.on('value', snapshot => {
           const data = snapshot.val();
           if (!data) return;
           this.remoteKeys.forEach(name => {
             if (Array.isArray(data[name])) {
-              const currentLocal = this.get(this.keys[name], []);
-              const merged = this.mergeDataLists(currentLocal, data[name]);
-              if (JSON.stringify(currentLocal) !== JSON.stringify(merged)) {
-                localStorage.setItem(this.keys[name], JSON.stringify(merged));
+              const currentStr = localStorage.getItem(this.keys[name]);
+              const newStr = JSON.stringify(data[name]);
+              if (currentStr !== newStr) {
+                localStorage.setItem(this.keys[name], newStr);
                 this.notify(this.keys[name]);
               }
             }
           });
           this.lastCloudSyncTime = new Date();
           this.notifySyncState('synced');
+          if (this.onRemoteReady) this.onRemoteReady();
         });
-      } catch (error) { console.error('Firebase no pudo inicializarse:', error); this.remoteRef = null; }
+      } catch (error) {
+        console.error('Firebase no pudo inicializarse:', error);
+        this.remoteRef = null;
+      }
     }
 
     isUnlocked() {

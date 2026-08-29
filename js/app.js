@@ -28,6 +28,16 @@
         if (key === window.CONFIG.storageKeys.dreams) this.renderDreams();
         this.renderDailyDashboard();
       });
+
+      window.storage.onRemoteReady = () => {
+        this.renderMemories();
+        this.renderAnnualCalendar();
+        this.renderMovies();
+        this.renderSongs();
+        this.renderNotes();
+        this.renderDreams();
+        this.renderDailyDashboard();
+      };
     }
 
     // --- 1. Desbloqueo y Seguridad ---

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Patico Wrapped 🌻 - Sistema de Presencia Compartida
  */
 
@@ -95,16 +95,69 @@
       this.state.isLocal = false;
       this.state.provider = 'firebase';
       
-      if (!this.config.firebaseConfig || !this.config.firebaseConfig.databaseURL) {
+      if (!this.config.firebaseConfig || !this.config.firebaseConfig.databaseURL || !window.firebase) {
         this.state.lastError = 'Configuración de Firebase incompleta. Operando en Modo Local.';
         this.initLocalMode();
         return;
       }
 
-      this.sendHeartbeat();
-      this.heartbeatTimer = setInterval(() => {
-        this.sendHeartbeat();
-      }, this.config.heartbeatIntervalMs);
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(this.config.firebaseConfig);
+        const db = firebase.database();
+        const roomId = this.config.roomId;
+        this.presenceRef = db.ref(`rooms/${roomId}/presence`);
+        this.userPresenceRef = db.ref(`rooms/${roomId}/presence/${this.currentUser}`);
+
+        const connectedRef = db.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+          if (snap.val() === true && this.userPresenceRef) {
+            this.userPresenceRef.onDisconnect().set({
+              online: false,
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+            this.userPresenceRef.set({
+              online: true,
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+          }
+        });
+
+        this.presenceRef.on('value', (snapshot) => {
+          const val = snapshot.val() || {};
+          window.CONFIG.users.forEach(user => {
+            const uData = val[user];
+            if (uData) {
+              const lastSeenDate = uData.lastSeen ? new Date(uData.lastSeen).toISOString() : null;
+              this.state.users[user] = {
+                online: Boolean(uData.online),
+                lastSeen: lastSeenDate,
+                lastSeenFormatted: lastSeenDate ? window.Utils.formatDateTimeES(lastSeenDate) : 'Desconectado'
+              };
+            } else {
+              this.state.users[user] = {
+                online: false,
+                lastSeen: null,
+                lastSeenFormatted: 'Desconectado'
+              };
+            }
+          });
+          this.updateSummary();
+          this.notify();
+        });
+
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = setInterval(() => {
+          if (this.userPresenceRef && !document.hidden) {
+            this.userPresenceRef.update({
+              online: true,
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+          }
+        }, 25000);
+      } catch (err) {
+        console.error('Error inicializando presencia Firebase:', err);
+        this.initLocalMode();
+      }
     }
 
     sendHeartbeat() {
@@ -132,7 +185,7 @@
             this.state.users[user] = {
               online: false,
               lastSeen: lastSeen,
-              lastSeenFormatted: lastSeen ? window.Utils.formatDateTimeES(lastSeen) : 'Sin registros en este dispositivo'
+              lastSeenFormatted: lastSeen ? window.Utils.formatDateTimeES(lastSeen) : 'Sin registros'
             };
           }
         });
@@ -143,63 +196,62 @@
     }
 
     handleTabHidden() {
-      if (this.state.isLocal) {
-        this.sendHeartbeat();
+      if (this.userPresenceRef) {
+        this.userPresenceRef.update({
+          online: false,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
       }
     }
 
     handleTabClosing() {
-      const localData = window.storage.get(window.CONFIG.storageKeys.localPresence, {});
-      if (localData[this.currentUser]) {
-        localData[this.currentUser].online = false;
-        localData[this.currentUser].lastSeen = new Date().toISOString();
-        window.storage.set(window.CONFIG.storageKeys.localPresence, localData);
+      if (this.userPresenceRef) {
+        this.userPresenceRef.set({
+          online: false,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
       }
     }
 
     updateSummary() {
-      if (this.state.provider === 'firebase') {
-        this.state.summary = 'Diario sincronizado con Firebase';
-        return;
-      }
-      if (this.state.isLocal) {
-        this.state.summary = 'Modo local: presencia compartida no configurada';
-        return;
-      }
-
-      const kevinOnline = this.state.users.Kevin?.online;
-      const wendyOnline = this.state.users.Wendy?.online;
+      const kevinOnline = Boolean(this.state.users.Kevin?.online);
+      const wendyOnline = Boolean(this.state.users.Wendy?.online);
 
       if (kevinOnline && wendyOnline) {
-        this.state.summary = 'Ambos están en línea';
+        this.state.summary = '✨ Ambos en línea';
       } else if (kevinOnline) {
-        this.state.summary = 'Solo Kevin está en línea';
+        this.state.summary = '🟢 Kevin en línea';
       } else if (wendyOnline) {
-        this.state.summary = 'Solo Wendy está en línea';
+        this.state.summary = '🟢 Wendy en línea';
       } else {
-        this.state.summary = 'Ninguno está en línea';
+        this.state.summary = '💤 Desconectados';
       }
     }
 
     switchUser(newUser) {
       if (!window.CONFIG.users.includes(newUser)) return false;
       
-      const localData = window.storage.get(window.CONFIG.storageKeys.localPresence, {});
-      const now = new Date().toISOString();
-      
-      if (localData[this.currentUser]) {
-        localData[this.currentUser].online = false;
-        localData[this.currentUser].lastSeen = now;
+      if (this.userPresenceRef) {
+        this.userPresenceRef.set({
+          online: false,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
       }
 
       this.currentUser = newUser;
       window.storage.setCurrentUser(newUser);
 
-      localData[newUser] = {
-        online: true,
-        lastSeen: now
-      };
-      window.storage.set(window.CONFIG.storageKeys.localPresence, localData);
+      if (this.state.provider === 'firebase' && window.firebase) {
+        this.userPresenceRef = firebase.database().ref(`rooms/${this.config.roomId}/presence/${newUser}`);
+        this.userPresenceRef.onDisconnect().set({
+          online: false,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+        this.userPresenceRef.set({
+          online: true,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
 
       this.sendHeartbeat();
       return true;

@@ -1,7 +1,7 @@
 /* Patico Wrapped 🌻 - Estilos Detallados por Sección */
 
 /* =========================================
-   PANTALLA DE LOGIN - DOS CASILLAS DE PERFIL
+   PANTALLA DE LOGIN
    ========================================= */
 #lock-screen {
   position: fixed;
@@ -22,24 +22,24 @@
   pointer-events: none;
 }
 
+/* Tarjeta contenedora centrada */
 .lock-card {
   width: 100%;
-  max-width: 820px;
+  max-width: 480px;
   text-align: center;
-  position: relative;
 }
 
 .lock-card.blooming .lock-emblem-circle {
   transform: scale(1.35) rotate(20deg);
-  box-shadow: 0 0 45px rgba(244, 197, 66, 0.9);
+  box-shadow: 0 0 45px rgba(244,197,66,0.9);
 }
 
-/* -- Emblema Superior -- */
+/* Emblema */
 .lock-hero-emblem {
   position: relative;
-  width: 68px;
-  height: 68px;
-  margin: 0 auto 0.9rem;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,193 +58,197 @@
 }
 .lock-emblem-circle {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(244,197,66,0.22), rgba(109,74,153,0.45));
   border: 2px solid rgba(244,197,66,0.65);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.85rem;
+  font-size: 1.7rem;
   box-shadow: 0 0 18px rgba(244,197,66,0.35);
   transition: transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 .lock-title {
   font-family: var(--font-heading);
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 700;
   color: var(--color-sunflower-gold);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
 }
 .lock-subtitle {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--color-text-secondary);
-  margin-bottom: 1.6rem;
-  line-height: 1.4;
+  margin-bottom: 1.4rem;
 }
 
-/* -- Grid de dos casillas -- */
-.lock-profiles-grid {
+/* ---- Paso 1: Grid de dos tarjetas seleccionables ---- */
+.lock-user-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.1rem;
-  text-align: left;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-/* -- Casilla individual de perfil -- */
-.lock-profile-box {
-  background: rgba(18, 12, 30, 0.7);
+.lock-user-card {
+  background: rgba(20, 13, 32, 0.75);
+  border: 1.5px solid rgba(185,142,230,0.2);
   border-radius: 16px;
-  border: 1.5px solid rgba(185, 142, 230, 0.2);
-  overflow: hidden;
+  padding: 1.4rem 0.8rem 1.1rem;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.22s ease;
+  font-family: var(--font-body);
 }
-.lock-profile-box:focus-within {
+.lock-user-card:hover {
   border-color: rgba(244,197,66,0.45);
-  box-shadow: 0 0 20px rgba(244,197,66,0.12);
+  background: rgba(40,25,60,0.85);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.lock-user-card.selected-kevin {
+  border-color: #00E5FF;
+  box-shadow: 0 0 22px rgba(0,229,255,0.25);
+  background: rgba(0,100,160,0.25);
+}
+.lock-user-card.selected-wendy {
+  border-color: #E040FB;
+  box-shadow: 0 0 22px rgba(224,64,251,0.25);
+  background: rgba(140,0,180,0.2);
 }
 
-/* Header de cada casilla */
-.lock-profile-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem 0.7rem;
-}
-.lock-profile-header.kevin {
-  background: linear-gradient(135deg, rgba(0,180,216,0.18), rgba(0,77,182,0.1));
-  border-bottom: 1px solid rgba(0,229,255,0.15);
-}
-.lock-profile-header.wendy {
-  background: linear-gradient(135deg, rgba(224,64,251,0.18), rgba(123,31,162,0.1));
-  border-bottom: 1px solid rgba(224,64,251,0.15);
-}
-.lock-profile-emoji {
-  font-size: 1.75rem;
+.lock-card-emoji {
+  font-size: 2.6rem;
   line-height: 1;
 }
-.lock-profile-name {
+.lock-card-name {
+  font-size: 1.05rem;
   font-weight: 700;
-  font-size: 1rem;
   color: var(--color-text-main);
-  line-height: 1.2;
 }
-.lock-profile-role {
-  font-size: 0.73rem;
+.lock-card-nickname {
+  font-size: 0.75rem;
   font-weight: 500;
-  margin-top: 0.1rem;
 }
-.kevin-role { color: #00E5FF; }
-.wendy-role { color: #E040FB; }
+.kevin-color { color: #00E5FF; }
+.wendy-color { color: #E040FB; }
 
-/* Cuerpo de la casilla */
-.lock-profile-body {
-  padding: 0.85rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex: 1;
+/* ---- Paso 2: Caja de contraseña ---- */
+.lock-password-box {
+  margin-top: 1.1rem;
+  background: rgba(18, 12, 30, 0.7);
+  border: 1.5px solid rgba(185,142,230,0.25);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem 1.1rem;
+  animation: fadeSlideIn 0.3s ease;
 }
-.lock-field-label {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lock-who-selected {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.85rem;
   font-weight: 500;
-  margin-bottom: 0.2rem;
 }
-.lock-field-input {
-  width: 100%;
-  padding: 0.55rem 0.75rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(185,142,230,0.25);
-  border-radius: 8px;
-  color: var(--color-text-main);
-  font-size: 0.9rem;
-  font-family: var(--font-body);
-  outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.lock-field-input::placeholder { color: var(--color-text-muted); }
-.lock-field-input:focus {
-  border-color: var(--color-sunflower-gold);
-  background: rgba(255,255,255,0.08);
-}
-.lock-pass-wrap {
+
+.lock-pass-row {
   position: relative;
   width: 100%;
+  margin-bottom: 0.85rem;
 }
-.lock-pass-wrap .lock-pass-input {
-  padding-right: 2.4rem;
+.lock-pass-field {
+  width: 100%;
+  padding: 0.75rem 2.8rem 0.75rem 1rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(185,142,230,0.3);
+  border-radius: 10px;
+  color: var(--color-text-main);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  outline: none;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
-.lock-pass-eye {
+.lock-pass-field::placeholder { color: var(--color-text-muted); }
+.lock-pass-field:focus {
+  border-color: var(--color-sunflower-gold);
+  background: rgba(255,255,255,0.09);
+}
+.lock-pass-eye-btn {
   position: absolute;
-  right: 0.55rem;
+  right: 0.7rem;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  font-size: 1rem;
+  font-size: 1.05rem;
   cursor: pointer;
   opacity: 0.55;
-  transition: opacity 0.15s;
   padding: 0;
   line-height: 1;
+  transition: opacity 0.15s;
 }
-.lock-pass-eye:hover { opacity: 1; }
+.lock-pass-eye-btn:hover { opacity: 1; }
 
-/* Botón Entrar de cada casilla */
-.btn-lock-enter {
+.lock-enter-btn {
   width: 100%;
-  padding: 0.65rem 1rem;
-  font-size: 0.88rem;
-  font-weight: 600;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
   border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-sunflower-gold), #c9a200);
+  color: #1a0e00;
   cursor: pointer;
-  transition: all 0.2s ease;
   font-family: var(--font-body);
+  transition: all 0.2s ease;
   letter-spacing: 0.2px;
+  margin-bottom: 0.5rem;
 }
-.kevin-btn {
-  background: linear-gradient(135deg, #0096C7, #0077B6);
-  color: #FFF;
-  border-top: 1px solid rgba(0,229,255,0.2);
+.lock-enter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(244,197,66,0.45);
 }
-.kevin-btn:hover {
-  background: linear-gradient(135deg, #00B4D8, #0096C7);
+.lock-enter-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
   transform: none;
-  box-shadow: 0 4px 14px rgba(0,180,216,0.4);
-}
-.wendy-btn {
-  background: linear-gradient(135deg, #C2185B, #7B1FA2);
-  color: #FFF;
-  border-top: 1px solid rgba(224,64,251,0.2);
-}
-.wendy-btn:hover {
-  background: linear-gradient(135deg, #E040FB, #AB47BC);
-  transform: none;
-  box-shadow: 0 4px 14px rgba(224,64,251,0.4);
 }
 
-/* Mensaje de error */
+.lock-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.15s;
+}
+.lock-back-btn:hover { color: var(--color-text-main); }
+
+/* Error */
 .lock-error-msg {
   font-size: 0.82rem;
   color: #FF5252;
   min-height: 1.1rem;
-  transition: var(--transition-fast);
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
-/* Responsive móvil: las casillas se apilan */
-@media (max-width: 600px) {
-  .lock-profiles-grid {
-    grid-template-columns: 1fr;
-  }
-  .lock-card {
-    max-width: 400px;
-  }
+/* Móvil */
+@media (max-width: 500px) {
+  .lock-user-grid { gap: 0.7rem; }
+  .lock-card-emoji { font-size: 2rem; }
 }
 
 /* =========================================

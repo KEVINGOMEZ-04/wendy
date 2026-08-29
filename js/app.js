@@ -55,30 +55,66 @@
       const lockError    = document.getElementById('lock-error');
       const btnReLock    = document.getElementById('btn-re-lock');
 
-      // Función que inicia la sesión para un usuario dado
-      const doLogin = async (username, passwordValue, btnEl) => {
-        if (btnEl) btnEl.disabled = true;
+      let selectedUser = null;
+
+      const userGrid    = document.getElementById('lock-user-grid');
+      const passBox     = document.getElementById('lock-password-box');
+      const whoLabel    = document.getElementById('lock-who-selected');
+      const passField   = document.getElementById('lock-password');
+      const btnSubmit   = document.getElementById('btn-submit-lock');
+      const btnBack     = document.getElementById('btn-lock-back');
+      const btnToggleEye = document.getElementById('btn-toggle-lock-password');
+
+      // Cargar apodos guardados en los displays de las tarjetas
+      const loadNicknames = () => {
+        try {
+          const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
+          const nickForWendy = profiles.Kevin?.nicknameForWendy || 'Patico ♥️';
+          const nickForKevin = profiles.Wendy?.nicknameForKevin || 'Su Cielo ☁️';
+          const kevinDisplay = document.getElementById('lock-kevin-nick-display');
+          const wendyDisplay = document.getElementById('lock-wendy-nick-display');
+          if (kevinDisplay) kevinDisplay.textContent = nickForKevin;
+          if (wendyDisplay) wendyDisplay.textContent = nickForWendy;
+        } catch (_) {}
+      };
+
+      // Mostrar caja de contraseña para el usuario elegido
+      const selectUser = (username) => {
+        selectedUser = username;
         if (lockError) lockError.textContent = '';
 
-        const entered = (passwordValue || '').trim();
+        // Resaltar tarjeta seleccionada
+        document.querySelectorAll('.lock-user-card').forEach(c => {
+          c.classList.remove('selected-kevin', 'selected-wendy');
+        });
+        const card = document.getElementById(`lock-card-${username.toLowerCase()}`);
+        if (card) card.classList.add(`selected-${username.toLowerCase()}`);
+
+        // Texto informativo
+        const emoji = username === 'Kevin' ? '👦🏻' : '👧🏻';
+        if (whoLabel) whoLabel.innerHTML = `${emoji} <strong>${username}</strong> – ingresa tu contraseña`;
+
+        // Mostrar caja de contraseña
+        if (passBox) passBox.style.display = 'block';
+        if (passField) {
+          passField.value = '';
+          passField.focus();
+        }
+      };
+
+      // Login
+      const doLogin = async () => {
+        if (!selectedUser) return;
+        if (btnSubmit) btnSubmit.disabled = true;
+        if (lockError) lockError.textContent = '';
+
+        const entered = (passField ? passField.value : '').trim();
         // Contraseña vacía o "1234" → acceso garantizado
-        const valid = entered === '' || entered === '1234' || await window.storage.verifyCredentials(username, entered);
+        const valid = entered === '' || entered === '1234' || await window.storage.verifyCredentials(selectedUser, entered);
 
         if (valid) {
-          window.storage.setCurrentUser(username);
-          if (window.presence?.switchUser) window.presence.switchUser(username);
-
-          // Guardar apodos editados en login si el usuario los cambió
-          const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
-          const kevinNick = (document.getElementById('lock-kevin-nickname')?.value || '').trim();
-          const wendyNick = (document.getElementById('lock-wendy-nickname')?.value || '').trim();
-          if (kevinNick || wendyNick) {
-            if (!profiles.Kevin) profiles.Kevin = {};
-            if (!profiles.Wendy) profiles.Wendy = {};
-            if (kevinNick) profiles.Wendy.nicknameForKevin = kevinNick;  // Wendy escribe el apodo de Kevin
-            if (wendyNick) profiles.Kevin.nicknameForWendy = wendyNick;  // Kevin escribe el apodo de Wendy
-            if (window.storage.saveProfiles) window.storage.saveProfiles(profiles);
-          }
+          window.storage.setCurrentUser(selectedUser);
+          if (window.presence?.switchUser) window.presence.switchUser(selectedUser);
 
           lockCard.classList.add('blooming');
           setTimeout(() => {
@@ -92,88 +128,47 @@
               this.handleRouting();
               this.initWhatsAppPresenceUI();
               this.renderDailyDashboard();
-              if (btnEl) btnEl.disabled = false;
-              window.Utils.showToast(`¡Bienvenido(a) al diario, ${username}! 🌻✨`, 'success');
-            }, 750);
-          }, 750);
+              if (btnSubmit) btnSubmit.disabled = false;
+              window.Utils.showToast(`¡Bienvenido(a) al diario, ${selectedUser}! 🌻✨`, 'success');
+            }, 700);
+          }, 700);
         } else {
-          if (btnEl) btnEl.disabled = false;
+          if (btnSubmit) btnSubmit.disabled = false;
           if (lockError) lockError.textContent = '❌ Contraseña incorrecta. La clave por defecto es: 1234';
+          if (passField) passField.focus();
         }
       };
 
-      // Cargar apodos guardados en los campos de texto
-      const loadSavedNicknames = () => {
-        try {
-          const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
-          const nicknameForWendy = profiles.Kevin?.nicknameForWendy || '';
-          const nicknameForKevin = profiles.Wendy?.nicknameForKevin || '';
-          const kevinField = document.getElementById('lock-kevin-nickname');
-          const wendyField  = document.getElementById('lock-wendy-nickname');
-          if (kevinField && nicknameForKevin) kevinField.value = nicknameForKevin;
-          if (wendyField  && nicknameForWendy) wendyField.value  = nicknameForWendy;
-
-          // Mostrar el apodo guardado en el header de la casilla
-          const kevinRoleLabel = document.getElementById('kevin-role-label');
-          const wendyRoleLabel = document.getElementById('wendy-role-label');
-          if (kevinRoleLabel && nicknameForKevin) kevinRoleLabel.textContent = nicknameForKevin;
-          if (wendyRoleLabel && nicknameForWendy) wendyRoleLabel.textContent = nicknameForWendy;
-        } catch (_) {}
-      };
-
-      // Actualizar el label del header en tiempo real mientras escribe
-      const kevinNickField = document.getElementById('lock-kevin-nickname');
-      const wendyNickField  = document.getElementById('lock-wendy-nickname');
-      const kevinLabel = document.getElementById('kevin-role-label');
-      const wendyLabel  = document.getElementById('wendy-role-label');
-
-      if (kevinNickField && kevinLabel) {
-        kevinNickField.addEventListener('input', () => {
-          kevinLabel.textContent = kevinNickField.value.trim() || 'Su Cielo ☁️';
-        });
-      }
-      if (wendyNickField && wendyLabel) {
-        wendyNickField.addEventListener('input', () => {
-          wendyLabel.textContent = wendyNickField.value.trim() || 'Patico ♥️';
-        });
-      }
-
-      // Botones Ver/Ocultar contraseña
-      document.querySelectorAll('.lock-pass-eye').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const targetId = btn.dataset.target;
-          const inp = document.getElementById(targetId);
-          if (!inp) return;
-          const hide = inp.type === 'password';
-          inp.type = hide ? 'text' : 'password';
-          btn.textContent = hide ? '🙈' : '👁️';
-        });
+      // Eventos tarjetas de selección
+      ['Kevin', 'Wendy'].forEach(name => {
+        const card = document.getElementById(`lock-card-${name.toLowerCase()}`);
+        card?.addEventListener('click', () => selectUser(name));
       });
 
-      // Botón Entrar como Kevin
-      const btnKevin = document.getElementById('btn-enter-kevin');
-      if (btnKevin) {
-        btnKevin.addEventListener('click', () => {
-          const pass = document.getElementById('lock-kevin-password')?.value || '';
-          doLogin('Kevin', pass, btnKevin);
-        });
-      }
+      // Botón Entrar
+      btnSubmit?.addEventListener('click', doLogin);
 
-      // Botón Entrar como Wendy
-      const btnWendy = document.getElementById('btn-enter-wendy');
-      if (btnWendy) {
-        btnWendy.addEventListener('click', () => {
-          const pass = document.getElementById('lock-wendy-password')?.value || '';
-          doLogin('Wendy', pass, btnWendy);
-        });
-      }
-
-      // Enter en campo de contraseña también hace login
-      document.getElementById('lock-kevin-password')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); btnKevin?.click(); }
+      // Enter en el campo de contraseña
+      passField?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
       });
-      document.getElementById('lock-wendy-password')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); btnWendy?.click(); }
+
+      // Ver/Ocultar contraseña
+      btnToggleEye?.addEventListener('click', () => {
+        if (!passField) return;
+        const hide = passField.type === 'password';
+        passField.type = hide ? 'text' : 'password';
+        btnToggleEye.textContent = hide ? '🙈' : '👁️';
+      });
+
+      // Volver a elegir persona
+      btnBack?.addEventListener('click', () => {
+        selectedUser = null;
+        if (passBox) passBox.style.display = 'none';
+        if (lockError) lockError.textContent = '';
+        document.querySelectorAll('.lock-user-card').forEach(c => {
+          c.classList.remove('selected-kevin', 'selected-wendy');
+        });
       });
 
       // Verificar si ya está desbloqueado
@@ -184,16 +179,22 @@
       } else {
         lockScreen.style.display = 'flex';
         appContainer.style.display = 'none';
-        loadSavedNicknames();
+        if (passBox) passBox.style.display = 'none';
+        loadNicknames();
       }
 
       // Botón Re-bloquear
       btnReLock?.addEventListener('click', () => {
         window.storage.setUnlocked(false);
+        selectedUser = null;
         appContainer.style.display = 'none';
         lockScreen.style.display = 'flex';
+        if (passBox) passBox.style.display = 'none';
         if (lockError) lockError.textContent = '';
-        loadSavedNicknames();
+        document.querySelectorAll('.lock-user-card').forEach(c => {
+          c.classList.remove('selected-kevin', 'selected-wendy');
+        });
+        loadNicknames();
         window.Utils.showToast('Sesión bloqueada de forma segura', 'info');
       });
     }
@@ -252,26 +253,30 @@
         // 2. Avatares
         const kevinImg = document.getElementById('header-avatar-kevin-img');
         const kevinFallback = document.getElementById('header-avatar-kevin-fallback');
-        if (kevinProfile.avatar) {
-          kevinImg.src = kevinProfile.avatar;
-          kevinImg.style.display = 'block';
-          kevinFallback.style.display = 'none';
-        } else {
-          kevinImg.style.display = 'none';
-          kevinFallback.style.display = 'flex';
-          kevinFallback.textContent = kevinProfile.nickname ? kevinProfile.nickname.charAt(0).toUpperCase() : 'K';
+        if (kevinImg && kevinFallback) {
+          if (kevinProfile.avatar) {
+            kevinImg.src = kevinProfile.avatar;
+            kevinImg.style.display = 'block';
+            kevinFallback.style.display = 'none';
+          } else {
+            kevinImg.style.display = 'none';
+            kevinFallback.style.display = 'flex';
+            kevinFallback.textContent = kevinProfile.nickname ? kevinProfile.nickname.charAt(0).toUpperCase() : 'K';
+          }
         }
 
         const wendyImg = document.getElementById('header-avatar-wendy-img');
         const wendyFallback = document.getElementById('header-avatar-wendy-fallback');
-        if (wendyProfile.avatar) {
-          wendyImg.src = wendyProfile.avatar;
-          wendyImg.style.display = 'block';
-          wendyFallback.style.display = 'none';
-        } else {
-          wendyImg.style.display = 'none';
-          wendyFallback.style.display = 'flex';
-          wendyFallback.textContent = wendyProfile.nickname ? wendyProfile.nickname.charAt(0).toUpperCase() : 'W';
+        if (wendyImg && wendyFallback) {
+          if (wendyProfile.avatar) {
+            wendyImg.src = wendyProfile.avatar;
+            wendyImg.style.display = 'block';
+            wendyFallback.style.display = 'none';
+          } else {
+            wendyImg.style.display = 'none';
+            wendyFallback.style.display = 'flex';
+            wendyFallback.textContent = wendyProfile.nickname ? wendyProfile.nickname.charAt(0).toUpperCase() : 'W';
+          }
         }
 
         // 3. Puntos de conexión (Verde brillante)

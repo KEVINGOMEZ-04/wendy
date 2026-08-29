@@ -23,61 +23,41 @@
   <!-- PANTALLA DE DESBLOQUEO / INICIO DE SESIÓN -->
   <div id="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
     <div class="lock-card" id="lock-card">
+
+      <!-- Emblema y título -->
       <div class="lock-hero-emblem">
         <div class="lock-emblem-glow"></div>
         <div class="lock-emblem-circle">🌻</div>
       </div>
       <h1 id="lock-title" class="lock-title">Patico Wrapped</h1>
-      <p class="lock-subtitle">Nuestro diario de recuerdos y momentos juntos 💖</p>
+      <p class="lock-subtitle">¿Quién está entrando hoy? 💖</p>
 
-      <!-- Dos casillas de perfil: una por persona -->
-      <div class="lock-profiles-grid">
-
-        <!-- Casilla Kevin -->
-        <div class="lock-profile-box" id="lock-box-kevin" data-user="Kevin">
-          <div class="lock-profile-header kevin">
-            <span class="lock-profile-emoji">👦🏻</span>
-            <div>
-              <div class="lock-profile-name">Kevin</div>
-              <div class="lock-profile-role kevin-role" id="kevin-role-label">Su Cielo ☁️</div>
-            </div>
-          </div>
-          <div class="lock-profile-body">
-            <label class="lock-field-label">Tu apodo para mí</label>
-            <input type="text" id="lock-kevin-nickname" class="lock-field-input" placeholder="Ej. Mi Cielo, Kevin, Amor…" value="" autocomplete="off" />
-            <label class="lock-field-label" style="margin-top: 0.5rem;">Contraseña</label>
-            <div class="lock-pass-wrap">
-              <input type="password" id="lock-kevin-password" class="lock-field-input lock-pass-input" placeholder="1234" value="" autocomplete="off" />
-              <button type="button" class="lock-pass-eye" data-target="lock-kevin-password" title="Ver/ocultar">👁️</button>
-            </div>
-          </div>
-          <button type="button" class="btn-lock-enter kevin-btn" id="btn-enter-kevin">Entrar como Kevin →</button>
-        </div>
-
-        <!-- Casilla Wendy -->
-        <div class="lock-profile-box" id="lock-box-wendy" data-user="Wendy">
-          <div class="lock-profile-header wendy">
-            <span class="lock-profile-emoji">👧🏻</span>
-            <div>
-              <div class="lock-profile-name">Wendy</div>
-              <div class="lock-profile-role wendy-role" id="wendy-role-label">Patico ♥️</div>
-            </div>
-          </div>
-          <div class="lock-profile-body">
-            <label class="lock-field-label">Tu apodo para mí</label>
-            <input type="text" id="lock-wendy-nickname" class="lock-field-input" placeholder="Ej. Patico, Amor, Princesa…" value="" autocomplete="off" />
-            <label class="lock-field-label" style="margin-top: 0.5rem;">Contraseña</label>
-            <div class="lock-pass-wrap">
-              <input type="password" id="lock-wendy-password" class="lock-field-input lock-pass-input" placeholder="1234" value="" autocomplete="off" />
-              <button type="button" class="lock-pass-eye" data-target="lock-wendy-password" title="Ver/ocultar">👁️</button>
-            </div>
-          </div>
-          <button type="button" class="btn-lock-enter wendy-btn" id="btn-enter-wendy">Entrar como Wendy →</button>
-        </div>
-
+      <!-- Paso 1: Dos tarjetas de selección -->
+      <div class="lock-user-grid" id="lock-user-grid">
+        <button type="button" class="lock-user-card" id="lock-card-kevin" data-user="Kevin">
+          <span class="lock-card-emoji">👦🏻</span>
+          <span class="lock-card-name">Kevin</span>
+          <span class="lock-card-nickname kevin-color" id="lock-kevin-nick-display">Su Cielo ☁️</span>
+        </button>
+        <button type="button" class="lock-user-card" id="lock-card-wendy" data-user="Wendy">
+          <span class="lock-card-emoji">👧🏻</span>
+          <span class="lock-card-name">Wendy</span>
+          <span class="lock-card-nickname wendy-color" id="lock-wendy-nick-display">Patico ♥️</span>
+        </button>
       </div>
 
-      <div id="lock-error" class="lock-error-msg" role="alert" style="text-align:center; margin-top:0.5rem;"></div>
+      <!-- Paso 2: Caja de contraseña (aparece al seleccionar) -->
+      <div class="lock-password-box" id="lock-password-box" style="display:none;">
+        <div class="lock-who-selected" id="lock-who-selected"></div>
+        <div class="lock-pass-row">
+          <input type="password" id="lock-password" class="lock-pass-field" placeholder="Contraseña (por defecto: 1234)" autocomplete="off" />
+          <button type="button" class="lock-pass-eye-btn" id="btn-toggle-lock-password" title="Ver/ocultar">👁️</button>
+        </div>
+        <button type="button" class="lock-enter-btn" id="btn-submit-lock">Entrar 🌻</button>
+        <button type="button" class="lock-back-btn" id="btn-lock-back">← Cambiar persona</button>
+      </div>
+
+      <div id="lock-error" class="lock-error-msg" role="alert"></div>
     </div>
   </div>
   <div id="app-container" style="display: none;">

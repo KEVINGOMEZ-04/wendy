@@ -653,14 +653,22 @@ textarea.form-control {
   transform: translateY(0);
 }
 
-/* Responsive */
+/* Responsive Styles para Layout y Header */
+@media (max-width: 992px) {
+  .main-content {
+    max-width: 100%;
+    padding: 2rem 1rem 4.5rem 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .app-header {
-    padding: 0.4rem 0.6rem;
+    padding: 0.4rem 0.65rem;
+    padding-top: max(0.4rem, env(safe-area-inset-top, 0px));
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 0.35rem;
+    gap: 0.4rem;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
@@ -668,29 +676,36 @@ textarea.form-control {
 
   .header-brand {
     font-size: 1.15rem;
+    gap: 0.3rem;
   }
 
-  .presence-capsule {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.74rem;
-    gap: 0.35rem;
-    max-width: 110px;
+  .whatsapp-presence-bar {
+    max-width: 210px;
+    padding: 0.25rem 0.6rem 0.25rem 0.35rem;
+    gap: 0.45rem;
+    flex-shrink: 1;
+    min-width: 0;
   }
 
-  #presence-summary-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .whatsapp-avatar-wrapper {
+    width: 30px;
+    height: 30px;
+    margin-right: -6px;
   }
 
-  #active-user-label {
-    display: none;
+  .whatsapp-names {
+    font-size: 0.78rem;
+  }
+
+  .whatsapp-status-row {
+    font-size: 0.68rem;
   }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.3rem;
+    flex-shrink: 0;
   }
 
   .btn-lock-text {
@@ -698,10 +713,11 @@ textarea.form-control {
   }
 
   .btn-lock {
-    padding: 0.35rem 0.5rem;
+    padding: 0.35rem;
     font-size: 0.85rem;
-    min-width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
     border-radius: var(--radius-full);
     justify-content: center;
   }
@@ -724,22 +740,22 @@ textarea.form-control {
 
   .nav-pills {
     justify-content: flex-start;
-    padding: 0.1rem 0.5rem;
-    gap: 0.35rem;
+    padding: 0.15rem 0.65rem;
+    gap: 0.4rem;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
   }
 
   .nav-pill-btn {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.78rem;
-    gap: 0.25rem;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
     flex-shrink: 0;
   }
 
   .main-content {
-    padding: 1.25rem 0.6rem 4rem 0.6rem;
+    padding: 1.25rem 0.75rem 4rem 0.75rem;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
@@ -747,7 +763,7 @@ textarea.form-control {
   }
 
   .glass-card {
-    padding: 1.1rem 0.9rem;
+    padding: 1.25rem 1rem;
     border-radius: var(--radius-md);
   }
 
@@ -756,16 +772,17 @@ textarea.form-control {
     align-items: flex-end;
   }
 
-  .modal-box {
-    padding: 1.25rem;
+  .modal-box, .modal-box-large, .modal-box-lyrics {
+    padding: 1.35rem 1.1rem;
     max-height: 88vh;
+    max-height: 88dvh;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     width: 100%;
-    margin-bottom: env(safe-area-inset-bottom, 0);
+    margin-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .modal-header h3 {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
 
   .form-actions {
@@ -787,25 +804,60 @@ textarea.form-control {
 @media (max-width: 480px) {
   .app-header {
     padding: 0.35rem 0.45rem;
+    gap: 0.25rem;
   }
   .header-brand {
     font-size: 1rem;
   }
-  .presence-capsule {
-    max-width: 95px;
-    padding: 0.15rem 0.35rem;
-    font-size: 0.68rem;
+  .whatsapp-presence-bar {
+    max-width: 155px;
+    padding: 0.2rem 0.45rem 0.2rem 0.25rem;
+    gap: 0.35rem;
+  }
+  .whatsapp-avatar-wrapper {
+    width: 26px;
+    height: 26px;
+    margin-right: -5px;
+  }
+  .whatsapp-names {
+    font-size: 0.74rem;
+  }
+  .whatsapp-status-row {
+    font-size: 0.64rem;
+  }
+  .header-actions {
+    gap: 0.2rem;
   }
   .btn-lock {
-    min-width: 30px;
+    width: 30px;
     height: 30px;
+    min-width: 30px;
     font-size: 0.8rem;
+    padding: 0;
   }
   .nav-pill-btn {
-    padding: 0.3rem 0.6rem;
+    padding: 0.32rem 0.7rem;
     font-size: 0.75rem;
   }
   .glass-card {
-    padding: 0.9rem 0.75rem;
+    padding: 1rem 0.85rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .header-brand span:not(.sunflower-icon) {
+    display: none;
+  }
+  .whatsapp-presence-bar {
+    max-width: 135px;
+  }
+  .header-actions {
+    gap: 0.15rem;
+  }
+  .btn-lock {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 0.75rem;
   }
 }

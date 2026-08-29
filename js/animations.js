@@ -20,6 +20,7 @@
       this.animate = this.animate.bind(this);
 
       window.addEventListener('resize', this.resize, { passive: true });
+      window.addEventListener('orientationchange', () => setTimeout(this.resize, 200), { passive: true });
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           this.stop();

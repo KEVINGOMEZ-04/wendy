@@ -3152,8 +3152,58 @@
   margin-bottom: 2.5rem;
 }
 
-/* Responsive Overrides */
+/* =========================================
+   RESPONSIVE DESIGN COMPLETO MULTIDISPOSITIVO
+   ========================================= */
+
+/* Tablets y pantallas medianas (<= 900px) */
+@media (max-width: 900px) {
+  .col-8, .col-7, .col-6, .col-5, .col-4 {
+    grid-column: span 12;
+  }
+  .annual-months-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Móviles y Tablets en vertical (<= 768px) */
 @media (max-width: 768px) {
+  /* Portada & Hero */
+  .portada-hero {
+    min-height: 60vh;
+    padding: 1rem 0;
+  }
+  .portada-moon-sunflower {
+    width: 180px;
+    height: 180px;
+    margin-bottom: 1.25rem;
+  }
+  .portada-sunflower {
+    width: 130px;
+    height: 130px;
+  }
+  .portada-moon {
+    width: 90px;
+    height: 90px;
+  }
+  .portada-title {
+    font-size: 2.3rem;
+  }
+  .portada-subtitle {
+    font-size: 1.15rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Acciones diarias */
+  .daily-actions {
+    gap: 0.5rem;
+    margin: 1rem 0 1.5rem;
+  }
+  .daily-actions .action-pill {
+    padding: 0.5rem 0.95rem;
+    font-size: 0.82rem;
+  }
+
   /* Wrapped Container & Hero */
   .wrapped-container {
     margin-top: 2rem;
@@ -3187,7 +3237,7 @@
   }
 
   .wrapped-card {
-    padding: 1.2rem 1rem;
+    padding: 1.25rem 1rem;
     border-radius: var(--radius-md);
   }
 
@@ -3195,8 +3245,19 @@
     font-size: 2.6rem;
   }
 
-  .chat-ratio-container {
-    padding: 0.6rem;
+  .participants-comparison {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .speed-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .identities-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
   }
 
   .top-days-table-container {
@@ -3206,8 +3267,14 @@
   }
 
   .top-days-table {
-    min-width: 320px;
+    min-width: 300px;
     font-size: 0.85rem;
+  }
+
+  .hist-day-row {
+    grid-template-columns: 110px 1fr 50px;
+    gap: 0.5rem;
+    font-size: 0.8rem;
   }
 
   /* Calendario Anual Interactivo */
@@ -3222,6 +3289,10 @@
     align-items: flex-start;
     gap: 0.75rem;
     padding-bottom: 0.85rem;
+  }
+
+  .calendar-heading {
+    font-size: 1.4rem;
   }
 
   .calendar-year-pills {
@@ -3254,6 +3325,12 @@
   .mini-day-cell {
     font-size: 0.82rem;
     border-radius: 4px;
+    min-height: 28px;
+  }
+
+  /* Recordatorios */
+  .reminder-grid {
+    grid-template-columns: 1fr;
   }
 
   /* Recuerdos & Línea de Tiempo */
@@ -3269,65 +3346,79 @@
 
   .sunflower-pin {
     left: 18px;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
+    font-size: 1.1rem;
   }
 
-  .memory-card {
-    width: 100%;
-    padding: 1rem;
-    border-radius: var(--radius-md);
+  .memory-card-body {
+    padding: 1.15rem 0.95rem;
   }
 
-  .memory-media-container {
-    max-height: 260px;
-    border-radius: var(--radius-sm);
-  }
-
-  .memory-gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 0.35rem;
-  }
-
-  .memory-comments-section {
-    padding: 0.75rem;
-  }
-
-  .comment-form-row {
+  .memory-footer-bar {
     flex-direction: column;
-    gap: 0.4rem;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  .comment-form-row button {
+  .trail-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+  .trail-controls > .btn-primary, .trail-controls > .btn-secondary {
     width: 100%;
   }
 
   /* Story Mode Pantalla Completa en Móvil */
-  .story-modal-overlay {
-    padding: 0;
-  }
-
   .story-player-card {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-width: 100vw;
-    max-height: 100vh;
+    max-height: 100dvh;
     border-radius: 0;
-    padding: 1.5rem 1rem 2rem 1rem;
+    padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem max(1.2rem, env(safe-area-inset-bottom, 0px)) 1rem;
   }
 
-  .story-content {
-    padding: 1rem 0;
+  /* Música y Cine */
+  .music-grid, .movies-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .music-search-grid, .movie-search-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .media-search {
+    flex-direction: column;
+  }
+  .media-search.compact {
+    width: 100%;
+  }
+
+  .song-header-row, .search-song-top, .search-movie-top {
+    gap: 0.75rem;
+  }
+
+  .song-card-cover, .search-song-cover, .search-movie-poster {
+    width: 70px;
+    height: 70px;
+  }
+  .search-movie-poster {
+    height: 105px;
   }
 
   /* Muro de Notas & Sueños */
-  .paper-notes-grid {
+  .notes-container, .paper-notes-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
   .paper-note {
-    padding: 1.1rem;
+    padding: 1.15rem 1rem;
   }
 
   .dreams-stats-banner {
@@ -3336,19 +3427,9 @@
   }
 
   .dream-item-card {
-    padding: 0.9rem 1rem;
+    padding: 0.85rem 1rem;
     gap: 0.6rem;
   }
-
-  /* Multimedia */
-  .media-search { flex-direction: column; }
-  .media-search.compact { width: 100%; }
-  .trail-controls { align-items: stretch; }
-  .trail-controls > .btn-primary, .trail-controls > .btn-secondary { width: 100%; }
-  .movie-rating-bar { align-items: flex-start; flex-direction: column; gap: .35rem; }
-  .media-result { align-items: flex-start; }
-  .media-result .btn-secondary { padding: .45rem .65rem; }
-  .song-card { align-items: flex-start; }
 
   .night-timeline {
     flex-direction: column;
@@ -3359,17 +3440,58 @@
   }
 }
 
+/* Teléfonos inteligentes pequeños (<= 480px) */
 @media (max-width: 480px) {
+  /* Pantalla de login */
+  .lock-card {
+    padding: 1.6rem 1.1rem;
+  }
+  .lock-title {
+    font-size: 1.65rem;
+  }
+  .lock-subtitle {
+    font-size: 0.84rem;
+    margin-bottom: 1.1rem;
+  }
+  .lock-user-cards-grid {
+    gap: 0.5rem;
+  }
+  .lock-user-card {
+    padding: 0.65rem 0.45rem;
+    gap: 0.45rem;
+  }
+  .lock-user-emoji {
+    font-size: 1.35rem;
+  }
+  .lock-user-name {
+    font-size: 0.88rem;
+  }
+  .lock-user-tag {
+    font-size: 0.66rem;
+  }
+
+  /* Dashboard */
+  .daily-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .daily-stat {
+    padding: 0.75rem 0.5rem;
+  }
+  .daily-stat strong {
+    font-size: 1.45rem;
+  }
+
   .wrapped-hero-banner {
     padding: 1.2rem 0.75rem;
   }
 
   .wrapped-main-title {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
   }
 
   .wrapped-badge-updated {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     padding: 0.35rem 0.75rem;
   }
 
@@ -3377,28 +3499,69 @@
     font-size: 2.2rem;
   }
 
-  .col-12, .col-8, .col-7, .col-6, .col-5, .col-4 {
-    grid-column: span 12;
+  .hist-day-row {
+    grid-template-columns: 85px 1fr 40px;
+    font-size: 0.74rem;
+    gap: 0.35rem;
+  }
+
+  .multimedia-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .multi-stat-card {
+    padding: 0.75rem 0.4rem;
+  }
+  .multi-stat-val {
+    font-size: 1.3rem;
   }
 
   .words-cloud-container {
-    min-height: 280px;
+    min-height: 260px;
   }
 
   .word-center {
-    font-size: 2.2rem;
+    font-size: 2.1rem;
   }
 
   .word-petal {
-    font-size: 0.85rem;
-    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .emotional-words-compare {
+    gap: 0.75rem;
+    font-size: 1.25rem;
   }
 
   .mini-day-cell {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 
   .dreams-stats-banner {
     grid-template-columns: 1fr;
   }
+
+  .dream-item-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
 }
+
+/* Pantallas ultra estrechas (<= 360px) */
+@media (max-width: 360px) {
+  .lock-user-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .portada-title {
+    font-size: 1.9rem;
+  }
+  .giant-number {
+    font-size: 1.9rem;
+  }
+  .multimedia-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

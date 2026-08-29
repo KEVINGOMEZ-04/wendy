@@ -733,33 +733,48 @@
 
     async searchMovies(query) {
       const results = document.getElementById('movie-search-results');
-      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold);">Buscando películas… 🎬✨</div>';
+      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold); padding: 1.5rem;">Buscando películas en tiempo real… 🎬✨</div>';
 
       try {
         const movies = await window.MediaService.searchMovies(query);
         if (!movies.length) {
-          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary);">No encontramos películas con ese nombre. ¡Intenta con otro título!</div>';
+          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 1.5rem;">No encontramos películas con ese nombre. ¡Intenta con otro título o franquicia!</div>';
           return;
         }
 
         results.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.9rem; color: var(--color-sunflower-gold);">Resultados de películas (${movies.length}):</span>
-            <button type="button" class="btn-secondary" id="btn-close-movie-results" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;">Cerrar resultados</button>
+          <div class="search-results-header">
+            <span class="search-results-title">🎬 Resultados de películas (${movies.length}):</span>
+            <button type="button" class="btn-secondary" id="btn-close-movie-results" style="padding: 0.25rem 0.7rem; font-size: 0.8rem;">✕ Cerrar resultados</button>
           </div>
-          ${movies.map((movie, index) => `
-            <div class="media-result">
-              ${movie.poster ? `<img src="${window.Utils.sanitizeHTML(movie.poster)}" alt="Póster" onerror="this.style.display='none'">` : '<div style="width: 56px; height: 56px; border-radius: 8px; background: var(--color-purple); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🎬</div>'}
-              <span>
-                <strong>${window.Utils.sanitizeHTML(movie.title)}</strong> (${movie.year || '—'})<br>
-                <small style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--color-text-secondary);">${window.Utils.sanitizeHTML(movie.synopsis)}</small>
-              </span>
-              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <button type="button" class="btn-primary btn-add-search-movie" data-index="${index}" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">+ Añadir</button>
-                <button type="button" class="btn-secondary btn-custom-movie" data-index="${index}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" title="Personalizar y calificar">⭐ Calificar</button>
+          <div class="movie-search-grid">
+            ${movies.map((movie, index) => `
+              <div class="glass-card search-movie-card">
+                <div class="search-movie-top">
+                  ${movie.poster ? `<img src="${window.Utils.sanitizeHTML(movie.poster)}" alt="Póster" class="search-movie-poster" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder">🎬</div>'}
+                  <div class="search-movie-info">
+                    <h4 class="search-movie-title">${window.Utils.sanitizeHTML(movie.title)}</h4>
+                    <p class="search-movie-year">📅 ${movie.year || '—'} ${movie.genre ? `· <em>${window.Utils.sanitizeHTML(movie.genre)}</em>` : ''}</p>
+                    <p class="search-movie-synopsis">${window.Utils.sanitizeHTML(movie.synopsis)}</p>
+                    ${movie.platforms && movie.platforms.length ? `
+                      <div class="movie-platforms" style="margin-top: 0.35rem;">
+                        ${movie.platforms.slice(0, 3).map(p => `<span class="platform-pill">📺 ${window.Utils.sanitizeHTML(p)}</span>`).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <div class="search-movie-actions">
+                  <button type="button" class="btn-primary btn-add-search-movie" data-index="${index}">
+                    <span>🍿 + Añadir a Biblioteca</span>
+                  </button>
+                  <button type="button" class="btn-secondary btn-custom-movie" data-index="${index}" title="Personalizar antes de guardar">
+                    <span>✏️ Personalizar</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         `;
 
         document.getElementById('btn-close-movie-results')?.addEventListener('click', () => {
@@ -770,24 +785,26 @@
           button.addEventListener('click', async () => {
             const index = parseInt(button.dataset.index, 10);
             button.disabled = true;
-            button.textContent = 'Importando… ⏳';
-            const details = await window.MediaService.movieDetails(movies[index]);
+            button.textContent = 'Añadiendo… ⏳';
+            const baseMovie = movies[index];
+            const details = await window.MediaService.movieDetails(baseMovie);
+            const currentUser = window.storage.getCurrentUser();
 
             window.storage.saveMovie({
               ...details,
-              proposedBy: window.storage.getCurrentUser(),
+              proposedBy: currentUser,
               priority: 5,
               status: 'Por ver',
-              kevinRating: '',
-              wendyRating: '',
-              kevinComment: '',
-              wendyComment: ''
+              kevinRating: currentUser === 'Kevin' ? 5 : 0,
+              wendyRating: currentUser === 'Wendy' ? 5 : 0,
+              rating: 5,
+              comments: []
             });
 
             this.renderMovies();
             this.renderDailyDashboard();
             results.innerHTML = '';
-            window.Utils.showToast(`¡${details.title} añadida a Nuestra Biblioteca! 🎬`, 'success');
+            window.Utils.showToast(`¡${details.title} añadida a Nuestra Biblioteca! 🎬🍿`, 'success');
           });
         });
 
@@ -796,21 +813,20 @@
             const index = parseInt(button.dataset.index, 10);
             button.textContent = 'Cargando…';
             const details = await window.MediaService.movieDetails(movies[index]);
+            const currentUser = window.storage.getCurrentUser();
             this.openMovieModal({
               ...details,
-              proposedBy: window.storage.getCurrentUser(),
+              proposedBy: currentUser,
               priority: 5,
               status: 'Por ver',
-              kevinRating: '',
-              wendyRating: '',
-              kevinComment: '',
-              wendyComment: ''
+              kevinRating: currentUser === 'Kevin' ? 5 : 0,
+              wendyRating: currentUser === 'Wendy' ? 5 : 0
             });
-            button.textContent = '⭐ Calificar';
+            button.textContent = '✏️ Personalizar';
           });
         });
       } catch (error) {
-        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger);">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar películas ahora.')}</div>`;
+        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar películas ahora.')}</div>`;
       }
     }
 
@@ -1241,12 +1257,15 @@
     }
 
     // --- 7. Películas (Nuestro Cine) ---
+    // --- 7. Películas (Nuestro Cine) ---
     renderMovies() {
       const container = document.getElementById("movies-grid-list");
       const filter = document.getElementById("filter-movies-status")?.value || "all";
       if (!container) return;
 
       let list = window.storage.getMovies();
+      const currentUser = window.storage.getCurrentUser();
+
       if (filter !== "all") {
         list = list.filter(m => m.status === filter);
       }
@@ -1257,39 +1276,53 @@
       }
 
       container.innerHTML = list.map(m => {
-        const hasKevin = m.kevinRating !== null && m.kevinRating !== undefined && m.kevinRating !== '';
-        const hasWendy = m.wendyRating !== null && m.wendyRating !== undefined && m.wendyRating !== '';
-        let ratingHtml = "";
+        const comments = Array.isArray(m.comments) ? m.comments : [];
+        const author = m.proposedBy || 'Kevin';
+        const authorInitial = author.charAt(0).toUpperCase();
+        const authorClass = author.toLowerCase() === 'wendy' ? 'wendy' : 'kevin';
 
-        if (hasKevin && hasWendy) {
-          const avg = (parseFloat(m.kevinRating) + parseFloat(m.wendyRating)) / 2;
-          ratingHtml = `<span>Promedio: <strong style="color: var(--color-sunflower-gold); font-size: 1rem;">${window.Utils.formatDecimalES(avg, 1)}/10</strong></span> <span>(K: ${window.Utils.formatDecimalES(parseFloat(m.kevinRating), 1)} | W: ${window.Utils.formatDecimalES(parseFloat(m.wendyRating), 1)})</span>`;
-        } else if (hasKevin) {
-          ratingHtml = `<span>Nota Kevin: <strong style="color: var(--color-lilac); font-size: 1rem;">${window.Utils.formatDecimalES(parseFloat(m.kevinRating), 1)}/10</strong></span> <span style="font-size: 0.75rem; color: var(--color-text-muted);">(Wendy pendiente)</span>`;
-        } else if (hasWendy) {
-          ratingHtml = `<span>Nota Wendy: <strong style="color: var(--color-sunflower-gold); font-size: 1rem;">${window.Utils.formatDecimalES(parseFloat(m.wendyRating), 1)}/10</strong></span> <span style="font-size: 0.75rem; color: var(--color-text-muted);">(Kevin pendiente)</span>`;
-        } else {
-          ratingHtml = `<span style="color: var(--color-text-muted); font-size: 0.8rem;">Sin calificar aún</span>`;
+        const kevinRating = parseInt(m.kevinRating, 10) || 0;
+        const wendyRating = parseInt(m.wendyRating, 10) || 0;
+        const activeUserRating = currentUser.toLowerCase() === 'wendy' ? wendyRating : kevinRating;
+
+        // 5 Estrellas Interactivas
+        const starsHtml = [1, 2, 3, 4, 5].map(starNum => {
+          const isFilled = starNum <= activeUserRating;
+          return `<button type="button" class="star-btn ${isFilled ? 'active' : ''}" data-movie-id="${m.id}" data-rating="${starNum}" title="Calificar con ${starNum} estrella${starNum > 1 ? 's' : ''}">★</button>`;
+        }).join("");
+
+        // Resumen de calificación para la cabecera
+        let ratingSummaryBadge = "";
+        if (kevinRating > 0 && wendyRating > 0) {
+          const avg = ((kevinRating + wendyRating) / 2).toFixed(1);
+          ratingSummaryBadge = `<span class="song-badge-rating" title="Promedio de Kevin y Wendy">⭐ ${avg}/5</span>`;
+        } else if (activeUserRating > 0) {
+          ratingSummaryBadge = `<span class="song-badge-rating" title="Tu calificación">⭐ ${activeUserRating}/5</span>`;
         }
 
         const statusClass = m.status === 'Me encantó' ? 'encanto' : (m.status === 'Vista' ? 'Vista' : 'por-ver');
         const statusLabel = m.status === 'Me encantó' ? '💖 Me encantó' : (m.status === 'Vista' ? '🍿 Vista' : '🌱 Por ver');
-        const platformsList = Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()) : []);
+        const platformsList = Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()).filter(Boolean) : []);
 
         return `
           <div class="glass-card movie-card" data-id="${m.id}">
             <div>
-              ${m.poster ? `<img class="movie-poster" src="${window.Utils.sanitizeHTML(m.poster)}" alt="Póster de ${window.Utils.sanitizeHTML(m.title)}" onerror="this.style.display='none'">` : ''}
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; gap: 0.5rem;">
+              ${m.poster ? `<img class="movie-poster" src="${window.Utils.sanitizeHTML(m.poster)}" alt="Póster de ${window.Utils.sanitizeHTML(m.title)}" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder" style="height: 220px; width: 100%; border-radius: 12px; margin-bottom: 0.85rem;">🎬</div>'}
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
                 <span class="movie-badge-status ${statusClass}" data-status="${window.Utils.sanitizeHTML(m.status)}">${statusLabel}</span>
-                ${m.isDemo ? `<span class="demo-badge">Dato de ejemplo</span>` : ""}
+                ${ratingSummaryBadge}
               </div>
-              <h3 style="font-family: var(--font-heading); font-size: 1.45rem; color: var(--color-text-main); margin-bottom: 0.2rem; line-height: 1.2;">
+
+              <div class="song-author-badge" style="margin-bottom: 0.35rem;" title="Propuesta automáticamente por ${window.Utils.sanitizeHTML(author)}">
+                <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
+                <span>Propuesta por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+              </div>
+
+              <h3 style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-text-main); margin-bottom: 0.2rem; line-height: 1.25;">
                 ${window.Utils.sanitizeHTML(m.title)} <span style="font-size: 0.95rem; color: var(--color-sunflower-gold); font-family: var(--font-numbers);">(${m.year})</span>
               </h3>
-              <p style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.4rem;">
-                Propuesta por: <strong style="color: var(--color-text-main);">${window.Utils.sanitizeHTML(m.proposedBy)}</strong> · Prioridad: ${m.priority}/5 ⭐
-              </p>
+
               ${m.synopsis ? `<p class="movie-synopsis">${window.Utils.sanitizeHTML(m.synopsis)}</p>` : ''}
               
               ${platformsList.length ? `
@@ -1304,20 +1337,128 @@
                   ${m.imdbUrl ? `· <a href="${window.Utils.sanitizeHTML(m.imdbUrl)}" target="_blank" rel="noopener">Ver ficha en IMDb</a>` : ''}
                 </p>
               ` : (m.imdbUrl ? `<p class="movie-meta"><a href="${window.Utils.sanitizeHTML(m.imdbUrl)}" target="_blank" rel="noopener">⭐ Buscar en IMDb</a></p>` : '')}
-
-              ${m.kevinComment ? `<p style="font-size: 0.84rem; color: var(--color-lilac); margin-top: 0.6rem; font-style: italic;">“${window.Utils.sanitizeHTML(m.kevinComment)}” — Kevin</p>` : ""}
-              ${m.wendyComment ? `<p style="font-size: 0.84rem; color: var(--color-sunflower-gold); margin-top: 0.35rem; font-style: italic;">“${window.Utils.sanitizeHTML(m.wendyComment)}” — Wendy</p>` : ""}
             </div>
-            <div>
-              <div class="movie-rating-bar">${ratingHtml}</div>
-              <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.85rem;">
-                <button type="button" class="btn-secondary btn-edit-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">Editar</button>
-                <button type="button" class="btn-secondary btn-delete-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);">Eliminar</button>
+
+            <div style="margin-top: 0.85rem;">
+              <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary btn-toggle-movie-comments" data-id="${m.id}">
+                  ⭐ Calificación y Comentarios (${comments.length})
+                </button>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" class="btn-secondary btn-edit-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">✏️</button>
+                  <button type="button" class="btn-secondary btn-delete-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);">🗑️</button>
+                </div>
+              </div>
+
+              <!-- Hilo de Calificaciones y Comentarios de la película -->
+              <div class="movie-comments-container" id="movie-comments-box-${m.id}" style="display: none;">
+                
+                <!-- Calificación de Estrellas Integrada en Películas -->
+                <div class="song-rating-section">
+                  <div class="song-rating-stars-bar">
+                    <span class="rating-label">Tu nota (${currentUser}):</span>
+                    <div class="interactive-stars-group">
+                      ${starsHtml}
+                    </div>
+                    <span class="rating-number">${activeUserRating > 0 ? `${activeUserRating}/5 ⭐` : 'Toca para calificar'}</span>
+                  </div>
+                  <div class="song-rating-scores-breakdown">
+                    <span class="score-pill ${kevinRating > 0 ? 'rated' : ''}">👦🏻 Kevin: <strong>${kevinRating > 0 ? `${kevinRating}/5 ★` : 'Pendiente'}</strong></span>
+                    <span class="score-pill ${wendyRating > 0 ? 'rated' : ''}">👧🏻 Wendy: <strong>${wendyRating > 0 ? `${wendyRating}/5 ★` : 'Pendiente'}</strong></span>
+                  </div>
+                </div>
+
+                <!-- Lista de comentarios -->
+                <div class="song-comments-list" id="movie-comments-list-${m.id}">
+                  ${comments.length === 0 ? `<p class="empty-comments-hint">Aún no hay comentarios sobre esta película. ¡Escribe qué te pareció o cuándo la veremos!</p>` : ''}
+                  ${comments.map(c => {
+                    const cAuthor = c.author || 'Kevin';
+                    const cClass = cAuthor.toLowerCase() === 'wendy' ? 'wendy-comment' : 'kevin-comment';
+                    return `
+                      <div class="comment-bubble ${cClass}">
+                        <div class="comment-bubble-header">
+                          <strong>${window.Utils.sanitizeHTML(cAuthor)}</strong>
+                          <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span>${window.Utils.formatDateTimeES(c.createdAt)}</span>
+                            <button type="button" class="btn-del-movie-comment" data-movie-id="${m.id}" data-comment-id="${c.id}" title="Eliminar comentario">&times;</button>
+                          </div>
+                        </div>
+                        <div class="comment-bubble-text">${window.Utils.sanitizeHTML(c.message)}</div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+
+                <!-- Formulario para agregar comentario -->
+                <form class="movie-add-comment-form" data-id="${m.id}">
+                  <input type="text" class="form-control movie-comment-input" placeholder="Comenta algo sobre esta película como ${window.Utils.sanitizeHTML(currentUser)}..." required />
+                  <button type="submit" class="btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; white-space: nowrap;">Comentar 💌</button>
+                </form>
               </div>
             </div>
           </div>
         `;
       }).join("");
+
+      // Listeners de Estrellas para Películas
+      container.querySelectorAll('.star-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const movieId = btn.dataset.movieId;
+          const ratingVal = parseInt(btn.dataset.rating, 10);
+          window.storage.rateMovie(movieId, ratingVal, currentUser);
+          this.renderMovies();
+          this.renderDailyDashboard();
+          window.Utils.showToast(`¡Calificaste la película con ${ratingVal} estrella${ratingVal > 1 ? 's' : ''}! 🎬⭐`, 'success');
+        });
+      });
+
+      // Listener de Despliegue de Comentarios
+      container.querySelectorAll('.btn-toggle-movie-comments').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const movieId = btn.dataset.id;
+          const box = document.getElementById(`movie-comments-box-${movieId}`);
+          if (box) {
+            const isHidden = box.style.display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+          }
+        });
+      });
+
+      // Listener de Envío de Comentarios
+      container.querySelectorAll('.movie-add-comment-form').forEach(form => {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const movieId = form.dataset.id;
+          const input = form.querySelector('.movie-comment-input');
+          const msg = input ? input.value.trim() : '';
+          if (!msg) return;
+
+          window.storage.addMovieComment(movieId, {
+            author: currentUser,
+            message: msg
+          });
+
+          input.value = '';
+          this.renderMovies();
+          window.Utils.showToast('Comentario añadido a la película 💬🎬', 'success');
+        });
+      });
+
+      // Listener de Eliminación de Comentarios
+      container.querySelectorAll('.btn-del-movie-comment').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const movieId = btn.dataset.movieId;
+          const commentId = btn.dataset.commentId;
+          if (confirm('¿Eliminar este comentario?')) {
+            window.storage.deleteMovieComment(movieId, commentId);
+            this.renderMovies();
+            window.Utils.showToast('Comentario eliminado', 'info');
+          }
+        });
+      });
 
       container.querySelectorAll(".btn-edit-movie").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -1344,13 +1485,24 @@
 
     openMovieModal(m = null) {
       const modal = document.getElementById("modal-movie");
+      const currentUser = window.storage.getCurrentUser();
+      const author = m && m.proposedBy ? m.proposedBy : currentUser;
+
       document.getElementById("movie-id").value = m ? (m.id || "") : "";
       document.getElementById("movie-title").value = m ? (m.title || "") : "";
       document.getElementById("movie-poster").value = m ? (m.poster || "") : "";
       document.getElementById("movie-year").value = m ? (m.year || new Date().getFullYear()) : new Date().getFullYear();
-      document.getElementById("movie-proposed").value = m ? (m.proposedBy || "Kevin") : "Kevin";
       document.getElementById("movie-priority").value = m ? (m.priority || "5") : "5";
       document.getElementById("movie-status").value = m ? (m.status === 'Favorita' ? 'Me encantó' : (m.status || "Por ver")) : "Por ver";
+      document.getElementById("movie-proposed").value = author;
+
+      const authorNameEl = document.getElementById("movie-author-name");
+      if (authorNameEl) authorNameEl.textContent = author;
+      const authorBadgeEl = document.getElementById("movie-author-badge");
+      if (authorBadgeEl) {
+        authorBadgeEl.textContent = author.charAt(0).toUpperCase();
+        authorBadgeEl.className = "author-badge-circle " + (author.toLowerCase() === "wendy" ? "wendy" : "kevin");
+      }
       
       const platformsVal = m && m.platforms ? (Array.isArray(m.platforms) ? m.platforms.join(", ") : m.platforms) : "";
       document.getElementById("movie-platforms").value = platformsVal;
@@ -1358,10 +1510,15 @@
       document.getElementById("movie-imdb-url").value = m && m.imdbUrl ? m.imdbUrl : "";
       document.getElementById("movie-synopsis").value = m && m.synopsis ? m.synopsis : "";
 
-      document.getElementById("movie-kevin-score").value = m && m.kevinRating !== null && m.kevinRating !== undefined ? m.kevinRating : "";
-      document.getElementById("movie-wendy-score").value = m && m.wendyRating !== null && m.wendyRating !== undefined ? m.wendyRating : "";
-      document.getElementById("movie-kevin-comment").value = m && m.kevinComment ? m.kevinComment : "";
-      document.getElementById("movie-wendy-comment").value = m && m.wendyComment ? m.wendyComment : "";
+      const kevinScoreSelect = document.getElementById("movie-kevin-score");
+      if (kevinScoreSelect) {
+        kevinScoreSelect.value = m && m.kevinRating !== undefined && m.kevinRating !== null && m.kevinRating !== '' ? m.kevinRating : 5;
+      }
+      const wendyScoreSelect = document.getElementById("movie-wendy-score");
+      if (wendyScoreSelect) {
+        wendyScoreSelect.value = m && m.wendyRating !== undefined && m.wendyRating !== null && m.wendyRating !== '' ? m.wendyRating : 0;
+      }
+
       modal.classList.add("active");
     }
 
@@ -1806,22 +1963,21 @@
 
       document.getElementById("form-movie")?.addEventListener("submit", (e) => {
         e.preventDefault();
+        const currentUser = window.storage.getCurrentUser();
         const movieData = {
           id: document.getElementById("movie-id").value,
-          title: document.getElementById("movie-title").value,
+          title: document.getElementById("movie-title").value.trim(),
           poster: document.getElementById("movie-poster").value.trim(),
           year: document.getElementById("movie-year").value,
-          proposedBy: document.getElementById("movie-proposed").value,
+          proposedBy: document.getElementById("movie-proposed").value || currentUser,
           priority: document.getElementById("movie-priority").value,
           status: document.getElementById("movie-status").value,
           platforms: document.getElementById("movie-platforms").value.trim(),
           imdbRating: document.getElementById("movie-imdb-score").value.trim(),
           imdbUrl: document.getElementById("movie-imdb-url").value.trim(),
           synopsis: document.getElementById("movie-synopsis").value.trim(),
-          kevinRating: document.getElementById("movie-kevin-score").value,
-          wendyRating: document.getElementById("movie-wendy-score").value,
-          kevinComment: document.getElementById("movie-kevin-comment").value,
-          wendyComment: document.getElementById("movie-wendy-comment").value
+          kevinRating: parseInt(document.getElementById("movie-kevin-score")?.value, 10) || 5,
+          wendyRating: parseInt(document.getElementById("movie-wendy-score")?.value, 10) || 0
         };
         window.storage.saveMovie(movieData);
         document.getElementById("modal-movie").classList.remove("active");

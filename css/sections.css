@@ -2740,6 +2740,129 @@
   font-size: 0.88rem;
 }
 
+/* Búsqueda Mejorada de Películas */
+.movie-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+.search-movie-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  transition: var(--transition-normal);
+}
+.search-movie-card:hover {
+  border-color: rgba(244, 197, 66, 0.45);
+  box-shadow: 0 6px 22px rgba(244, 197, 66, 0.14);
+}
+.search-movie-top {
+  display: flex;
+  gap: 0.95rem;
+  align-items: flex-start;
+}
+.search-movie-poster {
+  width: 85px;
+  height: 125px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--color-purple);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+.search-movie-poster-placeholder {
+  width: 85px;
+  height: 125px;
+  border-radius: 8px;
+  background: var(--color-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+.search-movie-info {
+  flex: 1;
+  overflow: hidden;
+}
+.search-movie-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--color-text-main);
+  margin: 0 0 0.2rem 0;
+  line-height: 1.25;
+}
+.search-movie-year {
+  font-size: 0.82rem;
+  color: var(--color-sunflower-gold);
+  margin: 0 0 0.35rem 0;
+}
+.search-movie-synopsis {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.search-movie-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+.search-movie-actions button {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  justify-content: center;
+}
+
+/* Apartado de Comentarios en Películas */
+.movie-comments-container {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(185, 142, 230, 0.25);
+}
+.btn-toggle-movie-comments {
+  font-size: 0.82rem;
+  padding: 0.3rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.btn-del-movie-comment {
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.2rem;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.btn-del-movie-comment:hover {
+  opacity: 1;
+}
+.movie-add-comment-form {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+.movie-comment-input {
+  flex: 1;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.65rem;
+}
+
 /* Modales personalizados */
 .modal-box-large {
   max-width: 650px;

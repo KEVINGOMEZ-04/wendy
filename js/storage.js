@@ -665,12 +665,30 @@
     }
 
     getMovies() {
-      const list = this.get(this.keys.movies, []);
-      return list.map(m => ({
-        ...m,
-        status: m.status === 'Favorita' ? 'Me encantó' : (m.status || 'Por ver'),
-        platforms: Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()).filter(Boolean) : [])
-      }));
+      return this.get(this.keys.movies, []).map(m => {
+        const kRating = m.kevinRating !== null && m.kevinRating !== undefined && m.kevinRating !== '' ? parseFloat(m.kevinRating) : 0;
+        const wRating = m.wendyRating !== null && m.wendyRating !== undefined && m.wendyRating !== '' ? parseFloat(m.wendyRating) : 0;
+        const comments = Array.isArray(m.comments) ? [...m.comments] : [];
+        
+        if (!comments.length) {
+          if (m.kevinComment) {
+            comments.push({ id: 'legacy-kevin-' + m.id, author: 'Kevin', message: m.kevinComment, createdAt: m.updatedAt || m.addedAt || new Date().toISOString() });
+          }
+          if (m.wendyComment) {
+            comments.push({ id: 'legacy-wendy-' + m.id, author: 'Wendy', message: m.wendyComment, createdAt: m.updatedAt || m.addedAt || new Date().toISOString() });
+          }
+        }
+
+        return {
+          ...m,
+          status: m.status === 'Favorita' ? 'Me encantó' : (m.status || 'Por ver'),
+          platforms: Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()).filter(Boolean) : []),
+          kevinRating: kRating,
+          wendyRating: wRating,
+          rating: m.rating || (kRating > 0 && wRating > 0 ? Math.round((kRating + wRating) / 2) : (kRating || wRating || 5)),
+          comments: comments
+        };
+      });
     }
 
     saveMovie(movieData) {
@@ -679,16 +697,18 @@
 
       const kevinScore = movieData.kevinRating !== '' && movieData.kevinRating !== null && movieData.kevinRating !== undefined
         ? parseFloat(movieData.kevinRating)
-        : null;
+        : 0;
       const wendyScore = movieData.wendyRating !== '' && movieData.wendyRating !== null && movieData.wendyRating !== undefined
         ? parseFloat(movieData.wendyRating)
-        : null;
+        : 0;
 
       const normalizedStatus = movieData.status === 'Favorita' ? 'Me encantó' : (movieData.status || 'Por ver');
       let platforms = movieData.platforms || [];
       if (typeof platforms === 'string') {
         platforms = platforms.split(',').map(s => s.trim()).filter(Boolean);
       }
+
+      const comments = Array.isArray(movieData.comments) ? movieData.comments : [];
 
       if (movieData.id) {
         const index = list.findIndex(m => m.id === movieData.id);
@@ -698,13 +718,13 @@
             ...existing,
             title: movieData.title.trim(),
             year: parseInt(movieData.year, 10) || existing.year || new Date().getFullYear(),
-            proposedBy: movieData.proposedBy || existing.proposedBy || 'Kevin',
+            proposedBy: movieData.proposedBy || existing.proposedBy || this.getCurrentUser() || 'Kevin',
             priority: parseInt(movieData.priority, 10) || existing.priority || 5,
             status: normalizedStatus,
             kevinRating: kevinScore,
             wendyRating: wendyScore,
-            kevinComment: movieData.kevinComment ? movieData.kevinComment.trim() : '',
-            wendyComment: movieData.wendyComment ? movieData.wendyComment.trim() : '',
+            rating: typeof movieData.rating === 'number' ? movieData.rating : (parseInt(movieData.rating, 10) || (kevinScore || wendyScore || 5)),
+            comments: comments.length ? comments : (existing.comments || []),
             poster: movieData.poster !== undefined ? movieData.poster : (existing.poster || ''),
             synopsis: movieData.synopsis !== undefined ? movieData.synopsis : (existing.synopsis || ''),
             platforms: platforms.length ? platforms : (existing.platforms || []),
@@ -722,13 +742,13 @@
           id: window.Utils.generateUUID(),
           title: movieData.title.trim(),
           year: parseInt(movieData.year, 10) || new Date().getFullYear(),
-          proposedBy: movieData.proposedBy || 'Kevin',
+          proposedBy: movieData.proposedBy || this.getCurrentUser() || 'Kevin',
           priority: parseInt(movieData.priority, 10) || 5,
           status: normalizedStatus,
           kevinRating: kevinScore,
           wendyRating: wendyScore,
-          kevinComment: movieData.kevinComment ? movieData.kevinComment.trim() : '',
-          wendyComment: movieData.wendyComment ? movieData.wendyComment.trim() : '',
+          rating: typeof movieData.rating === 'number' ? movieData.rating : 5,
+          comments: comments,
           poster: movieData.poster || '',
           synopsis: movieData.synopsis || '',
           platforms: platforms,
@@ -744,6 +764,71 @@
 
       this.set(this.keys.movies, list);
       return list;
+    }
+
+    rateMovie(movieId, ratingValue, user) {
+      const list = this.getMovies();
+      const index = list.findIndex(m => m.id === movieId);
+      if (index === -1) return false;
+
+      const val = Math.max(0, Math.min(5, parseInt(ratingValue, 10) || 0));
+      const targetUser = user || this.getCurrentUser();
+      
+      if (targetUser.toLowerCase() === 'wendy') {
+        list[index].wendyRating = val;
+      } else {
+        list[index].kevinRating = val;
+      }
+
+      const k = list[index].kevinRating || 0;
+      const w = list[index].wendyRating || 0;
+      if (k > 0 && w > 0) {
+        list[index].rating = Math.round((k + w) / 2);
+      } else {
+        list[index].rating = k > 0 ? k : w;
+      }
+
+      list[index].updatedAt = new Date().toISOString();
+      this.set(this.keys.movies, list);
+      return list[index];
+    }
+
+    addMovieComment(movieId, commentData) {
+      const list = this.getMovies();
+      const index = list.findIndex(m => m.id === movieId);
+      if (index === -1) return null;
+
+      const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
+      const newComment = {
+        id: window.Utils.generateUUID(),
+        author: commentData.author || currentUser,
+        message: commentData.message.trim(),
+        createdAt: now
+      };
+
+      if (!Array.isArray(list[index].comments)) {
+        list[index].comments = [];
+      }
+      list[index].comments.push(newComment);
+      list[index].updatedAt = now;
+
+      this.set(this.keys.movies, list);
+      return newComment;
+    }
+
+    deleteMovieComment(movieId, commentId) {
+      const list = this.getMovies();
+      const index = list.findIndex(m => m.id === movieId);
+      if (index === -1) return false;
+
+      if (Array.isArray(list[index].comments)) {
+        list[index].comments = list[index].comments.filter(c => c.id !== commentId);
+        list[index].updatedAt = new Date().toISOString();
+        this.set(this.keys.movies, list);
+        return true;
+      }
+      return false;
     }
 
     deleteMovie(id) {

@@ -138,91 +138,89 @@ window.MediaService = {
               poster: movie.poster_path ? (window.CONFIG.media.tmdbImageBaseUrl || 'https://image.tmdb.org/t/p/w500') + movie.poster_path : '',
               synopsis: movie.overview || 'Sin sinopsis disponible.',
               imdbRating: movie.vote_average ? movie.vote_average.toFixed(1) : '',
-              platforms: []
+              platforms: ['Cine', 'Streaming']
             }));
           }
         }
       } catch (e) {
-        console.warn('Error buscando en TMDB, usando fallback:', e);
+        console.warn('Error buscando en TMDB:', e);
       }
     }
 
-    // 2. Motor Inteligente de Películas en Español (OpenSearch & Wikipedia REST API con CORS origin=*)
+    // 2. Motor de Películas con Carátulas en Alta Definición (iTunes Movie API)
     try {
-      const openRes = await fetch(`https://es.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=12&format=json&origin=*`);
+      const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=movie&limit=8`);
+      if (itunesRes.ok) {
+        const itunesData = await itunesRes.json();
+        if (itunesData.results && itunesData.results.length) {
+          return itunesData.results.map(m => {
+            const cleanTitle = m.trackName || 'Película';
+            const year = parseInt((m.releaseDate || '').slice(0, 4), 10) || new Date().getFullYear();
+            let poster = m.artworkUrl100 || '';
+            if (poster) {
+              poster = poster.replace('100x100bb.jpg', '600x600bb.jpg').replace('100x100', '600x600');
+            }
+
+            let platforms = ['Netflix', 'Prime Video', 'Apple TV'];
+            const lower = (cleanTitle + ' ' + (m.primaryGenreName || '')).toLowerCase();
+            if (lower.includes('disney') || lower.includes('pixar') || lower.includes('animac') || lower.includes('infantil') || lower.includes('kids')) {
+              platforms = ['Disney+', 'Apple TV', 'Prime Video'];
+            } else if (lower.includes('hbo') || lower.includes('warner') || lower.includes('dc')) {
+              platforms = ['Max', 'Apple TV', 'Prime Video'];
+            }
+
+            return {
+              title: cleanTitle,
+              year,
+              poster,
+              genre: m.primaryGenreName || 'Cine',
+              synopsis: m.longDescription || m.shortDescription || 'Película disponible en catálogo digital.',
+              imdbRating: '',
+              platforms,
+              previewUrl: m.previewUrl || '',
+              imdbUrl: `https://www.imdb.com/find/?q=${encodeURIComponent(`${cleanTitle} ${year}`)}`
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error en búsqueda con iTunes Movies:', e);
+    }
+
+    // 3. Fallback con Wikipedia REST API
+    try {
+      const openRes = await fetch(`https://es.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=8&format=json&origin=*`);
       if (openRes.ok) {
         const openData = await openRes.json();
         const candidateTitles = openData[1] || [];
-        
-        // Priorizar títulos que sean películas o el término exacto
-        const movieTitles = candidateTitles.filter(t => t.toLowerCase().includes('película') || t.toLowerCase().includes('filme') || t.toLowerCase() === q.toLowerCase());
-        const titlesToFetch = movieTitles.length ? movieTitles.slice(0, 6) : candidateTitles.slice(0, 5);
-
-        const moviePromises = titlesToFetch.map(async title => {
+        const moviePromises = candidateTitles.slice(0, 5).map(async title => {
           try {
             const summaryRes = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
             if (!summaryRes.ok) return null;
             const page = await summaryRes.json();
-            
-            const isMovie = page.title.toLowerCase().includes('película') || 
-                            (page.description && (page.description.includes('película') || page.description.includes('filme') || page.description.includes('dirigida') || page.description.includes('cine'))) ||
-                            (page.extract && (page.extract.includes('película') || page.extract.includes('filme') || page.extract.includes('dirigida') || page.extract.includes('animación') || page.extract.includes('estrenada')));
-            
-            if (isMovie || candidateTitles.length <= 2) {
-              const cleanTitle = page.title.replace(/\s*\(.*?\)/g, '').trim();
-              const yearMatch = ((page.description || '') + ' ' + (page.extract || '')).match(/\b(19\d\d|20\d\d)\b/);
-              const year = yearMatch ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
-              
-              let platforms = ['Netflix', 'Prime Video', 'Max', 'Apple TV'];
-              const lower = (cleanTitle + ' ' + (page.extract || '')).toLowerCase();
-              if (lower.includes('disney') || lower.includes('pixar') || lower.includes('animac') || lower.includes('infantil')) {
-                platforms = ['Disney+', 'Apple TV', 'Prime Video'];
-              }
+            const cleanTitle = page.title.replace(/\s*\(.*?\)/g, '').trim();
+            const yearMatch = ((page.description || '') + ' ' + (page.extract || '')).match(/\b(19\d\d|20\d\d)\b/);
+            const year = yearMatch ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
 
-              return {
-                title: cleanTitle,
-                year,
-                poster: page.thumbnail?.source || '',
-                synopsis: page.extract || 'Película encontrada en el catálogo.',
-                imdbRating: '',
-                platforms,
-                imdbUrl: `https://www.imdb.com/find/?q=${encodeURIComponent(`${cleanTitle} ${year}`)}`
-              };
-            }
+            return {
+              title: cleanTitle,
+              year,
+              poster: page.thumbnail?.source || '',
+              synopsis: page.extract || 'Película encontrada en el catálogo.',
+              imdbRating: '',
+              platforms: ['Netflix', 'Prime Video', 'Disney+'],
+              imdbUrl: `https://www.imdb.com/find/?q=${encodeURIComponent(`${cleanTitle} ${year}`)}`
+            };
           } catch (e) {
             return null;
           }
-          return null;
         });
 
         const wikiResults = (await Promise.all(moviePromises)).filter(Boolean);
-        if (wikiResults.length) {
-          return wikiResults;
-        }
+        if (wikiResults.length) return wikiResults;
       }
     } catch (e) {
       console.warn('Error en búsqueda con Wikipedia:', e);
-    }
-
-    // 3. Fallback adicional con iTunes Movie Search
-    try {
-      const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=movie&limit=6`);
-      if (itunesRes.ok) {
-        const itunesData = await itunesRes.json();
-        if (itunesData.results?.length) {
-          return itunesData.results.map(m => ({
-            title: m.trackName || 'Película',
-            year: parseInt((m.releaseDate || '').slice(0, 4), 10) || new Date().getFullYear(),
-            poster: (m.artworkUrl100 || '').replace('100x100bb.jpg', '600x600bb.jpg').replace('100x100', '600x600'),
-            synopsis: m.longDescription || m.shortDescription || 'Sin sinopsis disponible.',
-            imdbRating: '',
-            platforms: ['Apple TV', 'Alquiler digital'],
-            imdbUrl: `https://www.imdb.com/find/?q=${encodeURIComponent(m.trackName)}`
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn('Error en búsqueda con iTunes:', e);
     }
 
     return [];

@@ -171,6 +171,8 @@
           id: 'bday-wendy',
           title: 'Cumpleaños de Wendy',
           subtitle: 'Patico ♥️ 👧🏻',
+          currentAge: 17,
+          turningAge: 18,
           month: 6, // 26 de Junio
           day: 26,
           color: '#E040FB',
@@ -183,6 +185,8 @@
           id: 'bday-kevin',
           title: 'Cumpleaños de Kevin',
           subtitle: 'Kevin 👦🏻',
+          currentAge: 22,
+          turningAge: 23,
           month: 8, // 2 de Agosto
           day: 2,
           color: '#00E5FF',
@@ -212,24 +216,24 @@
 
       let alertType = 'normal';
       let alertLabel = `Faltan ${diffDays} días`;
-      let alertMessage = `Próxima fecha: <strong>${dateText}</strong>. Recuerda preparar algo lindo para ${dateItem.celebrant}.`;
+      let alertMessage = `Edad actual: <strong>${dateItem.currentAge} años</strong> (cumplirá <strong>${dateItem.turningAge} años</strong> el <strong>${dateText}</strong>).`;
 
       if (diffDays === 0) {
         alertType = 'today';
-        alertLabel = '🎉 ¡HOY ES EL CUMPLEAÑOS! 🎂';
-        alertMessage = `¡Hoy celebramos el gran día de <strong>${dateItem.celebrant}</strong>! Que sea un día lleno de magia, risas y girasoles. 🌻✨`;
+        alertLabel = `🎉 ¡HOY CUMPLE ${dateItem.turningAge} AÑOS! 🎂`;
+        alertMessage = `¡Hoy celebramos los <strong>${dateItem.turningAge} años</strong> de <strong>${dateItem.celebrant}</strong>! Que sea un día lleno de magia, risas y girasoles. 🌻✨`;
       } else if (diffDays === 1) {
         alertType = 'day';
         alertLabel = '⚡ ¡FALTA 1 DÍA! (Mañana)';
-        alertMessage = `¡Aviso urgente! Mañana es el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). ¡Prepara el abrazo y la sorpresa! 🎁💖`;
+        alertMessage = `¡Aviso urgente! Mañana <strong>${dateItem.celebrant}</strong> cumple <strong>${dateItem.turningAge} años</strong> (${dateText}). ¡Prepara el abrazo y la sorpresa! 🎁💖`;
       } else if (diffDays >= 6 && diffDays <= 8) {
         alertType = 'week';
         alertLabel = `🚨 ¡Falta 1 semana! (${diffDays} días)`;
-        alertMessage = `Recordatorio especial: Queda 1 semana para el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). ¿Ya tienes listo el detalle? ✨`;
+        alertMessage = `Recordatorio especial: Queda 1 semana para los <strong>${dateItem.turningAge} años</strong> de <strong>${dateItem.celebrant}</strong> (${dateText}). ¿Ya tienes listo el detalle? ✨`;
       } else if (diffDays >= 28 && diffDays <= 32) {
         alertType = 'month';
         alertLabel = `🔔 ¡Falta 1 mes! (~${diffDays} días)`;
-        alertMessage = `Aviso con 1 mes de anticipación: Se acerca el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). Ve planeando con calma. 🌻`;
+        alertMessage = `Aviso con 1 mes de anticipación: Se acercan los <strong>${dateItem.turningAge} años</strong> de <strong>${dateItem.celebrant}</strong> (${dateText}). Ve planeando con calma. 🌻`;
       }
 
       return {
@@ -246,7 +250,8 @@
       const summary = document.getElementById('daily-summary');
       if (!summary) return;
       const currentUser = window.storage.getCurrentUser();
-      document.getElementById('dashboard-user').textContent = currentUser;
+      const userAgeStr = currentUser.toLowerCase() === 'wendy' ? 'Wendy (17 años) 👧🏻' : 'Kevin (22 años) 👦🏻';
+      document.getElementById('dashboard-user').textContent = userAgeStr;
       const values = [
         ['🌻', window.storage.getMemories().length, 'recuerdos'],
         ['🎵', window.storage.getSongs().length, 'canciones'],
@@ -716,9 +721,9 @@
 
           let tooltip = `${day} de ${monthNames[month]}`;
           if (isKevinBday) {
-            tooltip = `🎂 ¡Cumpleaños de Kevin! 👦🏻💙 (2 de Agosto)`;
+            tooltip = `🎂 ¡Cumpleaños de Kevin! 👦🏻💙 (2 de Agosto · 22 años)`;
           } else if (isWendyBday) {
-            tooltip = `🎂 ¡Cumpleaños de Wendy! 👧🏻💜 (26 de Junio - Patico ♥️)`;
+            tooltip = `🎂 ¡Cumpleaños de Wendy! 👧🏻💜 (26 de Junio · 17 años - Patico ♥️)`;
           } else if (isHoliday) {
             tooltip = `${day} de ${monthNames[month]}: ${isHoliday}`;
           } else if (hasMemories) {

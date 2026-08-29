@@ -22,7 +22,7 @@
   <canvas id="effects-canvas" aria-hidden="true"></canvas>
   <!-- PANTALLA DE DESBLOQUEO / INICIO DE SESIÓN -->
   <div id="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
-    <div class="lock-card glass-card" id="lock-card">
+    <div class="lock-card" id="lock-card">
       <div class="lock-hero-emblem">
         <div class="lock-emblem-glow"></div>
         <div class="lock-emblem-circle">🌻</div>
@@ -30,46 +30,54 @@
       <h1 id="lock-title" class="lock-title">Patico Wrapped</h1>
       <p class="lock-subtitle">Nuestro diario de recuerdos y momentos juntos 💖</p>
 
-      <form id="lock-form" class="lock-form" autocomplete="off">
-        <div class="lock-profiles-section">
-          <span class="lock-section-label">¿Quién está entrando hoy?</span>
-          <div class="lock-user-cards-grid">
-            <div class="lock-user-card active" data-user="Kevin" id="lock-user-kevin" role="button" tabindex="0">
-              <div class="lock-avatar-glow kevin">
-                <span class="lock-avatar-emoji">👦🏻</span>
-              </div>
-              <div class="lock-user-info">
-                <span class="lock-user-name">Kevin</span>
-                <span class="lock-user-tag kevin">Él 💙</span>
-              </div>
-            </div>
+      <!-- Dos casillas de perfil: una por persona -->
+      <div class="lock-profiles-grid">
 
-            <div class="lock-user-card" data-user="Wendy" id="lock-user-wendy" role="button" tabindex="0">
-              <div class="lock-avatar-glow wendy">
-                <span class="lock-avatar-emoji">👧🏻</span>
-              </div>
-              <div class="lock-user-info">
-                <span class="lock-user-name">Wendy</span>
-                <span class="lock-user-tag wendy">Patico ♥️</span>
-              </div>
+        <!-- Casilla Kevin -->
+        <div class="lock-profile-box" id="lock-box-kevin" data-user="Kevin">
+          <div class="lock-profile-header kevin">
+            <span class="lock-profile-emoji">👦🏻</span>
+            <div>
+              <div class="lock-profile-name">Kevin</div>
+              <div class="lock-profile-role kevin-role" id="kevin-role-label">Su Cielo ☁️</div>
             </div>
           </div>
+          <div class="lock-profile-body">
+            <label class="lock-field-label">Tu apodo para mí</label>
+            <input type="text" id="lock-kevin-nickname" class="lock-field-input" placeholder="Ej. Mi Cielo, Kevin, Amor…" value="" autocomplete="off" />
+            <label class="lock-field-label" style="margin-top: 0.5rem;">Contraseña</label>
+            <div class="lock-pass-wrap">
+              <input type="password" id="lock-kevin-password" class="lock-field-input lock-pass-input" placeholder="1234" value="" autocomplete="off" />
+              <button type="button" class="lock-pass-eye" data-target="lock-kevin-password" title="Ver/ocultar">👁️</button>
+            </div>
+          </div>
+          <button type="button" class="btn-lock-enter kevin-btn" id="btn-enter-kevin">Entrar como Kevin →</button>
         </div>
-        <input type="hidden" id="lock-username" value="Kevin" />
 
-        <div class="lock-password-container">
-          <input type="password" id="lock-password" class="form-control lock-input" placeholder="Contraseña (opcional / 1234)" aria-label="Contraseña" />
-          <button type="button" class="btn-toggle-password-view" id="btn-toggle-lock-password" title="Ver / Ocultar contraseña" aria-label="Ver contraseña">
-            👁️
-          </button>
+        <!-- Casilla Wendy -->
+        <div class="lock-profile-box" id="lock-box-wendy" data-user="Wendy">
+          <div class="lock-profile-header wendy">
+            <span class="lock-profile-emoji">👧🏻</span>
+            <div>
+              <div class="lock-profile-name">Wendy</div>
+              <div class="lock-profile-role wendy-role" id="wendy-role-label">Patico ♥️</div>
+            </div>
+          </div>
+          <div class="lock-profile-body">
+            <label class="lock-field-label">Tu apodo para mí</label>
+            <input type="text" id="lock-wendy-nickname" class="lock-field-input" placeholder="Ej. Patico, Amor, Princesa…" value="" autocomplete="off" />
+            <label class="lock-field-label" style="margin-top: 0.5rem;">Contraseña</label>
+            <div class="lock-pass-wrap">
+              <input type="password" id="lock-wendy-password" class="lock-field-input lock-pass-input" placeholder="1234" value="" autocomplete="off" />
+              <button type="button" class="lock-pass-eye" data-target="lock-wendy-password" title="Ver/ocultar">👁️</button>
+            </div>
+          </div>
+          <button type="button" class="btn-lock-enter wendy-btn" id="btn-enter-wendy">Entrar como Wendy →</button>
         </div>
 
-        <div id="lock-error" class="lock-error-msg" role="alert"></div>
+      </div>
 
-        <button type="submit" class="btn-primary btn-lock-submit" id="btn-submit-lock">
-          <span>Entrar al diario</span> 🌻✨
-        </button>
-      </form>
+      <div id="lock-error" class="lock-error-msg" role="alert" style="text-align:center; margin-top:0.5rem;"></div>
     </div>
   </div>
   <div id="app-container" style="display: none;">

@@ -49,104 +49,152 @@
 
     // --- 1. Desbloqueo y Seguridad ---
     initUnlockSystem() {
-      const lockScreen = document.getElementById("lock-screen");
-      const lockCard = document.getElementById("lock-card");
-      const appContainer = document.getElementById("app-container");
-      const lockForm = document.getElementById("lock-form");
-      const usernameInput = document.getElementById("lock-username");
-      const passwordInput = document.getElementById("lock-password");
-      const lockError = document.getElementById("lock-error");
-      const btnReLock = document.getElementById("btn-re-lock");
-      const btnToggle = document.getElementById("btn-toggle-lock-password");
-      const btnQuickPass = document.getElementById("btn-quick-pass-help");
+      const lockScreen   = document.getElementById('lock-screen');
+      const lockCard     = document.getElementById('lock-card');
+      const appContainer = document.getElementById('app-container');
+      const lockError    = document.getElementById('lock-error');
+      const btnReLock    = document.getElementById('btn-re-lock');
 
-      // Recordar último usuario seleccionado
-      const lastUser = window.storage.getCurrentUser() || 'Kevin';
-      if (usernameInput) usernameInput.value = lastUser;
-      document.querySelectorAll(".lock-user-card").forEach(card => {
-        if (card.dataset.user === lastUser) {
-          card.classList.add("active");
-        } else {
-          card.classList.remove("active");
-        }
-        card.addEventListener("click", () => {
-          document.querySelectorAll(".lock-user-card").forEach(c => c.classList.remove("active"));
-          card.classList.add("active");
-          const selectedUser = card.dataset.user;
-          if (usernameInput) usernameInput.value = selectedUser;
-          if (passwordInput) passwordInput.focus();
-        });
-      });
+      // Función que inicia la sesión para un usuario dado
+      const doLogin = async (username, passwordValue, btnEl) => {
+        if (btnEl) btnEl.disabled = true;
+        if (lockError) lockError.textContent = '';
 
-      // Botón Ver/Ocultar contraseña
-      if (btnToggle && passwordInput) {
-        btnToggle.addEventListener("click", () => {
-          const isPass = passwordInput.type === "password";
-          passwordInput.type = isPass ? "text" : "password";
-          btnToggle.textContent = isPass ? "🙈" : "👁️";
-          btnToggle.title = isPass ? "Ocultar contraseña" : "Ver contraseña";
-        });
-      }
+        const entered = (passwordValue || '').trim();
+        // Contraseña vacía o "1234" → acceso garantizado
+        const valid = entered === '' || entered === '1234' || await window.storage.verifyCredentials(username, entered);
 
-      // Botón de ayuda / clave de respaldo
-      if (btnQuickPass && passwordInput && lockForm) {
-        btnQuickPass.addEventListener("click", () => {
-          passwordInput.value = "1234";
-          lockForm.dispatchEvent(new Event("submit"));
-        });
-      }
-
-      if (window.storage.isUnlocked()) {
-        lockScreen.style.display = "none";
-        appContainer.style.display = "flex";
-        this.handleRouting();
-      } else {
-        lockScreen.style.display = "flex";
-        appContainer.style.display = "none";
-      }
-
-      lockForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const username = usernameInput ? usernameInput.value : 'Kevin';
-        const enteredPassword = passwordInput.value;
-        const submitBtn = document.getElementById("btn-submit-lock");
-        if (submitBtn) submitBtn.disabled = true;
-
-        const valid = await window.storage.verifyCredentials(username, enteredPassword);
         if (valid) {
           window.storage.setCurrentUser(username);
           if (window.presence?.switchUser) window.presence.switchUser(username);
-          lockError.textContent = "";
-          lockCard.classList.add("blooming");
+
+          // Guardar apodos editados en login si el usuario los cambió
+          const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
+          const kevinNick = (document.getElementById('lock-kevin-nickname')?.value || '').trim();
+          const wendyNick = (document.getElementById('lock-wendy-nickname')?.value || '').trim();
+          if (kevinNick || wendyNick) {
+            if (!profiles.Kevin) profiles.Kevin = {};
+            if (!profiles.Wendy) profiles.Wendy = {};
+            if (kevinNick) profiles.Wendy.nicknameForKevin = kevinNick;  // Wendy escribe el apodo de Kevin
+            if (wendyNick) profiles.Kevin.nicknameForWendy = wendyNick;  // Kevin escribe el apodo de Wendy
+            if (window.storage.saveProfiles) window.storage.saveProfiles(profiles);
+          }
+
+          lockCard.classList.add('blooming');
           setTimeout(() => {
-            lockScreen.classList.add("unlocked-fade");
+            lockScreen.classList.add('unlocked-fade');
             setTimeout(() => {
-              lockScreen.style.display = "none";
-              lockScreen.classList.remove("unlocked-fade");
-              lockCard.classList.remove("blooming");
-              appContainer.style.display = "flex";
+              lockScreen.style.display = 'none';
+              lockScreen.classList.remove('unlocked-fade');
+              lockCard.classList.remove('blooming');
+              appContainer.style.display = 'flex';
               window.storage.setUnlocked(true);
               this.handleRouting();
               this.initWhatsAppPresenceUI();
               this.renderDailyDashboard();
-              if (submitBtn) submitBtn.disabled = false;
-              window.Utils.showToast(`¡Bienvenido(a) al diario, ${username}! 🌻✨`, "success");
-            }, 800);
-          }, 800);
+              if (btnEl) btnEl.disabled = false;
+              window.Utils.showToast(`¡Bienvenido(a) al diario, ${username}! 🌻✨`, 'success');
+            }, 750);
+          }, 750);
         } else {
-          if (submitBtn) submitBtn.disabled = false;
-          lockError.textContent = "Contraseña incorrecta. (Clave por defecto: 1234)";
-          passwordInput.focus();
+          if (btnEl) btnEl.disabled = false;
+          if (lockError) lockError.textContent = '❌ Contraseña incorrecta. La clave por defecto es: 1234';
         }
+      };
+
+      // Cargar apodos guardados en los campos de texto
+      const loadSavedNicknames = () => {
+        try {
+          const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
+          const nicknameForWendy = profiles.Kevin?.nicknameForWendy || '';
+          const nicknameForKevin = profiles.Wendy?.nicknameForKevin || '';
+          const kevinField = document.getElementById('lock-kevin-nickname');
+          const wendyField  = document.getElementById('lock-wendy-nickname');
+          if (kevinField && nicknameForKevin) kevinField.value = nicknameForKevin;
+          if (wendyField  && nicknameForWendy) wendyField.value  = nicknameForWendy;
+
+          // Mostrar el apodo guardado en el header de la casilla
+          const kevinRoleLabel = document.getElementById('kevin-role-label');
+          const wendyRoleLabel = document.getElementById('wendy-role-label');
+          if (kevinRoleLabel && nicknameForKevin) kevinRoleLabel.textContent = nicknameForKevin;
+          if (wendyRoleLabel && nicknameForWendy) wendyRoleLabel.textContent = nicknameForWendy;
+        } catch (_) {}
+      };
+
+      // Actualizar el label del header en tiempo real mientras escribe
+      const kevinNickField = document.getElementById('lock-kevin-nickname');
+      const wendyNickField  = document.getElementById('lock-wendy-nickname');
+      const kevinLabel = document.getElementById('kevin-role-label');
+      const wendyLabel  = document.getElementById('wendy-role-label');
+
+      if (kevinNickField && kevinLabel) {
+        kevinNickField.addEventListener('input', () => {
+          kevinLabel.textContent = kevinNickField.value.trim() || 'Su Cielo ☁️';
+        });
+      }
+      if (wendyNickField && wendyLabel) {
+        wendyNickField.addEventListener('input', () => {
+          wendyLabel.textContent = wendyNickField.value.trim() || 'Patico ♥️';
+        });
+      }
+
+      // Botones Ver/Ocultar contraseña
+      document.querySelectorAll('.lock-pass-eye').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.target;
+          const inp = document.getElementById(targetId);
+          if (!inp) return;
+          const hide = inp.type === 'password';
+          inp.type = hide ? 'text' : 'password';
+          btn.textContent = hide ? '🙈' : '👁️';
+        });
       });
 
-      btnReLock?.addEventListener("click", () => {
+      // Botón Entrar como Kevin
+      const btnKevin = document.getElementById('btn-enter-kevin');
+      if (btnKevin) {
+        btnKevin.addEventListener('click', () => {
+          const pass = document.getElementById('lock-kevin-password')?.value || '';
+          doLogin('Kevin', pass, btnKevin);
+        });
+      }
+
+      // Botón Entrar como Wendy
+      const btnWendy = document.getElementById('btn-enter-wendy');
+      if (btnWendy) {
+        btnWendy.addEventListener('click', () => {
+          const pass = document.getElementById('lock-wendy-password')?.value || '';
+          doLogin('Wendy', pass, btnWendy);
+        });
+      }
+
+      // Enter en campo de contraseña también hace login
+      document.getElementById('lock-kevin-password')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); btnKevin?.click(); }
+      });
+      document.getElementById('lock-wendy-password')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); btnWendy?.click(); }
+      });
+
+      // Verificar si ya está desbloqueado
+      if (window.storage.isUnlocked()) {
+        lockScreen.style.display = 'none';
+        appContainer.style.display = 'flex';
+        this.handleRouting();
+      } else {
+        lockScreen.style.display = 'flex';
+        appContainer.style.display = 'none';
+        loadSavedNicknames();
+      }
+
+      // Botón Re-bloquear
+      btnReLock?.addEventListener('click', () => {
         window.storage.setUnlocked(false);
-        appContainer.style.display = "none";
-        lockScreen.style.display = "flex";
-        if (passwordInput) passwordInput.value = "";
-        if (lockError) lockError.textContent = "";
-        window.Utils.showToast("Sesión bloqueada de forma segura", "info");
+        appContainer.style.display = 'none';
+        lockScreen.style.display = 'flex';
+        if (lockError) lockError.textContent = '';
+        loadSavedNicknames();
+        window.Utils.showToast('Sesión bloqueada de forma segura', 'info');
       });
     }
 

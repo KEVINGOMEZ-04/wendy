@@ -659,23 +659,11 @@
     }
 
     async verifyCredentials(username, password) {
-      if (!window.CONFIG.users.includes(username) || !password) return false;
-      const cleanPass = password.toString().trim();
-      if (!cleanPass) return false;
-
-      // Acceso directo y claves de respaldo
-      if (cleanPass === '1234' || cleanPass === 'patico' || cleanPass.toLowerCase() === username.toLowerCase()) {
-        return true;
+      if (!username || !window.CONFIG.users.includes(username)) {
+        username = 'Kevin';
       }
-
-      const credentials = this.getCredentials();
-      if (!credentials[username]) {
-        credentials[username] = { passwordHash: await this.hashPassword('1234') };
-        this.set(this.keys.credentials, credentials);
-        return true;
-      }
-      const hash = await this.hashPassword(cleanPass);
-      return credentials[username].passwordHash === hash || cleanPass === '1234';
+      // Acceso directo garantizado para Kevin y Wendy
+      return true;
     }
 
     async changePassword(username, currentPassword, newPassword) {

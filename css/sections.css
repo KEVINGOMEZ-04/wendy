@@ -1,7 +1,7 @@
 /* Patico Wrapped 🌻 - Estilos Detallados por Sección */
 
 /* =========================================
-   PANTALLA BLOQUEADA
+   PANTALLA BLOQUEADA / LOGIN ELEGANTE
    ========================================= */
 #lock-screen {
   position: fixed;
@@ -9,175 +9,245 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at 50% 30%, #291B48 0%, #120E1C 70%, #08060F 100%);
+  background: radial-gradient(circle at 50% 25%, #2D1B4E 0%, #150F24 60%, #090710 100%);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  transition: opacity 1s ease, transform 1s ease;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #lock-screen.unlocked-fade {
   opacity: 0;
-  transform: scale(1.04);
+  transform: scale(1.05);
   pointer-events: none;
 }
 
 .lock-card {
-  max-width: 480px;
+  max-width: 440px;
   width: 100%;
   text-align: center;
   position: relative;
+  background: rgba(22, 16, 36, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(185, 142, 230, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 2.2rem 1.8rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(109, 74, 153, 0.2);
 }
 
-.lock-moon {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #FFF9D2 0%, #F8D96B 60%, #E5A91E 100%);
-  margin: 0 auto 1.5rem auto;
-  box-shadow: 0 0 35px rgba(248, 217, 107, 0.4);
-  transition: all 1s ease;
-}
-
-.lock-card.blooming .lock-moon {
-  box-shadow: 0 0 80px rgba(248, 217, 107, 0.85);
-  transform: scale(1.15);
-}
-
-.lock-sunflower-container {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 1.5rem auto;
+.lock-hero-emblem {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 1.1rem auto;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.lock-sunflower-svg {
+.lock-emblem-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform: scale(0.65);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 197, 66, 0.5) 0%, rgba(224, 64, 251, 0.3) 60%, transparent 80%);
+  filter: blur(14px);
+  animation: emblemPulse 3s ease-in-out infinite;
 }
 
-.lock-card.blooming .lock-sunflower-svg {
-  transform: scale(1.2) rotate(15deg);
+@keyframes emblemPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+
+.lock-emblem-circle {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(244, 197, 66, 0.25), rgba(109, 74, 153, 0.45));
+  border: 2px solid rgba(244, 197, 66, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 0 20px rgba(244, 197, 66, 0.35);
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lock-card.blooming .lock-emblem-circle {
+  transform: scale(1.3) rotate(20deg);
+  box-shadow: 0 0 40px rgba(244, 197, 66, 0.9);
 }
 
 .lock-title {
   font-family: var(--font-heading);
-  font-size: 2.2rem;
+  font-size: 2.1rem;
+  font-weight: 700;
   color: var(--color-sunflower-gold);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
 }
 
-.lock-question {
-  font-size: 1.1rem;
-  color: var(--color-text-main);
-  margin-bottom: 1.5rem;
+.lock-subtitle {
+  font-size: 0.92rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1.4rem;
   font-weight: 400;
+  line-height: 1.4;
 }
 
 .lock-form {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
-/* Selector Visual de Perfil en Login */
+.lock-profiles-section {
+  text-align: left;
+}
+.lock-section-label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.6rem;
+  text-align: center;
+  font-weight: 500;
+}
+
 .lock-user-cards-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.95rem;
-  margin-bottom: 0.5rem;
+  gap: 0.85rem;
 }
+
 .lock-user-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.9rem 0.6rem;
-  background: rgba(18, 14, 28, 0.7);
-  border: 2px solid var(--color-border);
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(30, 20, 48, 0.6);
+  border: 1.5px solid rgba(185, 142, 230, 0.2);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--color-text-secondary);
+  transition: all 0.25s ease;
+  user-select: none;
 }
+
 .lock-user-card:hover {
-  transform: translateY(-2px);
+  background: rgba(109, 74, 153, 0.3);
   border-color: rgba(244, 197, 66, 0.4);
-  background: rgba(109, 74, 153, 0.25);
+  transform: translateY(-2px);
 }
+
 .lock-user-card.active {
+  background: linear-gradient(135deg, rgba(109, 74, 153, 0.45), rgba(45, 27, 78, 0.7));
   border-color: var(--color-sunflower-gold);
-  background: rgba(109, 74, 153, 0.35);
-  box-shadow: 0 0 16px rgba(244, 197, 66, 0.3);
-  color: #FFF;
+  box-shadow: 0 0 16px rgba(244, 197, 66, 0.25);
 }
-.lock-user-avatar-circle {
-  width: 46px;
-  height: 46px;
+
+.lock-avatar-glow {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  background: var(--color-purple);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
-.lock-user-avatar-circle.kevin {
-  background: linear-gradient(135deg, rgba(0, 180, 216, 0.3), rgba(0, 119, 182, 0.7));
-  border: 2px solid #00E5FF;
+.lock-avatar-glow.kevin {
+  background: linear-gradient(135deg, #00B4D8, #0077B6);
+  box-shadow: 0 0 10px rgba(0, 180, 216, 0.4);
 }
-.lock-user-avatar-circle.wendy {
-  background: linear-gradient(135deg, rgba(224, 64, 251, 0.3), rgba(123, 31, 162, 0.7));
-  border: 2px solid #E040FB;
+.lock-avatar-glow.wendy {
+  background: linear-gradient(135deg, #E040FB, #7B1FA2);
+  box-shadow: 0 0 10px rgba(224, 64, 251, 0.4);
+}
+
+.lock-user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
 }
 .lock-user-name {
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
+  color: var(--color-text-main);
   line-height: 1.2;
 }
+.lock-user-tag {
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+.lock-user-tag.kevin { color: #00E5FF; }
+.lock-user-tag.wendy { color: #E040FB; }
 
-/* Campo de Contraseña con Botón de Ver/Ocultar */
+/* Campo Contraseña */
 .lock-password-container {
   position: relative;
   width: 100%;
 }
 .lock-password-container .lock-input {
   width: 100%;
-  padding-right: 2.8rem;
+  padding: 0.75rem 2.8rem 0.75rem 1rem;
   text-align: center;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+  border-radius: var(--radius-full);
+  background: rgba(18, 14, 28, 0.65);
+  border: 1px solid rgba(185, 142, 230, 0.3);
+  color: var(--color-text-main);
+  transition: var(--transition-fast);
 }
+.lock-password-container .lock-input:focus {
+  border-color: var(--color-sunflower-gold);
+  box-shadow: 0 0 12px rgba(244, 197, 66, 0.3);
+  background: rgba(18, 14, 28, 0.85);
+}
+
 .btn-toggle-password-view {
   position: absolute;
-  right: 0.65rem;
+  right: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
   font-size: 1.15rem;
   cursor: pointer;
-  opacity: 0.65;
+  opacity: 0.6;
   transition: opacity 0.15s ease;
-  padding: 0.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0.25rem;
+  line-height: 1;
 }
-.btn-toggle-password-view:hover {
-  opacity: 1;
+.btn-toggle-password-view:hover { opacity: 1; }
+
+.btn-lock-submit {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  box-shadow: 0 6px 20px rgba(244, 197, 66, 0.35);
+  transition: all 0.25s ease;
+}
+.btn-lock-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(244, 197, 66, 0.5);
 }
 
 .lock-error-msg {
-  font-size: 0.85rem;
-  color: var(--color-danger);
-  min-height: 1.2rem;
+  font-size: 0.82rem;
+  color: #FF5252;
+  min-height: 1.1rem;
   transition: var(--transition-fast);
 }
 

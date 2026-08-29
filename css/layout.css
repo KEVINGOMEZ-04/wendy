@@ -1,4 +1,4 @@
-﻿/* Patico Wrapped 🌻 - Layout, Navegación y Componentes Globales */
+/* Patico Wrapped 🌻 - Layout, Navegación y Componentes Globales */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -188,16 +188,18 @@ body {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 1rem;
 }
 
 .nav-pills {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0.6rem;
   overflow-x: auto;
-  padding: 0.2rem 0;
+  padding: 0.25rem 0.5rem;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
 }
@@ -209,43 +211,35 @@ body {
 .nav-pill-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   white-space: nowrap;
-  background: rgba(30, 22, 48, 0.6);
+  background: rgba(30, 22, 48, 0.65);
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 1.1rem;
   border-radius: var(--radius-full);
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.25s ease;
+  backdrop-filter: blur(6px);
 }
 
 .nav-pill-btn:hover {
   color: var(--color-text-main);
-  background: rgba(109, 74, 153, 0.35);
+  background: rgba(109, 74, 153, 0.38);
   border-color: var(--color-lilac);
+  transform: translateY(-1px);
 }
 
 .nav-pill-btn.active, .nav-pill-btn[aria-current="page"] {
-  background: linear-gradient(135deg, var(--color-purple) 0%, #4D326F 100%);
+  background: linear-gradient(135deg, var(--color-purple) 0%, #442a68 100%);
   color: var(--color-text-main);
   border-color: var(--color-sunflower-gold);
-  box-shadow: 0 0 12px rgba(244, 197, 66, 0.25);
+  box-shadow: 0 0 16px rgba(244, 197, 66, 0.3);
   font-weight: 600;
-}
-
-.nav-progress-indicator {
-  white-space: nowrap;
-  font-family: var(--font-numbers);
-  font-size: 0.82rem;
-  color: var(--color-sunflower-gold);
-  background: rgba(244, 197, 66, 0.1);
-  border: 1px solid rgba(244, 197, 66, 0.3);
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-full);
 }
 
 /* Área de Contenido y Secciones */

@@ -16,6 +16,7 @@
       this.initNavigation();
       this.initSections();
       this.initModals();
+      this.initWrappedSystem();
       window.storage.subscribe((key) => {
         if (key === window.CONFIG.storageKeys.memories) this.renderMemories();
         if (key === window.CONFIG.storageKeys.movies) this.renderMovies();
@@ -145,11 +146,6 @@
         activeTab.setAttribute("aria-current", "page");
         activeTab.setAttribute("aria-selected", "true");
         activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }
-
-      const progressEl = document.getElementById("nav-progress-text");
-      if (progressEl) {
-        progressEl.textContent = `Sección ${targetConfig.number} de ${window.CONFIG.sections.length}`;
       }
 
       if (sectionId === 'inicio') this.renderDailyDashboard();
@@ -961,9 +957,383 @@
         window.Utils.showToast("Sueño guardado en el frasco ✨", "success");
       });
     }
+
+    // --- 7. Sistema Interactivo Patico Wrapped 🌻 ---
+    initWrappedSystem() {
+      this.initChaptersTabs();
+      this.initWrappedStories();
+      this.initCounterAnimations();
+    }
+
+    initChaptersTabs() {
+      const tabs = document.querySelectorAll("#chapters-nav-tabs .chapter-tab-btn");
+      const display = document.getElementById("chapter-active-display");
+      if (!tabs.length || !display) return;
+
+      const chaptersData = {
+        1: {
+          title: "Capítulo 1 — El reencuentro",
+          dates: "20 noviembre – diciembre 2024",
+          count: "~3.361 mensajes",
+          desc: "Todo comienza cuando Kevin recupera contacto con Wendy después del robo de su celular. Los primeros días están llenos de saludos, preguntas simples y la sensación de volver a conocerse. En esta etapa aparecen los primeros audios largos y los chismes que terminarían siendo una tradición.",
+          quote: "«Todo comenzó con un simple “Holi”.»"
+        },
+        2: {
+          title: "Capítulo 2 — La confianza",
+          dates: "enero – abril 2025",
+          count: "~3.000 mensajes",
+          desc: "La conversación deja de depender de una excusa. Empiezan a llamarse “lindo”, comparten fotografías de su día, hablan de vacaciones, familia, universidad, trabajo y comienzan a mostrar espacios personales de su vida cotidiana.",
+          quote: "«Ya no hablaban para responder; hablaban para compartir.»"
+        },
+        3: {
+          title: "Capítulo 3 — Conversaciones reales",
+          dates: "julio – diciembre 2025",
+          count: "~11.680 mensajes",
+          desc: "Es la etapa con mayor crecimiento del chat. Ambos empiezan a compartir preocupaciones, estrés, problemas laborales y emociones personales. La confianza alcanza su punto más alto y las conversaciones dejan de ser superficiales para convertirse en un espacio de apoyo mutuo.",
+          quote: "«La confianza ya no estaba en los saludos. Estaba en contar lo difícil.»"
+        },
+        4: {
+          title: "Capítulo 4 — La rutina bonita",
+          dates: "enero – agosto 2026",
+          count: "~7.337 mensajes",
+          desc: "Hablar se convierte en parte del día. Ya no existen silencios incómodos ni motivos específicos para escribir. Los mensajes aparecen simplemente porque el otro forma parte de la rutina.",
+          quote: "«Algunas personas llegan. Otras terminan haciendo parte de los días normales.»"
+        }
+      };
+
+      tabs.forEach(btn => {
+        btn.addEventListener("click", () => {
+          tabs.forEach(t => t.classList.remove("active"));
+          btn.classList.add("active");
+          const chId = btn.dataset.chapter;
+          const data = chaptersData[chId];
+          if (!data) return;
+
+          display.style.opacity = "0";
+          display.style.transform = "translateY(8px)";
+          setTimeout(() => {
+            display.innerHTML = `
+              <div class="chapter-badge-dates">${data.dates}</div>
+              <span class="chapter-msg-count">${data.count}</span>
+              <h3 class="chapter-title">${data.title}</h3>
+              <p class="chapter-desc">${data.desc}</p>
+              <div class="chapter-quote">${data.quote}</div>
+            `;
+            display.style.transition = "all 0.3s ease";
+            display.style.opacity = "1";
+            display.style.transform = "translateY(0)";
+          }, 200);
+        });
+      });
+    }
+
+    initWrappedStories() {
+      const modal = document.getElementById("modal-wrapped-story");
+      const btnOpen = document.getElementById("btn-open-story-mode");
+      const btnClose = document.getElementById("btn-close-story");
+      const progressContainer = document.getElementById("story-progress-bars");
+      const viewport = document.getElementById("story-viewport");
+      const indexLabel = document.getElementById("story-slide-index-label");
+      const btnPrev = document.getElementById("btn-story-prev");
+      const btnNext = document.getElementById("btn-story-next");
+      const btnPause = document.getElementById("btn-story-pause");
+      const touchPrev = document.getElementById("story-touch-prev");
+      const touchNext = document.getElementById("story-touch-next");
+
+      if (!modal || !btnOpen) return;
+
+      const slides = [
+        {
+          tag: "🌻 Patico Wrapped · 2024 - 2026",
+          icon: "🌻",
+          title: "Nuestra Historia en Números",
+          bigNumber: "25.378",
+          unit: "mensajes intercambiados",
+          narrative: "«Durante 648 días, dos personas construyeron una historia de 25.378 mensajes. No es una conversación cualquiera; es un diario escrito entre risas, chismes, audios y pequeños momentos cotidianos.»",
+          footerInfo: "20 nov 2024 – 29 ago 2026 · 648 días"
+        },
+        {
+          tag: "⚖️ Participación de Cada Uno",
+          icon: "💬",
+          title: "El Ritmo de la Conversación",
+          customHtml: `
+            <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin: 1rem 0;">
+              <div class="participant-box kevin">
+                <div class="participant-name kevin-name">Kevin Gómez</div>
+                <div class="participant-pct">56,9%</div>
+                <div style="font-size: 0.85rem; color: var(--color-text-secondary);">14.428 msgs<br><strong>43.198 palabras</strong></div>
+              </div>
+              <div class="participant-box wendy">
+                <div class="participant-name wendy-name">Wendy (Patico ♥️)</div>
+                <div class="participant-pct">43,1%</div>
+                <div style="font-size: 0.85rem; color: var(--color-text-secondary);">10.950 msgs<br><strong>41.403 palabras</strong></div>
+              </div>
+            </div>
+            <div class="insight-highlight-box" style="margin-top: 0.5rem; text-align: left;">
+              💡 Aunque Kevin envió 3.478 mensajes más, la diferencia final fue de tan solo <strong>1.795 palabras</strong>.
+            </div>
+          `,
+          narrative: "«Kevin habla más veces. Wendy habla casi igual de profundo.»",
+          footerInfo: "84.601 palabras totales escritas"
+        },
+        {
+          tag: "⚡ Velocidad de Respuesta",
+          icon: "⏱️",
+          title: "Siempre Presentes",
+          customHtml: `
+            <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin: 1rem 0;">
+              <div class="speed-card">
+                <div class="speed-val">1 min</div>
+                <div class="speed-label">Mediana Kevin 👦🏻</div>
+              </div>
+              <div class="speed-card">
+                <div class="speed-val">3 min</div>
+                <div class="speed-label">Mediana Wendy 👧🏻</div>
+              </div>
+            </div>
+          `,
+          narrative: "«Cuando alguno escribía, el otro casi siempre estaba ahí. En conversación activa, el chat funcionaba prácticamente en tiempo real.»",
+          footerInfo: "Promedio general: 75 min (incluye noches y jornadas)"
+        },
+        {
+          tag: "📖 Capítulo 1 · El reencuentro",
+          icon: "🌱",
+          title: "El Reencuentro",
+          dates: "20 nov – dic 2024 · ~3.361 mensajes",
+          bodyText: "Todo comenzó cuando Kevin recuperó contacto con Wendy después del robo de su celular. Los primeros días estuvieron llenos de saludos, preguntas simples y volver a conocerse con los primeros audios y chismes.",
+          narrative: "«Todo comenzó con un simple “Holi”.»",
+          footerInfo: "El inicio de una nueva etapa"
+        },
+        {
+          tag: "🤝 Capítulo 2 · La confianza",
+          icon: "🌷",
+          title: "La Confianza",
+          dates: "ene – abr 2025 · ~3.000 mensajes",
+          bodyText: "La conversación dejó de necesitar excusas. Comenzaron a llamarse “lindo”, compartir fotos cotidianas, hablar de vacaciones, familia, universidad y trabajo.",
+          narrative: "«Ya no hablaban para responder; hablaban para compartir.»",
+          footerInfo: "Primeros espacios personales compartidos"
+        },
+        {
+          tag: "💖 Capítulo 3 · Conversaciones reales",
+          icon: "🌊",
+          title: "Conversaciones Reales",
+          dates: "jul – dic 2025 · ~11.680 mensajes",
+          bodyText: "La etapa de mayor crecimiento del chat. Compartieron preocupaciones, estrés, problemas del trabajo y emociones personales. Un espacio incondicional de apoyo mutuo.",
+          narrative: "«La confianza ya no estaba en los saludos. Estaba en contar lo difícil.»",
+          footerInfo: "Pico de actividad y cercanía emocional"
+        },
+        {
+          tag: "🏡 Capítulo 4 · La rutina bonita",
+          icon: "✨",
+          title: "La Rutina Bonita",
+          dates: "ene – ago 2026 · ~7.337 mensajes",
+          bodyText: "Hablar se convirtió en parte del día. Ya no existían silencios incómodos ni motivos forzados para escribir. Los mensajes aparecieron simplemente porque el otro hacía parte de la vida.",
+          narrative: "«Algunas personas llegan. Otras terminan haciendo parte de los días normales.»",
+          footerInfo: "Compañía cotidiana"
+        },
+        {
+          tag: "👑 Récords del Chat",
+          icon: "🔥",
+          title: "El Día Más Activo de la Historia",
+          bigNumber: "872",
+          unit: "mensajes en un solo día",
+          dates: "28 de agosto de 2026",
+          narrative: "«Hubo días donde dejaron de usar WhatsApp como una aplicación… y prácticamente vivieron dentro del chat.»",
+          footerInfo: "Top días: 2 dic 2025 (414 msgs) · 27 ago 2026 (405 msgs)"
+        },
+        {
+          tag: "💬 Identidad & Lo de Siempre",
+          icon: "🗣️",
+          title: "El Sello de la Conversación",
+          customHtml: `
+            <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin: 0.75rem 0;">
+              <div class="identity-col" style="padding: 0.8rem; text-align: left;">
+                <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-lilac); margin-bottom: 0.35rem;">👦🏻 Kevin</div>
+                <div style="font-size: 0.85rem; color: var(--color-text-main);">Holi · JSJSJS · Chisme · Parce · :3</div>
+              </div>
+              <div class="identity-col" style="padding: 0.8rem; text-align: left;">
+                <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-sunflower-gold); margin-bottom: 0.35rem;">👧🏻 Wendy</div>
+                <div style="font-size: 0.85rem; color: var(--color-text-main);">Holap · Jummm · Lindo · Pjs · 💁🏻‍♀️</div>
+              </div>
+            </div>
+            <div class="top-phrase-spotlight" style="padding: 0.9rem; margin-top: 0.5rem;">
+              <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--color-text-secondary);">Pregunta más repetida:</div>
+              <div style="font-family: var(--font-heading); font-size: 1.45rem; font-weight: 700; color: var(--color-sunflower-gold);">“¿Cómo estás?”</div>
+            </div>
+          `,
+          narrative: "«Algunas conversaciones se escribieron con palabras. Otras duraron más de un minuto en un audio.»",
+          footerInfo: "3.729 archivos multimedia compartidos"
+        },
+        {
+          tag: "💛 El Dato Más Bonito",
+          icon: "🌻",
+          title: "Dos Voces, Una Misma Historia",
+          customHtml: `
+            <div style="margin: 1.2rem 0;">
+              <div style="font-family: var(--font-numbers); font-size: 1.5rem; font-weight: 700; color: var(--color-sunflower-gold);">
+                43.198 palabras <span style="color: var(--color-lilac); font-weight: 300;">vs</span> 41.403 palabras
+              </div>
+            </div>
+          `,
+          narrative: "«Kevin envió miles de mensajes más. Wendy escribió casi la misma cantidad de palabras. Dos maneras distintas de conversar que terminaron construyendo exactamente la misma historia.»",
+          footerInfo: "648 días · 25.378 mensajes · Una historia infinita 🌻"
+        }
+      ];
+
+      let currentIndex = 0;
+      let isPaused = false;
+      let timerId = null;
+      const slideDuration = 6500; // ms
+
+      const renderProgressBar = () => {
+        progressContainer.innerHTML = slides.map((_, i) => `
+          <div class="story-progress-segment ${i < currentIndex ? 'completed' : ''}" id="story-seg-${i}">
+            <div class="story-progress-segment-fill" id="story-seg-fill-${i}" style="width: ${i < currentIndex ? '100%' : '0%'};"></div>
+          </div>
+        `).join("");
+      };
+
+      const renderSlide = (index) => {
+        currentIndex = index;
+        const slide = slides[index];
+        indexLabel.textContent = `${index + 1}/${slides.length}`;
+
+        renderProgressBar();
+
+        viewport.classList.remove("slide-animating");
+        void viewport.offsetWidth;
+        viewport.classList.add("slide-animating");
+
+        viewport.innerHTML = `
+          <div class="wrapped-card-tag" style="margin-bottom: 0.75rem;">${slide.tag}</div>
+          <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">${slide.icon}</div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.75rem; color: var(--color-sunflower-gold); margin-bottom: 0.5rem; line-height: 1.2;">
+            ${slide.title}
+          </h2>
+          
+          ${slide.dates ? `<div style="font-family: var(--font-numbers); font-size: 0.85rem; color: var(--color-lilac); margin-bottom: 0.5rem;">${slide.dates}</div>` : ''}
+          ${slide.bigNumber ? `
+            <div style="margin: 0.85rem 0;">
+              <span class="giant-number" style="font-size: 3.5rem;">${slide.bigNumber}</span>
+              <div style="font-size: 0.95rem; color: var(--color-light-yellow);">${slide.unit || ''}</div>
+            </div>
+          ` : ''}
+          ${slide.customHtml ? slide.customHtml : ''}
+          ${slide.bodyText ? `<p style="font-size: 0.92rem; color: var(--color-text-secondary); line-height: 1.5; margin: 0.75rem 0;">${slide.bodyText}</p>` : ''}
+          ${slide.narrative ? `
+            <div style="font-family: var(--font-heading); font-style: italic; font-size: 1.18rem; color: var(--color-text-main); margin-top: 0.9rem; line-height: 1.4; border-left: 2px solid var(--color-sunflower-gold); padding-left: 0.75rem; text-align: left;">
+              ${slide.narrative}
+            </div>
+          ` : ''}
+          ${slide.footerInfo ? `
+            <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 1.2rem;">
+              ${slide.footerInfo}
+            </div>
+          ` : ''}
+        `;
+
+        startProgressTimer();
+      };
+
+      const startProgressTimer = () => {
+        if (timerId) clearInterval(timerId);
+        if (isPaused) return;
+
+        const currentFill = document.getElementById(`story-seg-fill-${currentIndex}`);
+        let startTime = Date.now();
+
+        timerId = setInterval(() => {
+          if (isPaused) {
+            startTime += 50;
+            return;
+          }
+          const elapsed = Date.now() - startTime;
+          const pct = Math.min((elapsed / slideDuration) * 100, 100);
+          if (currentFill) currentFill.style.width = `${pct}%`;
+
+          if (elapsed >= slideDuration) {
+            clearInterval(timerId);
+            if (currentIndex < slides.length - 1) {
+              renderSlide(currentIndex + 1);
+            } else {
+              closeStory();
+            }
+          }
+        }, 30);
+      };
+
+      const nextSlide = () => {
+        if (currentIndex < slides.length - 1) {
+          renderSlide(currentIndex + 1);
+        } else {
+          closeStory();
+        }
+      };
+
+      const prevSlide = () => {
+        if (currentIndex > 0) {
+          renderSlide(currentIndex - 1);
+        } else {
+          renderSlide(0);
+        }
+      };
+
+      const togglePause = () => {
+        isPaused = !isPaused;
+        btnPause.textContent = isPaused ? "▶ Reanudar" : "⏸ Pausar";
+      };
+
+      const openStory = () => {
+        modal.classList.add("active");
+        currentIndex = 0;
+        isPaused = false;
+        btnPause.textContent = "⏸ Pausar";
+        renderSlide(0);
+      };
+
+      const closeStory = () => {
+        modal.classList.remove("active");
+        if (timerId) clearInterval(timerId);
+      };
+
+      btnOpen.addEventListener("click", openStory);
+      btnClose.addEventListener("click", closeStory);
+      btnNext.addEventListener("click", nextSlide);
+      btnPrev.addEventListener("click", prevSlide);
+      btnPause.addEventListener("click", togglePause);
+      touchNext.addEventListener("click", nextSlide);
+      touchPrev.addEventListener("click", prevSlide);
+
+      window.addEventListener("keydown", (e) => {
+        if (!modal.classList.contains("active")) return;
+        if (e.key === "Escape") closeStory();
+        if (e.key === "ArrowRight" || e.key === " ") nextSlide();
+        if (e.key === "ArrowLeft") prevSlide();
+      });
+    }
+
+    initCounterAnimations() {
+      const counters = document.querySelectorAll(".animate-counter");
+      if (!counters.length) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const target = parseInt(entry.target.dataset.target, 10);
+            if (!isNaN(target)) {
+              window.animateCounter(entry.target, target, 2000, false);
+            }
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2 });
+
+      counters.forEach(c => observer.observe(c));
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     window.paticoApp = new PaticoApp();
   });
 })();
+

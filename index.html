@@ -63,21 +63,396 @@
     <nav class="app-nav" aria-label="Navegación principal del Wrapped">
       <div class="nav-wrapper">
         <div class="nav-pills" id="nav-pills-container" role="tablist"></div>
-        <div class="nav-progress-indicator" id="nav-progress-text">Sección 1 de 6</div>
       </div>
     </nav>
     <main class="main-content">
-      <!-- INICIO -->
+      <!-- INICIO & PATICO WRAPPED -->
       <section id="section-inicio" class="wrapped-section" role="tabpanel">
-        <div class="section-header"><span class="section-number">Tu espacio compartido</span><h1 class="section-title">Hola, <span id="dashboard-user">Kevin</span> 🌻</h1><p class="section-quote">Lo importante de ustedes, a mano y sin relleno.</p></div>
-        <div class="daily-actions"><a href="#recuerdos" class="btn-primary">Añadir recuerdo</a><a href="#musica" class="btn-secondary">Recomendar canción</a><a href="#cine" class="btn-secondary">Elegir película</a><a href="#muro" class="btn-secondary">Dejar una nota</a></div>
+        <div class="section-header">
+          <h1 class="section-title">Hola, <span id="dashboard-user">Kevin</span> 🌻</h1>
+          <p class="section-quote">Lo importante de ustedes, a mano y sin relleno.</p>
+        </div>
+        
+        <div class="daily-actions">
+          <a href="#recuerdos" class="action-pill"><span>🌻</span> Añadir recuerdo</a>
+          <a href="#musica" class="action-pill"><span>🎵</span> Recomendar canción</a>
+          <a href="#cine" class="action-pill"><span>🎬</span> Elegir película</a>
+          <a href="#muro" class="action-pill"><span>💌</span> Dejar una nota</a>
+          <a href="#suenos" class="action-pill"><span>🌟</span> Nuevo sueño</a>
+        </div>
+
         <div class="daily-summary" id="daily-summary"></div>
-        <div class="glass-card daily-tip"><strong>Para hoy</strong><p id="daily-tip-text"></p></div>
+        <div class="glass-card daily-tip">
+          <strong>Para hoy</strong>
+          <p id="daily-tip-text"></p>
+        </div>
+
+        <!-- =========================================
+             PATICO WRAPPED 🌻 — ESTADÍSTICAS DEL CHAT
+             ========================================= -->
+        <div class="wrapped-container" id="patico-wrapped-hub">
+          
+          <!-- BANNER HERO CON INSIGNIA DE ACTUALIZACIÓN -->
+          <div class="wrapped-hero-banner">
+            <div class="wrapped-badge-updated animate-shimmer">
+              <span class="badge-dot"></span>
+              <span>📅 Reporte actualizado a: <strong>29 de agosto de 2026</strong></span>
+            </div>
+            
+            <h2 class="wrapped-main-title">Patico Wrapped 🌻</h2>
+            <p class="wrapped-lead-quote">
+              «Durante 648 días, dos personas construyeron una historia de 25.378 mensajes. No es una conversación cualquiera; es un diario escrito entre risas, chismes, audios y pequeños momentos cotidianos.»
+            </p>
+
+            <div class="wrapped-cta-group">
+              <button type="button" class="btn-launch-wrapped" id="btn-open-story-mode">
+                <span class="sparkle">✨</span>
+                <span>Vivir experiencia Wrapped (Modo Historia)</span>
+                <span>▶</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- GRID DE MÉTRICAS INTERACTIVAS -->
+          <div class="wrapped-stats-grid">
+            
+            <!-- 1. RESUMEN GENERAL & ACTIVIDAD -->
+            <article class="wrapped-card col-12">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">📊 1. Estadísticas Generales</span>
+                <span class="wrapped-card-icon">🌻</span>
+              </div>
+              <div>
+                <div class="giant-number-row">
+                  <span class="giant-number animate-counter" data-target="25378">25.378</span>
+                  <span class="giant-number-unit">mensajes intercambiados</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: 1.25rem;">
+                  <strong>Periodo analizado:</strong> 20 de noviembre de 2024 – 29 de agosto de 2026 (<strong>648 días</strong> · ~1 año, 9 meses y 9 días)
+                </p>
+
+                <!-- Barra Proporcional -->
+                <div class="proportion-bar-container">
+                  <div class="proportion-bar-track">
+                    <div class="proportion-fill-kevin" style="width: 56.9%;" title="Kevin: 56,9%"></div>
+                    <div class="proportion-fill-wendy" style="width: 43.1%;" title="Wendy: 43,1%"></div>
+                  </div>
+                  <div class="proportion-legend">
+                    <span style="color: var(--color-lilac);">🟣 Kevin: 14.428 msgs (56,9%)</span>
+                    <span style="color: var(--color-sunflower-gold);">🟡 Wendy (Patico ♥️): 10.950 msgs (43,1%)</span>
+                  </div>
+                </div>
+
+                <!-- Comparación detallada -->
+                <div class="participants-comparison">
+                  <div class="participant-box kevin">
+                    <div class="participant-name kevin-name">Kevin Gómez 👦🏻</div>
+                    <div class="participant-pct">56,9%</div>
+                    <div class="participant-stats-list">
+                      <div class="participant-stat-item"><span>Mensajes enviados</span><strong>14.428</strong></div>
+                      <div class="participant-stat-item"><span>Palabras escritas</span><strong>43.198</strong></div>
+                      <div class="participant-stat-item"><span>Multimedia compartida</span><strong>2.164</strong></div>
+                    </div>
+                  </div>
+
+                  <div class="participant-box wendy">
+                    <div class="participant-name wendy-name">Wendy (Patico ♥️) 👧🏻</div>
+                    <div class="participant-pct">43,1%</div>
+                    <div class="participant-stats-list">
+                      <div class="participant-stat-item"><span>Mensajes enviados</span><strong>10.950</strong></div>
+                      <div class="participant-stat-item"><span>Palabras escritas</span><strong>41.403</strong></div>
+                      <div class="participant-stat-item"><span>Multimedia compartida</span><strong>1.565</strong></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="insight-highlight-box">
+                  💡 <strong>Dato importante:</strong> Aunque Kevin envió 3.478 mensajes más, la diferencia final fue de solamente <strong>1.795 palabras</strong> (84.601 palabras en total), demostrando que ambos aportan prácticamente la misma cantidad de contenido a la conversación.
+                  <div style="font-family: var(--font-heading); font-style: italic; color: var(--color-light-yellow); font-size: 1.15rem; margin-top: 0.5rem;">
+                    «Kevin habla más veces. Wendy habla casi igual de profundo.»
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 2. VELOCIDAD DE RESPUESTA -->
+            <article class="wrapped-card col-5">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">⚡ 2. Velocidad de Respuesta</span>
+                <span class="wrapped-card-icon">⏱️</span>
+              </div>
+              <div>
+                <div class="speed-comparison-grid">
+                  <div class="speed-card">
+                    <div class="speed-val">1 min</div>
+                    <div class="speed-label">Mediana de Kevin 👦🏻</div>
+                  </div>
+                  <div class="speed-card">
+                    <div class="speed-val">3 min</div>
+                    <div class="speed-label">Mediana de Wendy 👧🏻</div>
+                  </div>
+                </div>
+                <div class="speed-avg-pill">
+                  🌙 Promedio general del chat: <strong>75 minutos</strong><br>
+                  <small style="color: var(--color-text-muted);">(Influenciado por noches, jornadas laborales y descansos)</small>
+                </div>
+              </div>
+              <div class="chapter-quote" style="margin-top: 1rem;">
+                «Cuando alguno escribía, el otro casi siempre estaba ahí. En conversación activa, el chat funcionaba prácticamente en tiempo real.»
+              </div>
+            </article>
+
+            <!-- 3. IDENTIDAD DE LA CONVERSACIÓN -->
+            <article class="wrapped-card col-7">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">💬 3. Identidad del Chat</span>
+                <span class="wrapped-card-icon">✨</span>
+              </div>
+              <div>
+                <div class="identities-grid">
+                  <div class="identity-col">
+                    <div class="identity-author" style="color: var(--color-lilac);">👦🏻 Expresiones de Kevin</div>
+                    <div class="expression-chips">
+                      <span class="expression-chip">Holi</span>
+                      <span class="expression-chip">JSJSJS</span>
+                      <span class="expression-chip">Chisme</span>
+                      <span class="expression-chip">Parce</span>
+                      <span class="expression-chip">:3</span>
+                    </div>
+                  </div>
+
+                  <div class="identity-col">
+                    <div class="identity-author" style="color: var(--color-sunflower-gold);">👧🏻 Expresiones de Wendy</div>
+                    <div class="expression-chips">
+                      <span class="expression-chip">Holap</span>
+                      <span class="expression-chip">Jummm</span>
+                      <span class="expression-chip">Lindo</span>
+                      <span class="expression-chip">Pjs</span>
+                      <span class="expression-chip">💁🏻‍♀️</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="top-phrase-spotlight">
+                  <div class="top-phrase-title">Frase más repetida de toda la historia</div>
+                  <div class="top-phrase-text">“¿Cómo estás?”</div>
+                  <div class="top-phrase-desc">Es la pregunta que más aparece durante toda la conversación y funciona como el verdadero hilo conductor de su historia.</div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 4. EVOLUCIÓN DE LA RELACIÓN EN 4 CAPÍTULOS -->
+            <article class="wrapped-card col-12">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">📖 4. Evolución de la Relación</span>
+                <span class="wrapped-card-icon">🌻</span>
+              </div>
+              <div>
+                <div class="chapters-nav" id="chapters-nav-tabs">
+                  <button type="button" class="chapter-tab-btn active" data-chapter="1">Capítulo 1 · El reencuentro</button>
+                  <button type="button" class="chapter-tab-btn" data-chapter="2">Capítulo 2 · La confianza</button>
+                  <button type="button" class="chapter-tab-btn" data-chapter="3">Capítulo 3 · Conversaciones reales</button>
+                  <button type="button" class="chapter-tab-btn" data-chapter="4">Capítulo 4 · La rutina bonita</button>
+                </div>
+
+                <div class="chapter-content-box" id="chapter-active-display">
+                  <div class="chapter-badge-dates">20 noviembre – diciembre 2024</div>
+                  <span class="chapter-msg-count">~3.361 mensajes</span>
+                  <h3 class="chapter-title">Capítulo 1 — El reencuentro</h3>
+                  <p class="chapter-desc">
+                    Todo comienza cuando Kevin recupera contacto con Wendy después del robo de su celular. Los primeros días están llenos de saludos, preguntas simples y la sensación de volver a conocerse. En esta etapa aparecen los primeros audios largos y los chismes que terminarían siendo una tradición.
+                  </p>
+                  <div class="chapter-quote">
+                    «Todo comenzó con un simple “Holi”.»
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 5. RÉCORDS DEL CHAT & TOP 10 DÍAS HISTÓRICOS -->
+            <article class="wrapped-card col-7">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">🏆 5. Récords del Chat</span>
+                <span class="wrapped-card-icon">🔥</span>
+              </div>
+              <div>
+                <div class="record-peak-card">
+                  <div class="record-peak-date">👑 Día más activo de toda la historia: 28 de agosto de 2026</div>
+                  <div class="record-peak-count">872</div>
+                  <div style="font-size: 0.9rem; color: var(--color-light-yellow);">mensajes en un solo día (Pico absoluto)</div>
+                </div>
+
+                <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.6rem; font-weight: 500;">
+                  Top 10 días con más mensajes en la historia:
+                </div>
+
+                <div class="historical-days-bars">
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">28 ago 2026 👑</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 100%;"></div></div>
+                    <span class="hist-day-count">872 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">2 dic 2025</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 47.5%;"></div></div>
+                    <span class="hist-day-count">414 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">27 ago 2026</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 46.4%;"></div></div>
+                    <span class="hist-day-count">405 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">10 nov 2025</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 40.1%;"></div></div>
+                    <span class="hist-day-count">350 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">5 sep 2025</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 39.7%;"></div></div>
+                    <span class="hist-day-count">346 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">11 dic 2024</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 38.0%;"></div></div>
+                    <span class="hist-day-count">331 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">13 jul 2025</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 28.3%;"></div></div>
+                    <span class="hist-day-count">247 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">22 nov 2024</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 25.3%;"></div></div>
+                    <span class="hist-day-count">221 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">15 dic 2024</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 22.7%;"></div></div>
+                    <span class="hist-day-count">198 msgs</span>
+                  </div>
+                  <div class="hist-day-row">
+                    <span class="hist-day-date">20 abr 2025</span>
+                    <div class="hist-day-bar-bg"><div class="hist-day-bar-fill" style="width: 20.8%;"></div></div>
+                    <span class="hist-day-count">181 msgs</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chapter-quote" style="margin-top: 1rem;">
+                «Hubo días donde dejaron de usar WhatsApp como una aplicación… y prácticamente vivieron dentro del chat.»
+              </div>
+            </article>
+
+            <!-- 6. TEMAS MÁS FRECUENTES & MULTIMEDIA -->
+            <article class="wrapped-card col-5">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">🏷️ 6. Temas & Multimedia</span>
+                <span class="wrapped-card-icon">🎙️</span>
+              </div>
+              <div>
+                <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.5rem; font-weight: 500;">
+                  De qué hablan siempre:
+                </div>
+                <div class="topic-tags-cloud">
+                  <span class="topic-tag-pill">💼 Trabajo y oficina</span>
+                  <span class="topic-tag-pill">🎓 Estudios y colegio</span>
+                  <span class="topic-tag-pill">🏡 Familia</span>
+                  <span class="topic-tag-pill">🗣️ Chismes infinitos</span>
+                  <span class="topic-tag-pill">✈️ Vacaciones</span>
+                  <span class="topic-tag-pill">🎬 Películas</span>
+                  <span class="topic-tag-pill">⚽ Fútbol (Nacional y América)</span>
+                  <span class="topic-tag-pill">🎙️ Audios largos</span>
+                  <span class="topic-tag-pill">🍿 Planes de fin de semana</span>
+                  <span class="topic-tag-pill">☕ Rutina diaria</span>
+                </div>
+
+                <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin: 1.25rem 0 0.5rem; font-weight: 500;">
+                  Multimedia compartida (3.729 en total):
+                </div>
+                <div class="multimedia-stats-grid">
+                  <div class="multi-stat-card">
+                    <div class="multi-stat-icon">🎙️</div>
+                    <div class="multi-stat-val">Audios</div>
+                    <div class="multi-stat-lbl">extensos</div>
+                  </div>
+                  <div class="multi-stat-card">
+                    <div class="multi-stat-icon">👦🏻</div>
+                    <div class="multi-stat-val">2.164</div>
+                    <div class="multi-stat-lbl">Kevin</div>
+                  </div>
+                  <div class="multi-stat-card">
+                    <div class="multi-stat-icon">👧🏻</div>
+                    <div class="multi-stat-val">1.565</div>
+                    <div class="multi-stat-lbl">Wendy</div>
+                  </div>
+                </div>
+              </div>
+              <div class="chapter-quote" style="margin-top: 0.75rem;">
+                «Algunas conversaciones se escribieron con palabras. Otras duraron más de un minuto en un audio.»
+              </div>
+            </article>
+
+            <!-- 7. CURIOSIDADES DESTACADAS -->
+            <article class="wrapped-card col-12">
+              <div class="wrapped-card-header">
+                <span class="wrapped-card-tag">💡 7. Curiosidades del Chat</span>
+                <span class="wrapped-card-icon">🌟</span>
+              </div>
+              <div class="curiosities-grid">
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">📅</span>
+                  <div class="curiosity-text"><strong>25.378</strong> mensajes escritos a lo largo de <strong>648 días</strong>.</div>
+                </div>
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">💬</span>
+                  <div class="curiosity-text"><strong>84.601</strong> palabras intercambiadas entre los dos.</div>
+                </div>
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">🔥</span>
+                  <div class="curiosity-text">Racha de <strong>69 días seguidos</strong> sin romper continuidad de conversación.</div>
+                </div>
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">⚖️</span>
+                  <div class="curiosity-text">La diferencia real entre ambos fue de apenas <strong>1.795 palabras</strong>.</div>
+                </div>
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">👑</span>
+                  <div class="curiosity-text">El día más activo de la historia sumó <strong>872 mensajes</strong> en 24 horas.</div>
+                </div>
+                <div class="curiosity-card">
+                  <span class="curiosity-icon">🎙️</span>
+                  <div class="curiosity-text">Los <strong>audios de más de 1 minuto</strong> se volvieron la marca del chat.</div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 8. CIERRE EMOCIONAL -->
+            <article class="wrapped-card col-12" style="background: transparent; border: none; padding: 0;">
+              <div class="emotional-closing-box">
+                <div style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 2px; color: var(--color-sunflower-gold); margin-bottom: 0.5rem;">
+                  El dato más bonito 💛
+                </div>
+                <div class="emotional-words-compare">
+                  <span>Kevin: 43.198 palabras</span>
+                  <span class="divider">vs</span>
+                  <span>Wendy: 41.403 palabras</span>
+                </div>
+                <p class="emotional-quote-main">
+                  «Kevin envió miles de mensajes más. Wendy escribió casi la misma cantidad de palabras. Dos maneras distintas de conversar que terminaron construyendo exactamente la misma historia.»
+                </p>
+                <div class="emotional-final-tagline">
+                  «648 días. 25.378 mensajes. Una historia que jamás podría resumirse en una sola conversación.» 🌻
+                </div>
+              </div>
+            </article>
+
+          </div>
+        </div>
       </section>
       <!-- RECUERDOS -->
       <section id="section-recuerdos" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <span class="section-number">Sección 2 de 6</span>
           <h2 class="section-title">Campo de girasoles</h2>
           <p class="section-quote">«Cada recuerdo florece como un girasol en nuestro camino.»</p>
         </div>
@@ -98,7 +473,6 @@
       <!-- 7. NUESTRA MÚSICA -->
       <section id="section-musica" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <span class="section-number">Sección 3 de 6</span>
           <h2 class="section-title">Nuestra música 🎵</h2>
           <p class="section-quote">«Canciones que nos recomendamos para seguir cerca.»</p>
         </div>
@@ -116,7 +490,6 @@
       <!-- 8. NUESTRO CINE -->
       <section id="section-cine" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <span class="section-number">Sección 4 de 6</span>
           <h2 class="section-title">Nuestro cine 🎬</h2>
           <p class="section-quote">«Historias que vimos juntos y se quedaron para siempre.»</p>
         </div>
@@ -141,7 +514,6 @@
       <!-- 8. MURO COMPARTIDO -->
       <section id="section-muro" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <span class="section-number">Sección 5 de 6</span>
           <h2 class="section-title">Muro compartido 💬</h2>
           <p class="section-quote">«Un diario para dejar pequeñas notas en el corazón.»</p>
         </div>
@@ -154,7 +526,6 @@
       <!-- 9. FRASCO DE SUEÑOS -->
       <section id="section-suenos" class="wrapped-section" role="tabpanel">
         <div class="section-header">
-          <span class="section-number">Sección 6 de 6</span>
           <h2 class="section-title">Frasco de sueños ✨</h2>
           <p class="section-quote">«Metas y deseos que florecerán a su debido tiempo.»</p>
         </div>
@@ -346,6 +717,39 @@
           <button type="submit" class="btn-primary">Guardar sueño</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL SPOTIFY WRAPPED (MODO HISTORIA) -->
+  <div id="modal-wrapped-story" class="wrapped-story-modal" role="dialog" aria-modal="true" aria-label="Patico Wrapped en Modo Historia">
+    <div class="story-player-card">
+      
+      <!-- Barras de progreso de historias -->
+      <div class="story-progress-bar-container" id="story-progress-bars"></div>
+
+      <!-- Barra superior de autor y controles -->
+      <div class="story-header-bar">
+        <div class="story-author-badge">
+          <span>🌻</span>
+          <span>Patico Wrapped · <span id="story-slide-index-label">1/10</span></span>
+        </div>
+        <button type="button" class="story-close-btn" id="btn-close-story" aria-label="Cerrar historias">&times;</button>
+      </div>
+
+      <!-- Zonas de toque táctil / click para anterior / siguiente -->
+      <div class="story-touch-left" id="story-touch-prev" title="Diapositiva anterior"></div>
+      <div class="story-touch-right" id="story-touch-next" title="Siguiente diapositiva"></div>
+
+      <!-- Contenedor del contenido de la diapositiva -->
+      <div class="story-slide-viewport" id="story-viewport"></div>
+
+      <!-- Barra inferior con botones de navegación manual -->
+      <div class="story-nav-footer">
+        <button type="button" class="story-nav-btn" id="btn-story-prev">◀ Anterior</button>
+        <button type="button" class="story-nav-btn" id="btn-story-pause">⏸ Pausar</button>
+        <button type="button" class="story-nav-btn" id="btn-story-next">Siguiente ▶</button>
+      </div>
+
     </div>
   </div>
 

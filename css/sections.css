@@ -1626,14 +1626,21 @@
   background: #FF5252;
 }
 
-/* Cumpleaños de Kevin - Azul Neón */
+/* Cumpleaños de Kevin - Azul Neón Eléctrico */
 .mini-day-cell.bday-kevin {
-  background: rgba(0, 229, 255, 0.22) !important;
-  color: #E0F7FA !important;
-  font-weight: 800 !important;
-  border: 1.5px solid #00E5FF !important;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.75), inset 0 0 8px rgba(0, 229, 255, 0.4) !important;
-  animation: neonBluePulse 2.5s infinite ease-in-out;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.4) 0%, rgba(0, 176, 255, 0.2) 100%) !important;
+  color: #FFFFFF !important;
+  text-shadow: 0 0 8px #00E5FF, 0 0 15px #00B0FF, 0 0 25px #0091EA !important;
+  font-weight: 900 !important;
+  border: 2px solid #00E5FF !important;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.9), inset 0 0 10px rgba(0, 229, 255, 0.6) !important;
+  animation: neonBluePulse 2.2s infinite ease-in-out;
+  transform: scale(1.08);
+}
+
+.mini-day-cell.bday-kevin span {
+  color: #FFFFFF !important;
+  text-shadow: 0 0 6px #00E5FF, 0 0 12px #00E5FF;
 }
 
 .mini-day-cell.bday-kevin::before {
@@ -1645,14 +1652,21 @@
   line-height: 1;
 }
 
-/* Cumpleaños de Wendy - Lila Neón */
+/* Cumpleaños de Wendy - Lila Neón Eléctrico */
 .mini-day-cell.bday-wendy {
-  background: rgba(224, 64, 251, 0.24) !important;
-  color: #F3E5F5 !important;
-  font-weight: 800 !important;
-  border: 1.5px solid #E040FB !important;
-  box-shadow: 0 0 12px rgba(224, 64, 251, 0.75), inset 0 0 8px rgba(224, 64, 251, 0.4) !important;
-  animation: neonLilacPulse 2.5s infinite ease-in-out;
+  background: radial-gradient(circle, rgba(224, 64, 251, 0.4) 0%, rgba(213, 0, 249, 0.2) 100%) !important;
+  color: #FFFFFF !important;
+  text-shadow: 0 0 8px #E040FB, 0 0 15px #D500F9, 0 0 25px #AA00FF !important;
+  font-weight: 900 !important;
+  border: 2px solid #E040FB !important;
+  box-shadow: 0 0 14px rgba(224, 64, 251, 0.9), inset 0 0 10px rgba(224, 64, 251, 0.6) !important;
+  animation: neonLilacPulse 2.2s infinite ease-in-out;
+  transform: scale(1.08);
+}
+
+.mini-day-cell.bday-wendy span {
+  color: #FFFFFF !important;
+  text-shadow: 0 0 6px #E040FB, 0 0 12px #E040FB;
 }
 
 .mini-day-cell.bday-wendy::before {
@@ -1670,7 +1684,7 @@
     border-color: #00E5FF;
   }
   50% {
-    box-shadow: 0 0 16px rgba(0, 229, 255, 0.95), 0 0 24px rgba(0, 176, 255, 0.6), inset 0 0 10px rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.95), 0 0 26px rgba(0, 176, 255, 0.7), inset 0 0 12px rgba(0, 229, 255, 0.6);
     border-color: #80D8FF;
   }
 }
@@ -1681,9 +1695,139 @@
     border-color: #E040FB;
   }
   50% {
-    box-shadow: 0 0 16px rgba(224, 64, 251, 0.95), 0 0 24px rgba(213, 0, 249, 0.6), inset 0 0 10px rgba(224, 64, 251, 0.5);
+    box-shadow: 0 0 18px rgba(224, 64, 251, 0.95), 0 0 26px rgba(213, 0, 249, 0.7), inset 0 0 12px rgba(224, 64, 251, 0.6);
     border-color: #EA80FC;
   }
+}
+
+/* Tarjeta de Recordatorios de Fechas Especiales */
+.special-dates-reminder-hub {
+  background: linear-gradient(135deg, rgba(28, 20, 48, 0.95) 0%, rgba(15, 11, 25, 0.95) 100%);
+  border: 1px solid rgba(185, 142, 230, 0.35);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(109, 74, 153, 0.2);
+}
+
+.reminder-hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.reminder-hub-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  color: var(--color-sunflower-gold);
+}
+
+.reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.reminder-card {
+  background: rgba(18, 14, 28, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-fast);
+}
+
+.reminder-card.kevin-theme {
+  border-left: 4px solid #00E5FF;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+}
+
+.reminder-card.wendy-theme {
+  border-left: 4px solid #E040FB;
+  box-shadow: 0 0 15px rgba(224, 64, 251, 0.15);
+}
+
+.reminder-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.reminder-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reminder-countdown-badge {
+  font-family: var(--font-numbers);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reminder-countdown-badge.alert-normal {
+  background: rgba(109, 74, 153, 0.3);
+  color: var(--color-lilac);
+  border: 1px solid var(--color-border);
+}
+
+.reminder-countdown-badge.alert-month {
+  background: rgba(244, 197, 66, 0.2);
+  color: var(--color-sunflower-gold);
+  border: 1px solid rgba(244, 197, 66, 0.5);
+  box-shadow: 0 0 8px rgba(244, 197, 66, 0.3);
+}
+
+.reminder-countdown-badge.alert-week {
+  background: rgba(255, 152, 0, 0.25);
+  color: #FFA726;
+  border: 1px solid #FFA726;
+  box-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
+  animation: gentlePulse 2s infinite ease-in-out;
+}
+
+.reminder-countdown-badge.alert-day {
+  background: rgba(244, 67, 54, 0.3);
+  color: #FF8A80;
+  border: 1px solid #FF5252;
+  box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+  animation: gentlePulse 1.2s infinite ease-in-out;
+}
+
+.reminder-countdown-badge.alert-today {
+  background: linear-gradient(135deg, #FFD700 0%, #FF6D00 100%);
+  color: #120E1C;
+  font-weight: 900;
+  border: 1px solid #FFD700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  animation: countUpHighlight 1s infinite alternate;
+}
+
+.reminder-message {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.reminder-message strong {
+  color: var(--color-light-yellow);
 }
 
 .mini-day-cell.has-memory {

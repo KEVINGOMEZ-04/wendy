@@ -164,6 +164,84 @@
       this.renderDailyDashboard();
     }
 
+    // --- Motor de Fechas Especiales y Recordatorios Anticipados ---
+    getSpecialDates() {
+      return [
+        {
+          id: 'bday-wendy',
+          title: 'Cumpleaños de Wendy',
+          subtitle: 'Patico ♥️ 👧🏻',
+          month: 6, // 26 de Junio
+          day: 26,
+          color: '#E040FB',
+          themeClass: 'wendy-theme',
+          emoji: '🎂💜',
+          forUser: 'Kevin',
+          celebrant: 'Wendy'
+        },
+        {
+          id: 'bday-kevin',
+          title: 'Cumpleaños de Kevin',
+          subtitle: 'Kevin 👦🏻',
+          month: 8, // 2 de Agosto
+          day: 2,
+          color: '#00E5FF',
+          themeClass: 'kevin-theme',
+          emoji: '🎂💙',
+          forUser: 'Wendy',
+          celebrant: 'Kevin'
+        }
+      ];
+    }
+
+    calculateSpecialDateRemaining(dateItem) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      let targetDate = new Date(currentYear, dateItem.month - 1, dateItem.day, 0, 0, 0, 0);
+
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      if (targetDate.getTime() < todayStart.getTime()) {
+        targetDate = new Date(currentYear + 1, dateItem.month - 1, dateItem.day, 0, 0, 0, 0);
+      }
+
+      const diffTime = targetDate.getTime() - todayStart.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      const monthNamesES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      const dateText = `${dateItem.day} de ${monthNamesES[dateItem.month - 1]}`;
+
+      let alertType = 'normal';
+      let alertLabel = `Faltan ${diffDays} días`;
+      let alertMessage = `Próxima fecha: <strong>${dateText}</strong>. Recuerda preparar algo lindo para ${dateItem.celebrant}.`;
+
+      if (diffDays === 0) {
+        alertType = 'today';
+        alertLabel = '🎉 ¡HOY ES EL CUMPLEAÑOS! 🎂';
+        alertMessage = `¡Hoy celebramos el gran día de <strong>${dateItem.celebrant}</strong>! Que sea un día lleno de magia, risas y girasoles. 🌻✨`;
+      } else if (diffDays === 1) {
+        alertType = 'day';
+        alertLabel = '⚡ ¡FALTA 1 DÍA! (Mañana)';
+        alertMessage = `¡Aviso urgente! Mañana es el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). ¡Prepara el abrazo y la sorpresa! 🎁💖`;
+      } else if (diffDays >= 6 && diffDays <= 8) {
+        alertType = 'week';
+        alertLabel = `🚨 ¡Falta 1 semana! (${diffDays} días)`;
+        alertMessage = `Recordatorio especial: Queda 1 semana para el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). ¿Ya tienes listo el detalle? ✨`;
+      } else if (diffDays >= 28 && diffDays <= 32) {
+        alertType = 'month';
+        alertLabel = `🔔 ¡Falta 1 mes! (~${diffDays} días)`;
+        alertMessage = `Aviso con 1 mes de anticipación: Se acerca el cumpleaños de <strong>${dateItem.celebrant}</strong> (${dateText}). Ve planeando con calma. 🌻`;
+      }
+
+      return {
+        ...dateItem,
+        diffDays,
+        nextDate: targetDate,
+        alertType,
+        alertLabel,
+        alertMessage
+      };
+    }
+
     renderDailyDashboard() {
       const summary = document.getElementById('daily-summary');
       if (!summary) return;
@@ -177,6 +255,46 @@
         ['🌟', window.storage.getDreams().filter(dream => dream.status === 'Pendiente').length, 'sueños pendientes']
       ];
       summary.innerHTML = values.map(([icon, value, label]) => `<div class="glass-card daily-stat"><span>${icon}</span><strong>${value}</strong><small>${label}</small></div>`).join('');
+      
+      // Render de Recordatorios de Fechas Especiales (1 mes, 1 semana, 1 día)
+      const reminderContainer = document.getElementById('special-dates-reminders-container');
+      if (reminderContainer) {
+        const specialDates = this.getSpecialDates().map(d => this.calculateSpecialDateRemaining(d));
+        // Ordenar por cercanía
+        specialDates.sort((a, b) => a.diffDays - b.diffDays);
+
+        reminderContainer.innerHTML = `
+          <div class="special-dates-reminder-hub">
+            <div class="reminder-hub-header">
+              <div class="reminder-hub-title">
+                <span>🔔</span>
+                <span>Recordatorios de Fechas Especiales</span>
+              </div>
+              <span style="font-size: 0.8rem; color: var(--color-text-secondary);">Avisos automáticos a 1 mes, 1 semana y 1 día</span>
+            </div>
+
+            <div class="reminder-grid">
+              ${specialDates.map(item => `
+                <div class="reminder-card ${item.themeClass}">
+                  <div class="reminder-card-top">
+                    <span class="reminder-name">
+                      <span>${item.emoji}</span>
+                      <span>${window.Utils.sanitizeHTML(item.title)}</span>
+                    </span>
+                    <span class="reminder-countdown-badge alert-${item.alertType}">
+                      ${window.Utils.sanitizeHTML(item.alertLabel)}
+                    </span>
+                  </div>
+                  <div class="reminder-message">
+                    ${item.alertMessage}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
       const prompts = ['Dejen una nota para que el otro la encuentre.', '¿Qué canción describe este día?', 'Elijan una película para su próxima noche.', 'Guarden un momento pequeño antes de olvidarlo.'];
       document.getElementById('daily-tip-text').textContent = prompts[new Date().getDate() % prompts.length];
     }

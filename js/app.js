@@ -577,12 +577,16 @@
 
           const isHoliday = holidays[dateStr];
           const isToday = dateStr === todayStr;
+          const isKevinBday = (month === 7 && day === 2); // 2 de Agosto (mes 7 = Agosto, 0-indexed)
+          const isWendyBday = (month === 5 && day === 26); // 26 de Junio (mes 5 = Junio, 0-indexed)
           const dayMemories = memoriesByDate[dateStr] || [];
           const hasMemories = dayMemories.length > 0;
 
           let classes = ["mini-day-cell"];
           if (isToday) classes.push("today");
-          if (isHoliday) classes.push("holiday");
+          if (isKevinBday) classes.push("bday-kevin");
+          if (isWendyBday) classes.push("bday-wendy");
+          if (isHoliday && !isKevinBday && !isWendyBday) classes.push("holiday");
           if (hasMemories) classes.push("has-memory");
 
           let dotsHtml = "";
@@ -592,7 +596,16 @@
             `).join("")}</div>`;
           }
 
-          const tooltip = isHoliday ? `${day} de ${monthNames[month]}: ${isHoliday}` : (hasMemories ? `${dayMemories.length} recuerdo(s) en esta fecha` : `${day} de ${monthNames[month]}`);
+          let tooltip = `${day} de ${monthNames[month]}`;
+          if (isKevinBday) {
+            tooltip = `🎂 ¡Cumpleaños de Kevin! 👦🏻💙 (2 de Agosto)`;
+          } else if (isWendyBday) {
+            tooltip = `🎂 ¡Cumpleaños de Wendy! 👧🏻💜 (26 de Junio - Patico ♥️)`;
+          } else if (isHoliday) {
+            tooltip = `${day} de ${monthNames[month]}: ${isHoliday}`;
+          } else if (hasMemories) {
+            tooltip = `${dayMemories.length} recuerdo(s) en esta fecha`;
+          }
 
           daysGridHtml += `
             <div class="${classes.join(" ")}" data-date="${dateStr}" title="${window.Utils.sanitizeHTML(tooltip)}">

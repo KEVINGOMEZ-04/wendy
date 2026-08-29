@@ -36,6 +36,19 @@ window.CONFIG = {
     }
   },
 
+  // Configuración de sincronización en la nube (GitHub & Remote Sync)
+  cloudSync: {
+    enabled: true,
+    repoOwner: 'KEVINGOMEZ-04',
+    repoName: 'wendy',
+    filePath: 'data/journal.json',
+    branch: 'main',
+    get token() {
+      return localStorage.getItem('patico_github_token') || '';
+    },
+    syncIntervalMs: 25000
+  },
+
   // Usuarios del diario compartido
   users: ['Kevin', 'Wendy'],
   defaultUser: 'Kevin',

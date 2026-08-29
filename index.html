@@ -56,6 +56,7 @@
         <span id="active-user-label" class="active-user-label"></span>
       </div>
       <div class="header-actions">
+        <button type="button" class="btn-lock" id="btn-open-sync" title="Sincronización en la nube y multidispositivo"><span>☁️</span> Sincronizar</button>
         <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña">⚙️ Contraseña</button>
         <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span> Bloquear</button>
       </div>
@@ -853,6 +854,80 @@
           <button type="submit" class="btn-primary">Guardar sueño</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL SINCRONIZACIÓN Y NUBE MULTIDISPOSITIVO -->
+  <div id="modal-sync" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-sync-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3 id="modal-sync-title">Sincronización en la Nube y Dispositivos ☁️</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-sync" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div class="sync-modal-body" style="padding-top: 0.5rem;">
+        <!-- Estado de la Nube -->
+        <div class="glass-card sync-status-card" style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem; color: var(--color-sunflower-gold);">
+                <span class="sync-indicator-dot" id="sync-modal-dot"></span>
+                <span id="sync-modal-status-text">Conectado a la nube</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 0.25rem;" id="sync-modal-last-time">
+                Sincronizando automáticamente en segundo plano...
+              </p>
+            </div>
+            <button type="button" class="btn-primary" id="btn-force-cloud-sync" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+              🔄 Sincronizar Ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- Transferencia Rápida entre Dispositivos -->
+        <div class="glass-card" style="margin-bottom: 1.25rem;">
+          <h4 style="color: var(--color-light-yellow); font-size: 0.98rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>📲</span> Transferencia Rápida entre Teléfono y PC
+          </h4>
+          <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4; margin-bottom: 0.75rem;">
+            Copia el código desde tu dispositivo con recuerdos y pégalo en tu teléfono (o viceversa) para transferir todo al instante:
+          </p>
+
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+            <button type="button" class="btn-secondary" id="btn-copy-sync-code" style="font-size: 0.82rem;">
+              📋 1. Copiar Código de este Dispositivo
+            </button>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <textarea id="sync-code-input" class="form-control" rows="2" style="font-size: 0.78rem; font-family: monospace;" placeholder="Pega aquí el código copiado desde tu otro dispositivo..."></textarea>
+          </div>
+
+          <button type="button" class="btn-secondary" id="btn-apply-sync-code" style="font-size: 0.82rem; color: var(--color-sunflower-gold);">
+            📥 2. Importar y Aplicar en este Dispositivo
+          </button>
+        </div>
+
+        <!-- Respaldo en Archivo JSON -->
+        <div class="glass-card">
+          <h4 style="color: var(--color-text-main); font-size: 0.95rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>💾</span> Copia de Seguridad en Archivo
+          </h4>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;">
+            <button type="button" class="btn-secondary" id="btn-export-backup-json" style="font-size: 0.82rem;">
+              📥 Descargar Archivo JSON
+            </button>
+            <label class="btn-secondary" style="font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+              📤 Restaurar desde Archivo JSON
+              <input type="file" id="input-restore-backup-file" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 1.25rem;">
+          <button type="button" class="btn-primary" data-close-modal="modal-sync">Entendido / Cerrar</button>
+        </div>
+      </div>
     </div>
   </div>
 

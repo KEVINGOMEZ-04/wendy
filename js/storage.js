@@ -129,6 +129,7 @@
       this.remoteRef = null;
       this.initDefaults();
       this.initRemoteSync();
+      this.initCloudSync();
     }
 
     initDefaults() {
@@ -168,6 +169,10 @@
         if (this.remoteRef && this.remoteKeys.includes(remoteName)) {
           this.remoteRef.child(remoteName).set(value).catch(error => console.error('No se pudo sincronizar:', error));
         }
+        // Programar subida automática a la nube en segundo plano
+        if (this.remoteKeys.includes(remoteName) && this.scheduleCloudPush) {
+          this.scheduleCloudPush();
+        }
         return true;
       } catch (e) {
         console.error(`Error guardando clave ${key} en localStorage:`, e);
@@ -177,6 +182,275 @@
 
     subscribe(listener) { this.listeners.push(listener); return () => { this.listeners = this.listeners.filter(item => item !== listener); }; }
     notify(key) { this.listeners.forEach(listener => listener(key)); }
+
+    // --- Sincronización en la Nube con GitHub & Cloud Engine ---
+    initCloudSync() {
+      this.cloudConfig = window.CONFIG.cloudSync || {};
+      this.lastCloudSyncTime = null;
+      this.isSyncing = false;
+      this.lastFileSha = null;
+      this.pendingPushTimeout = null;
+
+      // Cargar datos de la nube inmediatamente
+      setTimeout(() => {
+        this.syncCloudPull().catch(e => console.warn('Auto-pull inicial diferido:', e));
+      }, 500);
+
+      // Sincronización periódica cada intervalo
+      if (this.cloudConfig.enabled && this.cloudConfig.syncIntervalMs) {
+        setInterval(() => {
+          if (!this.isSyncing) {
+            this.syncCloudPull().catch(e => console.warn('Sync background pull:', e));
+          }
+        }, this.cloudConfig.syncIntervalMs);
+      }
+    }
+
+    notifySyncState(state, message = '') {
+      if (this.onSyncStateChange) {
+        this.onSyncStateChange({
+          state,
+          message,
+          lastSync: this.lastCloudSyncTime,
+          isSyncing: this.isSyncing
+        });
+      }
+    }
+
+    async syncCloudPull() {
+      if (!this.cloudConfig || !this.cloudConfig.enabled) return null;
+      this.isSyncing = true;
+      this.notifySyncState('syncing');
+
+      try {
+        const { repoOwner, repoName, filePath, branch, token } = this.cloudConfig;
+        const headers = {
+          'Accept': 'application/vnd.github+json',
+          'User-Agent': 'Patico-App'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        let remoteData = null;
+        let fileSha = null;
+
+        // Intento 1: GitHub API pública
+        try {
+          const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}?ref=${branch || 'main'}&t=${Date.now()}`;
+          const response = await fetch(url, { headers });
+          if (response.ok) {
+            const data = await response.json();
+            fileSha = data.sha;
+            const binaryStr = atob(data.content.replace(/\s/g, ''));
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+            const jsonText = new TextDecoder('utf-8').decode(bytes);
+            remoteData = JSON.parse(jsonText);
+          }
+        } catch (apiErr) {
+          console.warn('Fallo consulta API GitHub, intentando archivo local:', apiErr);
+        }
+
+        // Intento 2: Archivo estático relativo
+        if (!remoteData) {
+          try {
+            const staticRes = await fetch(`./${filePath}?t=${Date.now()}`);
+            if (staticRes.ok) {
+              remoteData = await staticRes.json();
+            }
+          } catch(statErr) {}
+        }
+
+        if (!remoteData) {
+          this.isSyncing = false;
+          this.notifySyncState('synced');
+          return { success: false, error: 'No se pudo contactar el servidor' };
+        }
+
+        if (fileSha) this.lastFileSha = fileSha;
+
+        let hasChanges = false;
+        this.remoteKeys.forEach(name => {
+          if (Array.isArray(remoteData[name])) {
+            const localList = this.get(this.keys[name], []);
+            const mergedList = this.mergeDataLists(localList, remoteData[name]);
+            if (JSON.stringify(localList) !== JSON.stringify(mergedList)) {
+              localStorage.setItem(this.keys[name], JSON.stringify(mergedList));
+              this.notify(this.keys[name]);
+              hasChanges = true;
+            }
+          }
+        });
+
+        this.lastCloudSyncTime = new Date();
+        this.isSyncing = false;
+        this.notifySyncState('synced');
+        return { success: true, hasChanges, lastSync: this.lastCloudSyncTime };
+      } catch (error) {
+        console.error('Error en syncCloudPull:', error);
+        this.isSyncing = false;
+        this.notifySyncState('error', error.message);
+        return { success: false, error: error.message };
+      }
+    }
+
+    async syncCloudPush() {
+      if (!this.cloudConfig || !this.cloudConfig.enabled || !this.cloudConfig.token) return null;
+      this.isSyncing = true;
+      this.notifySyncState('syncing');
+
+      try {
+        const { repoOwner, repoName, filePath, branch, token } = this.cloudConfig;
+        
+        // 1. Obtener SHA actual si no lo tenemos
+        if (!this.lastFileSha) {
+          try {
+            const checkRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}?ref=${branch || 'main'}`, {
+              headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+            });
+            if (checkRes.ok) {
+              const checkData = await checkRes.json();
+              this.lastFileSha = checkData.sha;
+            }
+          } catch(e) {}
+        }
+
+        const payload = {
+          version: '1.0',
+          updatedAt: new Date().toISOString(),
+          updatedBy: this.getCurrentUser(),
+          memories: this.get(this.keys.memories, []),
+          movies: this.get(this.keys.movies, []),
+          notes: this.get(this.keys.notes, []),
+          dreams: this.get(this.keys.dreams, []),
+          songs: this.get(this.keys.songs, [])
+        };
+
+        const jsonStr = JSON.stringify(payload, null, 2);
+        // UTF-8 a Base64 seguro
+        const bytes = new TextEncoder().encode(jsonStr);
+        let binaryStr = '';
+        bytes.forEach(b => binaryStr += String.fromCharCode(b));
+        const base64Content = btoa(binaryStr);
+
+        const bodyData = {
+          message: `sync: Actualizar recuerdos y diario (${this.getCurrentUser()})`,
+          content: base64Content,
+          branch: branch || 'main'
+        };
+        if (this.lastFileSha) bodyData.sha = this.lastFileSha;
+
+        const putRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Patico-App'
+          },
+          body: JSON.stringify(bodyData)
+        });
+
+        if (!putRes.ok) {
+          if (putRes.status === 409 || putRes.status === 422) {
+            this.lastFileSha = null;
+            await this.syncCloudPull();
+            return await this.syncCloudPush();
+          }
+          throw new Error(`Error ${putRes.status} al subir a la nube`);
+        }
+
+        const resData = await putRes.json();
+        this.lastFileSha = resData.content?.sha || null;
+        this.lastCloudSyncTime = new Date();
+        this.isSyncing = false;
+        this.notifySyncState('synced');
+        return { success: true, lastSync: this.lastCloudSyncTime };
+      } catch (error) {
+        console.error('Error en syncCloudPush:', error);
+        this.isSyncing = false;
+        this.notifySyncState('error', error.message);
+        return { success: false, error: error.message };
+      }
+    }
+
+    scheduleCloudPush() {
+      if (this.pendingPushTimeout) clearTimeout(this.pendingPushTimeout);
+      this.pendingPushTimeout = setTimeout(() => {
+        this.syncCloudPush().catch(e => console.warn('Background push error:', e));
+      }, 1500);
+    }
+
+    mergeDataLists(localList, remoteList) {
+      const mergedMap = new Map();
+      
+      remoteList.forEach(item => {
+        if (item && item.id) mergedMap.set(item.id, item);
+      });
+
+      localList.forEach(item => {
+        if (!item || !item.id) return;
+        if (!mergedMap.has(item.id)) {
+          mergedMap.set(item.id, item);
+        } else {
+          const remoteItem = mergedMap.get(item.id);
+          const localTime = new Date(item.updatedAt || item.createdAt || 0).getTime();
+          const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+          if (localTime >= remoteTime) {
+            mergedMap.set(item.id, item);
+          }
+        }
+      });
+
+      return Array.from(mergedMap.values());
+    }
+
+    exportTransferCode() {
+      const data = {
+        timestamp: Date.now(),
+        user: this.getCurrentUser(),
+        memories: this.get(this.keys.memories, []),
+        movies: this.get(this.keys.movies, []),
+        notes: this.get(this.keys.notes, []),
+        dreams: this.get(this.keys.dreams, []),
+        songs: this.get(this.keys.songs, [])
+      };
+      const json = JSON.stringify(data);
+      const bytes = new TextEncoder().encode(json);
+      let binary = '';
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      return 'PATICO_SYNC::' + btoa(binary);
+    }
+
+    importTransferCode(codeString) {
+      if (!codeString || typeof codeString !== 'string') return { success: false, error: 'Código vacío o inválido' };
+      try {
+        const clean = codeString.trim();
+        const rawB64 = clean.startsWith('PATICO_SYNC::') ? clean.slice(13) : clean;
+        
+        const binary = atob(rawB64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const json = new TextDecoder('utf-8').decode(bytes);
+        const imported = JSON.parse(json);
+
+        let importedCount = 0;
+        this.remoteKeys.forEach(name => {
+          if (Array.isArray(imported[name])) {
+            const current = this.get(this.keys[name], []);
+            const merged = this.mergeDataLists(current, imported[name]);
+            this.set(this.keys[name], merged);
+            importedCount += imported[name].length;
+          }
+        });
+
+        this.scheduleCloudPush();
+        return { success: true, count: importedCount };
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
+    }
 
     initRemoteSync() {
       const config = window.CONFIG.presence;

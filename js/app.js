@@ -1182,16 +1182,16 @@
             <span class="paper-author" style="color: ${n.author === "Kevin" ? "var(--color-lilac)" : "var(--color-sunflower-gold)"};">${n.author}</span>
             <span class="paper-date">${window.Utils.formatDateTimeES(n.createdAt)}</span>
           </div>
-        <div class="paper-content">${window.Utils.sanitizeHTML(n.message)}</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          ${n.isDemo ? `<span class="demo-badge">Dato de ejemplo</span>` : `<span></span>`}
-          <div style="display: flex; gap: 0.4rem;">
-            <button type="button" class="btn-secondary btn-edit-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;">Editar</button>
-            <button type="button" class="btn-secondary btn-delete-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem; color: var(--color-danger);">Eliminar</button>
+          <div class="paper-content">${window.Utils.sanitizeHTML(n.message)}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            ${n.isDemo ? `<span class="demo-badge">Dato de ejemplo</span>` : `<span></span>`}
+            <div style="display: flex; gap: 0.4rem;">
+              <button type="button" class="btn-secondary btn-edit-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;">Editar</button>
+              <button type="button" class="btn-secondary btn-delete-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem; color: var(--color-danger);">Eliminar</button>
+            </div>
           </div>
         </div>
-      </div>
-    `).join("");
+      `).join("");
 
       container.querySelectorAll(".btn-edit-note").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -1295,6 +1295,26 @@
       });
     }
 
+    updateSyncModalUI() {
+      const statusText = document.getElementById("sync-modal-status-text");
+      const timeText = document.getElementById("sync-modal-last-time");
+      const dot = document.getElementById("sync-modal-dot");
+      if (!statusText || !timeText || !dot) return;
+
+      if (window.storage && window.storage.isSyncing) {
+        statusText.textContent = "Sincronizando con la nube…";
+        dot.className = "sync-indicator-dot syncing";
+      } else if (window.storage && window.storage.lastCloudSyncTime) {
+        statusText.textContent = "Sincronizado con la nube ☁️";
+        timeText.textContent = `Última sincronización: ${window.Utils.formatDateTimeES(window.storage.lastCloudSyncTime)}`;
+        dot.className = "sync-indicator-dot online";
+      } else {
+        statusText.textContent = "Conectado a la nube ☁️";
+        timeText.textContent = "Sincronización automática activa en segundo plano.";
+        dot.className = "sync-indicator-dot online";
+      }
+    }
+
     openDreamModal(d = null) {
       const modal = document.getElementById("modal-dream");
       document.getElementById("dream-id").value = d ? d.id : "";
@@ -1313,6 +1333,125 @@
       document.getElementById("btn-change-password")?.addEventListener("click", () => document.getElementById("modal-password").classList.add("active"));
       document.getElementById("music-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMusic(document.getElementById('music-search-input').value); });
       document.getElementById("movie-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMovies(document.getElementById('movie-search-input').value); });
+
+      // Sincronización en la Nube y Multidispositivo
+      document.getElementById("btn-open-sync")?.addEventListener("click", () => {
+        const modal = document.getElementById("modal-sync");
+        this.updateSyncModalUI();
+        modal.classList.add("active");
+      });
+
+      if (window.storage) {
+        window.storage.onSyncStateChange = () => this.updateSyncModalUI();
+      }
+
+      document.getElementById("btn-force-cloud-sync")?.addEventListener("click", async () => {
+        const btn = document.getElementById("btn-force-cloud-sync");
+        btn.disabled = true;
+        btn.textContent = "Sincronizando… ⏳";
+        
+        const pullRes = await window.storage.syncCloudPull();
+        const pushRes = await window.storage.syncCloudPush();
+
+        btn.disabled = false;
+        btn.textContent = "🔄 Sincronizar Ahora";
+        this.renderMemories();
+        this.renderAnnualCalendar();
+        this.renderDailyDashboard();
+        this.updateSyncModalUI();
+
+        if (pullRes && pullRes.success) {
+          window.Utils.showToast("¡Datos sincronizados con la nube! ☁️✨", "success");
+        } else {
+          window.Utils.showToast("Sincronización completada localmente.", "info");
+        }
+      });
+
+      document.getElementById("btn-copy-sync-code")?.addEventListener("click", () => {
+        const code = window.storage.exportTransferCode();
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code).then(() => {
+            window.Utils.showToast("¡Código copiado! 📋 Pégalo en tu teléfono.", "success");
+          }).catch(() => {
+            const input = document.getElementById("sync-code-input");
+            if (input) input.value = code;
+            window.Utils.showToast("Código generado en la caja. Cópialo.", "info");
+          });
+        } else {
+          const input = document.getElementById("sync-code-input");
+          if (input) input.value = code;
+          window.Utils.showToast("Código generado en la caja. Cópialo.", "info");
+        }
+      });
+
+      document.getElementById("btn-apply-sync-code")?.addEventListener("click", () => {
+        const input = document.getElementById("sync-code-input");
+        const code = input ? input.value.trim() : "";
+        if (!code) {
+          window.Utils.showToast("Por favor pega un código de sincronización.", "error");
+          return;
+        }
+        const res = window.storage.importTransferCode(code);
+        if (res && res.success) {
+          input.value = "";
+          this.initSections();
+          window.Utils.showToast(`¡${res.count} elementos sincronizados en este dispositivo! 🌻✨`, "success");
+        } else {
+          window.Utils.showToast("El código no es válido o está incompleto.", "error");
+        }
+      });
+
+      document.getElementById("btn-export-backup-json")?.addEventListener("click", () => {
+        const data = {
+          exportDate: new Date().toISOString(),
+          app: "Patico Wrapped",
+          memories: window.storage.getMemories(),
+          movies: window.storage.getMovies(),
+          notes: window.storage.getNotes(),
+          dreams: window.storage.getDreams(),
+          songs: window.storage.getSongs()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `patico-recuerdos-respaldo-${new Date().toISOString().split("T")[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        window.Utils.showToast("Archivo de respaldo descargado 💾", "success");
+      });
+
+      document.getElementById("input-restore-backup-file")?.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const imported = JSON.parse(ev.target.result);
+            if (imported.memories && Array.isArray(imported.memories)) {
+              window.storage.set(window.CONFIG.storageKeys.memories, window.storage.mergeDataLists(window.storage.getMemories(), imported.memories));
+            }
+            if (imported.movies && Array.isArray(imported.movies)) {
+              window.storage.set(window.CONFIG.storageKeys.movies, window.storage.mergeDataLists(window.storage.getMovies(), imported.movies));
+            }
+            if (imported.notes && Array.isArray(imported.notes)) {
+              window.storage.set(window.CONFIG.storageKeys.notes, window.storage.mergeDataLists(window.storage.getNotes(), imported.notes));
+            }
+            if (imported.dreams && Array.isArray(imported.dreams)) {
+              window.storage.set(window.CONFIG.storageKeys.dreams, window.storage.mergeDataLists(window.storage.getDreams(), imported.dreams));
+            }
+            if (imported.songs && Array.isArray(imported.songs)) {
+              window.storage.set(window.CONFIG.storageKeys.songs, window.storage.mergeDataLists(window.storage.getSongs(), imported.songs));
+            }
+            window.storage.scheduleCloudPush();
+            this.initSections();
+            window.Utils.showToast("¡Copia de seguridad restaurada con éxito! 🌻", "success");
+          } catch(err) {
+            window.Utils.showToast("Error al leer el archivo de respaldo.", "error");
+          }
+        };
+        reader.readAsText(file);
+      });
 
       document.querySelectorAll("[data-close-modal]").forEach(btn => {
         btn.addEventListener("click", (e) => {

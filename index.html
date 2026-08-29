@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patico Wrapped 🌻 — Kevin & Wendy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Jost:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/sections.css">
+</head>
+<body>
+  <canvas id="stars-canvas" aria-hidden="true"></canvas>
+  <canvas id="effects-canvas" aria-hidden="true"></canvas>
+  <!-- PANTALLA DE DESBLOQUEO -->
+  <div id="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
+    <div class="lock-card glass-card" id="lock-card">
+      <div class="lock-moon"></div>
+      <div class="lock-sunflower-container">
+        <svg class="lock-sunflower-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="18" fill="#5D4037" stroke="#3E2723" stroke-width="2"/>
+          <circle cx="50" cy="50" r="12" fill="#4E342E" stroke="#F4C542" stroke-width="1" stroke-dasharray="2 2"/>
+          <path d="M50 12 C46 26 54 26 50 12 Z" fill="#F4C542" />
+          <path d="M50 88 C46 74 54 74 50 88 Z" fill="#F4C542" />
+          <path d="M12 50 C26 46 26 54 12 50 Z" fill="#F4C542" />
+          <path d="M88 50 C74 46 74 54 88 50 Z" fill="#F4C542" />
+          <path d="M23 23 C34 32 39 27 23 23 Z" fill="#F8D96B" />
+          <path d="M77 77 C66 68 61 73 77 77 Z" fill="#F8D96B" />
+          <path d="M23 77 C32 66 27 61 23 77 Z" fill="#F8D96B" />
+          <path d="M77 23 C68 34 73 39 77 23 Z" fill="#F8D96B" />
+        </svg>
+      </div>
+      <h1 id="lock-title" class="lock-title">Patico Wrapped 🌻</h1>
+      <p class="lock-question">Entren para seguir escribiendo su historia.</p>
+      <form id="lock-form" class="lock-form" autocomplete="off">
+        <label class="sr-only" for="lock-username">Usuario</label>
+        <select id="lock-username" class="form-control lock-input" required aria-label="Usuario"><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select>
+        <label class="sr-only" for="lock-password">Contraseña</label>
+        <input type="password" id="lock-password" class="form-control lock-input" placeholder="Contraseña" required aria-label="Contraseña" />
+        <div id="lock-error" class="lock-error-msg" role="alert"></div>
+        <button type="submit" class="btn-primary" style="width: 100%;">
+          <span>Entrar al diario</span> 🌻
+        </button>
+      </form>
+    </div>
+  </div>
+  <div id="app-container" style="display: none;">
+    <header class="app-header">
+      <a href="#inicio" class="header-brand" aria-label="Ir al inicio"><span class="sunflower-icon">🌻</span><span>Patico</span></a>
+      <div class="presence-capsule" id="presence-badge" aria-live="polite">
+        <span class="presence-status-dot local-mode" id="presence-dot"></span>
+        <span id="presence-summary-text">Modo local: presencia compartida no configurada</span>
+        <span id="active-user-label" class="active-user-label"></span>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña">⚙️ Contraseña</button>
+        <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span> Bloquear</button>
+      </div>
+    </header>
+    <nav class="app-nav" aria-label="Navegación principal del Wrapped">
+      <div class="nav-wrapper">
+        <div class="nav-pills" id="nav-pills-container" role="tablist"></div>
+        <div class="nav-progress-indicator" id="nav-progress-text">Sección 1 de 6</div>
+      </div>
+    </nav>
+    <main class="main-content">
+      <!-- INICIO -->
+      <section id="section-inicio" class="wrapped-section" role="tabpanel">
+        <div class="section-header"><span class="section-number">Tu espacio compartido</span><h1 class="section-title">Hola, <span id="dashboard-user">Kevin</span> 🌻</h1><p class="section-quote">Lo importante de ustedes, a mano y sin relleno.</p></div>
+        <div class="daily-actions"><a href="#recuerdos" class="btn-primary">Añadir recuerdo</a><a href="#musica" class="btn-secondary">Recomendar canción</a><a href="#cine" class="btn-secondary">Elegir película</a><a href="#muro" class="btn-secondary">Dejar una nota</a></div>
+        <div class="daily-summary" id="daily-summary"></div>
+        <div class="glass-card daily-tip"><strong>Para hoy</strong><p id="daily-tip-text"></p></div>
+      </section>
+      <!-- RECUERDOS -->
+      <section id="section-recuerdos" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <span class="section-number">Sección 2 de 6</span>
+          <h2 class="section-title">Campo de girasoles</h2>
+          <p class="section-quote">«Cada recuerdo florece como un girasol en nuestro camino.»</p>
+        </div>
+        <div class="trail-controls">
+          <button type="button" class="btn-primary" id="btn-new-memory"><span>+ Nuevo recuerdo</span> 🌻</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <label for="select-sort-memories" style="font-size: 0.85rem; color: var(--color-text-secondary);">Orden:</label>
+            <select id="select-sort-memories" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="desc">Más recientes primero</option>
+              <option value="asc">Cronológico (antiguos primero)</option>
+            </select>
+          </div>
+        </div>
+        <div class="trail-container" id="memories-trail-list">
+          <div class="trail-line"></div>
+        </div>
+      </section>
+      <!-- 7. NUESTRA MÚSICA -->
+      <section id="section-musica" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <span class="section-number">Sección 3 de 6</span>
+          <h2 class="section-title">Nuestra música 🎵</h2>
+          <p class="section-quote">«Canciones que nos recomendamos para seguir cerca.»</p>
+        </div>
+        <div class="trail-controls">
+          <form id="music-search-form" class="media-search compact">
+            <input id="music-search-input" class="form-control" placeholder="Busca una canción o artista (ej. Yellow Coldplay, Morat)..." required>
+            <button type="submit" class="btn-primary">Buscar</button>
+          </form>
+          <button type="button" id="btn-new-song" class="btn-secondary">+ Recomendar canción</button>
+        </div>
+        <div id="music-search-results" class="media-results"></div>
+        <div class="section-subtitle">Nuestras recomendaciones</div>
+        <div class="music-grid" id="songs-grid-list"></div>
+      </section>
+      <!-- 8. NUESTRO CINE -->
+      <section id="section-cine" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <span class="section-number">Sección 4 de 6</span>
+          <h2 class="section-title">Nuestro cine 🎬</h2>
+          <p class="section-quote">«Historias que vimos juntos y se quedaron para siempre.»</p>
+        </div>
+        <div class="trail-controls">
+          <button type="button" class="btn-primary" id="btn-new-movie"><span>+ Añadir película</span> 🍿</button>
+          <form id="movie-search-form" class="media-search compact">
+            <input id="movie-search-input" class="form-control" placeholder="Buscar película (ej. Elementos, Enredados)..." required>
+            <button type="submit" class="btn-secondary">Buscar</button>
+          </form>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="filter-movies-status" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">Todas las películas</option>
+              <option value="Me encantó">💖 Me encantó</option>
+              <option value="Vista">🍿 Vistas</option>
+              <option value="Por ver">🌱 Por ver</option>
+            </select>
+          </div>
+        </div>
+        <div id="movie-search-results" class="media-results"></div>
+        <div class="movies-grid" id="movies-grid-list"></div>
+      </section>
+      <!-- 8. MURO COMPARTIDO -->
+      <section id="section-muro" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <span class="section-number">Sección 5 de 6</span>
+          <h2 class="section-title">Muro compartido 💬</h2>
+          <p class="section-quote">«Un diario para dejar pequeñas notas en el corazón.»</p>
+        </div>
+        <div class="trail-controls">
+          <button type="button" class="btn-primary" id="btn-new-note"><span>+ Escribir una nota</span> 💌</button>
+          <span style="font-size: 0.85rem; color: var(--color-text-secondary);">Orden: Más recientes primero</span>
+        </div>
+        <div class="notes-container" id="notes-grid-list"></div>
+      </section>
+      <!-- 9. FRASCO DE SUEÑOS -->
+      <section id="section-suenos" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <span class="section-number">Sección 6 de 6</span>
+          <h2 class="section-title">Frasco de sueños ✨</h2>
+          <p class="section-quote">«Metas y deseos que florecerán a su debido tiempo.»</p>
+        </div>
+        <div class="dreams-stats-banner" id="dreams-stats-container">
+          <div class="glass-card" style="text-align: center;"><span class="stat-label">Total de sueños</span><div class="stat-value" id="stat-dreams-total">0</div></div>
+          <div class="glass-card" style="text-align: center;"><span class="stat-label">Cumplidos</span><div class="stat-value" style="color: var(--color-sunflower-gold);" id="stat-dreams-completed">0</div></div>
+          <div class="glass-card" style="text-align: center;"><span class="stat-label">Pendientes</span><div class="stat-value" style="color: var(--color-lilac);" id="stat-dreams-pending">0</div></div>
+          <div class="glass-card" style="text-align: center;"><span class="stat-label">% Cumplido</span><div class="stat-value" style="color: var(--color-light-yellow);" id="stat-dreams-pct">0,00 %</div></div>
+        </div>
+        <div class="trail-controls">
+          <button type="button" class="btn-primary" id="btn-new-dream"><span>+ Nuevo sueño</span> 🌟</button>
+          <p class="stats-note-legend" style="margin: 0;">* Porcentaje = (sueños cumplidos / total de sueños) × 100</p>
+        </div>
+        <div id="dreams-list-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL CAMBIAR CONTRASEÑA -->
+  <div id="modal-password" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-password-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-password-title">Cambiar contraseña</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-password">&times;</button>
+      </div>
+      <form id="form-password">
+        <div class="form-group"><label for="current-password">Contraseña actual</label><input id="current-password" type="password" class="form-control" required></div>
+        <div class="form-group"><label for="new-password">Nueva contraseña (mínimo 4 caracteres)</label><input id="new-password" type="password" minlength="4" class="form-control" required></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-password">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CANCIÓN -->
+  <div id="modal-song" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-song-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-song-title">Recomendar canción 🎵</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-song" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-song">
+        <input type="hidden" id="song-id">
+        <div class="form-group"><label for="song-title">Nombre de la canción *</label><input id="song-title" class="form-control" placeholder="Ej. Yellow" required></div>
+        <div class="form-group"><label for="song-artist">Artista *</label><input id="song-artist" class="form-control" placeholder="Ej. Coldplay" required></div>
+        <div class="form-group"><label for="song-cover">Enlace de portada (URL)</label><input id="song-cover" type="url" class="form-control" placeholder="https://..."></div>
+        <div class="form-group">
+          <label for="song-lyrics">Letra de la canción</label>
+          <textarea id="song-lyrics" class="form-control" rows="5" placeholder="Escribe o pega la letra aquí para leerla juntos..."></textarea>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="song-spotify">Enlace de Spotify</label><input id="song-spotify" type="url" class="form-control" placeholder="https://open.spotify.com/..."></div>
+          <div class="form-group"><label for="song-youtube">Enlace de YouTube</label><input id="song-youtube" type="url" class="form-control" placeholder="https://www.youtube.com/..."></div>
+        </div>
+        <div class="form-group">
+          <label for="song-proposed">Recomendada por</label>
+          <select id="song-proposed" class="form-control"><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-song">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar canción 🎵</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL LETRA DE CANCIÓN -->
+  <div id="modal-lyrics" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-lyrics-title">
+    <div class="modal-box modal-box-lyrics">
+      <div class="modal-header" style="align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.85rem; overflow: hidden;">
+          <img id="lyrics-modal-cover" src="" alt="" style="width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--color-purple); flex-shrink: 0;">
+          <div style="overflow: hidden;">
+            <h3 id="modal-lyrics-title" style="font-size: 1.25rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Letra</h3>
+            <p id="modal-lyrics-artist" style="font-size: 0.88rem; color: var(--color-sunflower-gold); margin: 0.2rem 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-lyrics" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="lyrics-scroll-body" id="modal-lyrics-body">
+        <!-- Letra formateada -->
+      </div>
+      <div class="lyrics-footer-links" id="modal-lyrics-links" style="display: flex; gap: 0.75rem; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid var(--color-border); padding-top: 1rem;">
+        <div id="modal-lyrics-actions" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
+        <button type="button" class="btn-primary" data-close-modal="modal-lyrics" style="padding: 0.4rem 1.2rem; font-size: 0.9rem;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RECUERDO -->
+  <div id="modal-memory" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-memory-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-memory-title">Nuevo Recuerdo 🌻</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-memory" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-memory">
+        <input type="hidden" id="mem-id" />
+        <div class="form-group"><label for="mem-date">Fecha del recuerdo *</label><input type="date" id="mem-date" class="form-control" required /></div>
+        <div class="form-group"><label for="mem-title">Título *</label><input type="text" id="mem-title" class="form-control" placeholder="Ej. Nuestro primer picnic" required /></div>
+        <div class="form-group"><label for="mem-desc">Descripción *</label><textarea id="mem-desc" class="form-control" placeholder="Describe lo vivido..." required></textarea></div>
+        <div class="form-group"><label for="mem-status">Estado</label><select id="mem-status" class="form-control"><option value="Guardado">Guardado</option><option value="Destacado">Destacado ⭐</option></select></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-memory">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar recuerdo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PELÍCULA -->
+  <div id="modal-movie" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-movie-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3 id="modal-movie-title">Película 🎬</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-movie" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-movie">
+        <input type="hidden" id="movie-id" />
+        <div class="form-group"><label for="movie-title">Título de la película *</label><input type="text" id="movie-title" class="form-control" placeholder="Ej. Elementos" required /></div>
+        <div class="form-group"><label for="movie-poster">Enlace del póster (URL)</label><input type="url" id="movie-poster" class="form-control" placeholder="https://image.tmdb.org/..." /></div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="movie-year">Año (4 dígitos) *</label><input type="number" id="movie-year" class="form-control" min="1900" max="2099" required /></div>
+          <div class="form-group"><label for="movie-proposed">Propuesta por *</label><select id="movie-proposed" class="form-control" required><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="movie-priority">Prioridad (1 a 5) *</label><select id="movie-priority" class="form-control" required><option value="5">⭐⭐⭐⭐⭐ (5/5)</option><option value="4">⭐⭐⭐⭐ (4/5)</option><option value="3">⭐⭐⭐ (3/5)</option><option value="2">⭐⭐ (2/5)</option><option value="1">⭐ (1/5)</option></select></div>
+          <div class="form-group"><label for="movie-status">Etiqueta de estado *</label><select id="movie-status" class="form-control" required><option value="Por ver">🌱 Por ver</option><option value="Vista">🍿 Vista</option><option value="Me encantó">💖 Me encantó</option></select></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+          <div class="form-group"><label for="movie-platforms">Plataformas disponibles</label><input type="text" id="movie-platforms" class="form-control" placeholder="Ej. Netflix, Disney+, Prime Video" /></div>
+          <div class="form-group"><label for="movie-imdb-score">Calificación IMDb</label><input type="text" id="movie-imdb-score" class="form-control" placeholder="Ej. 8.4" /></div>
+        </div>
+        <div class="form-group"><label for="movie-imdb-url">Enlace IMDb (opcional)</label><input type="url" id="movie-imdb-url" class="form-control" placeholder="https://www.imdb.com/title/..." /></div>
+
+        <div class="form-group"><label for="movie-synopsis">Sinopsis</label><textarea id="movie-synopsis" class="form-control" rows="3" placeholder="Resumen de la película..."></textarea></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="movie-kevin-score">Nota Kevin (0 - 10)</label><input type="number" id="movie-kevin-score" class="form-control" min="0" max="10" step="0.1" placeholder="Ej. 9.5" /></div>
+          <div class="form-group"><label for="movie-wendy-score">Nota Wendy (0 - 10)</label><input type="number" id="movie-wendy-score" class="form-control" min="0" max="10" step="0.1" placeholder="Ej. 10" /></div>
+        </div>
+        <div class="form-group"><label for="movie-kevin-comment">Comentario de Kevin</label><input type="text" id="movie-kevin-comment" class="form-control" placeholder="¿Qué le pareció a Kevin?" /></div>
+        <div class="form-group"><label for="movie-wendy-comment">Comentario de Wendy</label><input type="text" id="movie-wendy-comment" class="form-control" placeholder="¿Qué le pareció a Wendy?" /></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-movie">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar película</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL NOTA MURO -->
+  <div id="modal-note" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-note-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-note-title">Nota para el Muro 💌</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-note" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-note">
+        <input type="hidden" id="note-id" />
+        <div class="form-group"><label for="note-author">Autor *</label><select id="note-author" class="form-control" required><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select></div>
+        <div class="form-group"><label for="note-message">Mensaje *</label><textarea id="note-message" class="form-control" placeholder="Escribe tus palabras aquí..." required></textarea></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-note">Cancelar</button>
+          <button type="submit" class="btn-primary">Publicar nota</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL SUEÑO -->
+  <div id="modal-dream" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-dream-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-dream-title">Nuevo Sueño ✨</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-dream" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-dream">
+        <input type="hidden" id="dream-id" />
+        <div class="form-group"><label for="dream-title">Título del sueño o meta *</label><input type="text" id="dream-title" class="form-control" placeholder="Ej. Viajar juntos a..." required /></div>
+        <div class="form-group"><label for="dream-status">Estado</label><select id="dream-status" class="form-control"><option value="Pendiente">Pendiente 🌱</option><option value="Cumplido">Cumplido 🌟</option></select></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-dream">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar sueño</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/media.js"></script>
+  <script src="js/presence.js"></script>
+  <script src="js/animations.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

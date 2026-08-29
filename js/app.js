@@ -52,149 +52,135 @@
       const lockScreen   = document.getElementById('lock-screen');
       const lockCard     = document.getElementById('lock-card');
       const appContainer = document.getElementById('app-container');
+      const lockForm     = document.getElementById('lock-form');
+      const usernameInput = document.getElementById('lock-username');
+      const passwordInput = document.getElementById('lock-password');
       const lockError    = document.getElementById('lock-error');
       const btnReLock    = document.getElementById('btn-re-lock');
-
-      let selectedUser = null;
-
-      const userGrid    = document.getElementById('lock-user-grid');
-      const passBox     = document.getElementById('lock-password-box');
-      const whoLabel    = document.getElementById('lock-who-selected');
-      const passField   = document.getElementById('lock-password');
-      const btnSubmit   = document.getElementById('btn-submit-lock');
-      const btnBack     = document.getElementById('btn-lock-back');
       const btnToggleEye = document.getElementById('btn-toggle-lock-password');
+      const submitBtn    = document.getElementById('btn-submit-lock');
 
-      // Cargar apodos guardados en los displays de las tarjetas
-      const loadNicknames = () => {
+      // Recordar último usuario seleccionado
+      const lastUser = window.storage.getCurrentUser() || 'Kevin';
+      if (usernameInput) usernameInput.value = lastUser;
+
+      // Actualizar tarjetas de usuario y permitir seleccionar con un toque
+      const cards = document.querySelectorAll('.lock-user-card');
+      const selectUserCard = (user) => {
+        if (usernameInput) usernameInput.value = user;
+        cards.forEach(c => {
+          if (c.dataset.user === user) {
+            c.classList.add('active');
+          } else {
+            c.classList.remove('active');
+          }
+        });
+        if (passwordInput) passwordInput.focus();
+      };
+
+      cards.forEach(card => {
+        if (card.dataset.user === lastUser) card.classList.add('active');
+        else card.classList.remove('active');
+
+        card.addEventListener('click', () => {
+          const user = card.dataset.user;
+          if (user) selectUserCard(user);
+        });
+      });
+
+      // Actualizar apodos en subtítulos de las tarjetas
+      const updateNicknamesOnCards = () => {
         try {
           const profiles = window.storage.getProfiles ? window.storage.getProfiles() : {};
-          const nickForWendy = profiles.Kevin?.nicknameForWendy || 'Patico ♥️';
-          const nickForKevin = profiles.Wendy?.nicknameForKevin || 'Su Cielo ☁️';
-          const kevinDisplay = document.getElementById('lock-kevin-nick-display');
-          const wendyDisplay = document.getElementById('lock-wendy-nick-display');
-          if (kevinDisplay) kevinDisplay.textContent = nickForKevin;
-          if (wendyDisplay) wendyDisplay.textContent = nickForWendy;
+          const kevinSub = document.getElementById('lock-kevin-subtag');
+          const wendySub = document.getElementById('lock-wendy-subtag');
+          if (kevinSub && profiles.Wendy?.nicknameForKevin) {
+            kevinSub.textContent = profiles.Wendy.nicknameForKevin;
+          }
+          if (wendySub && profiles.Kevin?.nicknameForWendy) {
+            wendySub.textContent = profiles.Kevin.nicknameForWendy;
+          }
         } catch (_) {}
       };
+      updateNicknamesOnCards();
 
-      // Mostrar caja de contraseña para el usuario elegido
-      const selectUser = (username) => {
-        selectedUser = username;
-        if (lockError) lockError.textContent = '';
+      // Botón Ver/Ocultar contraseña
+      btnToggleEye?.addEventListener('click', () => {
+        if (!passwordInput) return;
+        const isPass = passwordInput.type === 'password';
+        passwordInput.type = isPass ? 'text' : 'password';
+        btnToggleEye.textContent = isPass ? '🙈' : '👁️';
+      });
 
-        // Resaltar tarjeta seleccionada
-        document.querySelectorAll('.lock-user-card').forEach(c => {
-          c.classList.remove('selected-kevin', 'selected-wendy');
-        });
-        const card = document.getElementById(`lock-card-${username.toLowerCase()}`);
-        if (card) card.classList.add(`selected-${username.toLowerCase()}`);
+      // Función de desbloqueo garantizado
+      const unlockAndOpen = (username) => {
+        window.storage.setCurrentUser(username);
+        window.storage.setUnlocked(true);
 
-        // Texto informativo
-        const emoji = username === 'Kevin' ? '👦🏻' : '👧🏻';
-        if (whoLabel) whoLabel.innerHTML = `${emoji} <strong>${username}</strong> – ingresa tu contraseña`;
-
-        // Mostrar caja de contraseña
-        if (passBox) passBox.style.display = 'block';
-        if (passField) {
-          passField.value = '';
-          passField.focus();
+        try {
+          if (window.presence?.switchUser) window.presence.switchUser(username);
+        } catch (e) {
+          console.warn('Presence error ignored on unlock:', e);
         }
-      };
 
-      // Login
-      const doLogin = async () => {
-        if (!selectedUser) return;
-        if (btnSubmit) btnSubmit.disabled = true;
         if (lockError) lockError.textContent = '';
+        lockCard?.classList.add('blooming');
 
-        const entered = (passField ? passField.value : '').trim();
-        // Contraseña vacía o "1234" → acceso garantizado
-        const valid = entered === '' || entered === '1234' || await window.storage.verifyCredentials(selectedUser, entered);
-
-        if (valid) {
-          window.storage.setCurrentUser(selectedUser);
-          if (window.presence?.switchUser) window.presence.switchUser(selectedUser);
-
-          lockCard.classList.add('blooming');
+        setTimeout(() => {
+          lockScreen?.classList.add('unlocked-fade');
           setTimeout(() => {
-            lockScreen.classList.add('unlocked-fade');
-            setTimeout(() => {
+            if (lockScreen) {
               lockScreen.style.display = 'none';
               lockScreen.classList.remove('unlocked-fade');
-              lockCard.classList.remove('blooming');
-              appContainer.style.display = 'flex';
-              window.storage.setUnlocked(true);
-              this.handleRouting();
-              this.initWhatsAppPresenceUI();
-              this.renderDailyDashboard();
-              if (btnSubmit) btnSubmit.disabled = false;
-              window.Utils.showToast(`¡Bienvenido(a) al diario, ${selectedUser}! 🌻✨`, 'success');
-            }, 700);
-          }, 700);
-        } else {
-          if (btnSubmit) btnSubmit.disabled = false;
-          if (lockError) lockError.textContent = '❌ Contraseña incorrecta. La clave por defecto es: 1234';
-          if (passField) passField.focus();
-        }
+            }
+            if (lockCard) lockCard.classList.remove('blooming');
+            if (appContainer) appContainer.style.display = 'flex';
+
+            try { this.handleRouting(); } catch (_) {}
+            try { this.initWhatsAppPresenceUI(); } catch (_) {}
+            try { this.renderDailyDashboard(); } catch (_) {}
+
+            if (submitBtn) submitBtn.disabled = false;
+            window.Utils.showToast(`¡Bienvenido(a), ${username}! 🌻✨`, 'success');
+          }, 350);
+        }, 250);
       };
 
-      // Eventos tarjetas de selección
-      ['Kevin', 'Wendy'].forEach(name => {
-        const card = document.getElementById(`lock-card-${name.toLowerCase()}`);
-        card?.addEventListener('click', () => selectUser(name));
-      });
-
-      // Botón Entrar
-      btnSubmit?.addEventListener('click', doLogin);
-
-      // Enter en el campo de contraseña
-      passField?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
-      });
-
-      // Ver/Ocultar contraseña
-      btnToggleEye?.addEventListener('click', () => {
-        if (!passField) return;
-        const hide = passField.type === 'password';
-        passField.type = hide ? 'text' : 'password';
-        btnToggleEye.textContent = hide ? '🙈' : '👁️';
-      });
-
-      // Volver a elegir persona
-      btnBack?.addEventListener('click', () => {
-        selectedUser = null;
-        if (passBox) passBox.style.display = 'none';
-        if (lockError) lockError.textContent = '';
-        document.querySelectorAll('.lock-user-card').forEach(c => {
-          c.classList.remove('selected-kevin', 'selected-wendy');
-        });
-      });
-
-      // Verificar si ya está desbloqueado
+      // Si ya está desbloqueado en la sesión
       if (window.storage.isUnlocked()) {
-        lockScreen.style.display = 'none';
-        appContainer.style.display = 'flex';
-        this.handleRouting();
+        if (lockScreen) lockScreen.style.display = 'none';
+        if (appContainer) appContainer.style.display = 'flex';
+        try { this.handleRouting(); } catch (_) {}
       } else {
-        lockScreen.style.display = 'flex';
-        appContainer.style.display = 'none';
-        if (passBox) passBox.style.display = 'none';
-        loadNicknames();
+        if (lockScreen) lockScreen.style.display = 'flex';
+        if (appContainer) appContainer.style.display = 'none';
       }
 
-      // Botón Re-bloquear
+      // Procesar Login al enviar el formulario
+      lockForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = usernameInput ? usernameInput.value : 'Kevin';
+        const enteredPassword = passwordInput ? passwordInput.value : '1234';
+        if (submitBtn) submitBtn.disabled = true;
+
+        const valid = await window.storage.verifyCredentials(username, enteredPassword);
+        if (valid) {
+          unlockAndOpen(username);
+        } else {
+          if (submitBtn) submitBtn.disabled = false;
+          if (lockError) lockError.textContent = 'Contraseña incorrecta. (Clave por defecto: 1234)';
+          if (passwordInput) passwordInput.focus();
+        }
+      });
+
+      // Botón Bloquear de nuevo
       btnReLock?.addEventListener('click', () => {
         window.storage.setUnlocked(false);
-        selectedUser = null;
-        appContainer.style.display = 'none';
-        lockScreen.style.display = 'flex';
-        if (passBox) passBox.style.display = 'none';
+        if (appContainer) appContainer.style.display = 'none';
+        if (lockScreen) lockScreen.style.display = 'flex';
+        if (passwordInput) passwordInput.value = '1234';
         if (lockError) lockError.textContent = '';
-        document.querySelectorAll('.lock-user-card').forEach(c => {
-          c.classList.remove('selected-kevin', 'selected-wendy');
-        });
-        loadNicknames();
+        updateNicknamesOnCards();
         window.Utils.showToast('Sesión bloqueada de forma segura', 'info');
       });
     }
@@ -1906,156 +1892,6 @@
       document.getElementById("btn-change-password")?.addEventListener("click", () => document.getElementById("modal-password").classList.add("active"));
       document.getElementById("music-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMusic(document.getElementById('music-search-input').value); });
       document.getElementById("movie-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMovies(document.getElementById('movie-search-input').value); });
-    }
-
-    initProfilesModal() {
-      const modal = document.getElementById('modal-profiles');
-      const form = document.getElementById('form-profiles');
-      if (!modal || !form) return;
-
-      const kevinNicknameInput = document.getElementById('profile-kevin-nickname');
-      const kevinUrlInput = document.getElementById('profile-kevin-avatar-url');
-      const kevinFileInput = document.getElementById('profile-kevin-avatar-file');
-      const kevinPreviewImg = document.getElementById('kevin-avatar-preview-img');
-      const kevinPreviewFallback = document.getElementById('kevin-avatar-preview-fallback');
-
-      const wendyNicknameInput = document.getElementById('profile-wendy-nickname');
-      const wendyUrlInput = document.getElementById('profile-wendy-avatar-url');
-      const wendyFileInput = document.getElementById('profile-wendy-avatar-file');
-      const wendyPreviewImg = document.getElementById('wendy-avatar-preview-img');
-      const wendyPreviewFallback = document.getElementById('wendy-avatar-preview-fallback');
-
-      let kevinAvatarData = '';
-      let wendyAvatarData = '';
-
-      const populateModal = () => {
-        const profiles = window.storage.getProfiles();
-        kevinNicknameInput.value = profiles.Kevin?.nickname || 'Kevin';
-        kevinUrlInput.value = profiles.Kevin?.avatar?.startsWith('data:') ? '' : (profiles.Kevin?.avatar || '');
-        kevinAvatarData = profiles.Kevin?.avatar || '';
-        if (kevinAvatarData) {
-          kevinPreviewImg.src = kevinAvatarData;
-          kevinPreviewImg.style.display = 'block';
-          kevinPreviewFallback.style.display = 'none';
-        } else {
-          kevinPreviewImg.style.display = 'none';
-          kevinPreviewFallback.style.display = 'flex';
-          kevinPreviewFallback.textContent = profiles.Kevin?.nickname ? profiles.Kevin.nickname.charAt(0).toUpperCase() : 'K';
-        }
-
-        wendyNicknameInput.value = profiles.Wendy?.nickname || 'Patico ♥️';
-        wendyUrlInput.value = profiles.Wendy?.avatar?.startsWith('data:') ? '' : (profiles.Wendy?.avatar || '');
-        wendyAvatarData = profiles.Wendy?.avatar || '';
-        if (wendyAvatarData) {
-          wendyPreviewImg.src = wendyAvatarData;
-          wendyPreviewImg.style.display = 'block';
-          wendyPreviewFallback.style.display = 'none';
-        } else {
-          wendyPreviewImg.style.display = 'none';
-          wendyPreviewFallback.style.display = 'flex';
-          wendyPreviewFallback.textContent = profiles.Wendy?.nickname ? profiles.Wendy.nickname.charAt(0).toUpperCase() : 'W';
-        }
-      };
-
-      document.getElementById('btn-open-profiles')?.addEventListener('click', () => {
-        populateModal();
-        modal.classList.add('active');
-      });
-
-      document.getElementById('whatsapp-presence-bar')?.addEventListener('click', () => {
-        populateModal();
-        modal.classList.add('active');
-      });
-
-      kevinUrlInput?.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        if (val) {
-          kevinAvatarData = val;
-          kevinPreviewImg.src = val;
-          kevinPreviewImg.style.display = 'block';
-          kevinPreviewFallback.style.display = 'none';
-        }
-      });
-
-      kevinFileInput?.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            kevinAvatarData = evt.target.result;
-            kevinPreviewImg.src = kevinAvatarData;
-            kevinPreviewImg.style.display = 'block';
-            kevinPreviewFallback.style.display = 'none';
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      wendyUrlInput?.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        if (val) {
-          wendyAvatarData = val;
-          wendyPreviewImg.src = val;
-          wendyPreviewImg.style.display = 'block';
-          wendyPreviewFallback.style.display = 'none';
-        }
-      });
-
-      wendyFileInput?.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            wendyAvatarData = evt.target.result;
-            wendyPreviewImg.src = wendyAvatarData;
-            wendyPreviewImg.style.display = 'block';
-            wendyPreviewFallback.style.display = 'none';
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const updated = {
-          Kevin: {
-            nickname: kevinNicknameInput.value.trim() || 'Kevin',
-            avatar: kevinAvatarData
-          },
-          Wendy: {
-            nickname: wendyNicknameInput.value.trim() || 'Patico ♥️',
-            avatar: wendyAvatarData
-          }
-        };
-
-        window.storage.saveProfiles(updated);
-        modal.classList.remove('active');
-        this.initWhatsAppPresenceUI();
-        this.renderDailyDashboard();
-        window.Utils.showToast('¡Perfiles y apodos actualizados! 💖🌻', 'success');
-      });
-    }
-
-    initNudgeFeature() {
-      document.getElementById('btn-send-nudge')?.addEventListener('click', () => {
-        const currentUser = window.storage.getCurrentUser();
-        const profiles = window.storage.getProfiles();
-        const otherUser = currentUser.toLowerCase() === 'wendy' ? 'Kevin' : 'Wendy';
-        const otherNickname = profiles[otherUser]?.nickname || otherUser;
-
-        window.storage.sendNudge();
-        window.Utils.showToast(`¡Le enviaste un toquecito de amor a ${otherNickname}! 🌻💖`, 'success');
-
-        if (window.confetti) {
-          window.confetti({
-            particleCount: 45,
-            spread: 70,
-            origin: { y: 0.15 },
-            colors: ['#F4C542', '#E040FB', '#00E5FF', '#FF4081']
-          });
-        }
-      });
-    }
 
       document.querySelectorAll("[data-close-modal]").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -2255,6 +2091,171 @@
         document.getElementById("modal-dream").classList.remove("active");
         this.renderDreams();
         window.Utils.showToast("Sueño guardado en el frasco ✨", "success");
+      });
+    }
+
+    initProfilesModal() {
+      const modal = document.getElementById('modal-profiles');
+      const form = document.getElementById('form-profiles');
+      if (!modal || !form) return;
+
+      const kevinNicknameInput = document.getElementById('profile-kevin-nickname');
+      const kevinUrlInput = document.getElementById('profile-kevin-avatar-url');
+      const kevinFileInput = document.getElementById('profile-kevin-avatar-file');
+      const kevinPreviewImg = document.getElementById('kevin-avatar-preview-img');
+      const kevinPreviewFallback = document.getElementById('kevin-avatar-preview-fallback');
+
+      const wendyNicknameInput = document.getElementById('profile-wendy-nickname');
+      const wendyUrlInput = document.getElementById('profile-wendy-avatar-url');
+      const wendyFileInput = document.getElementById('profile-wendy-avatar-file');
+      const wendyPreviewImg = document.getElementById('wendy-avatar-preview-img');
+      const wendyPreviewFallback = document.getElementById('wendy-avatar-preview-fallback');
+
+      let kevinAvatarData = '';
+      let wendyAvatarData = '';
+
+      const populateModal = () => {
+        const profiles = window.storage.getProfiles();
+        if (kevinNicknameInput) kevinNicknameInput.value = profiles.Kevin?.nickname || 'Kevin';
+        if (kevinUrlInput) kevinUrlInput.value = profiles.Kevin?.avatar?.startsWith('data:') ? '' : (profiles.Kevin?.avatar || '');
+        kevinAvatarData = profiles.Kevin?.avatar || '';
+        if (kevinAvatarData) {
+          if (kevinPreviewImg) {
+            kevinPreviewImg.src = kevinAvatarData;
+            kevinPreviewImg.style.display = 'block';
+          }
+          if (kevinPreviewFallback) kevinPreviewFallback.style.display = 'none';
+        } else {
+          if (kevinPreviewImg) kevinPreviewImg.style.display = 'none';
+          if (kevinPreviewFallback) {
+            kevinPreviewFallback.style.display = 'flex';
+            kevinPreviewFallback.textContent = profiles.Kevin?.nickname ? profiles.Kevin.nickname.charAt(0).toUpperCase() : 'K';
+          }
+        }
+
+        if (wendyNicknameInput) wendyNicknameInput.value = profiles.Wendy?.nickname || 'Patico ♥️';
+        if (wendyUrlInput) wendyUrlInput.value = profiles.Wendy?.avatar?.startsWith('data:') ? '' : (profiles.Wendy?.avatar || '');
+        wendyAvatarData = profiles.Wendy?.avatar || '';
+        if (wendyAvatarData) {
+          if (wendyPreviewImg) {
+            wendyPreviewImg.src = wendyAvatarData;
+            wendyPreviewImg.style.display = 'block';
+          }
+          if (wendyPreviewFallback) wendyPreviewFallback.style.display = 'none';
+        } else {
+          if (wendyPreviewImg) wendyPreviewImg.style.display = 'none';
+          if (wendyPreviewFallback) {
+            wendyPreviewFallback.style.display = 'flex';
+            wendyPreviewFallback.textContent = profiles.Wendy?.nickname ? profiles.Wendy.nickname.charAt(0).toUpperCase() : 'W';
+          }
+        }
+      };
+
+      document.getElementById('btn-open-profiles')?.addEventListener('click', () => {
+        populateModal();
+        modal.classList.add('active');
+      });
+
+      document.getElementById('whatsapp-presence-bar')?.addEventListener('click', () => {
+        populateModal();
+        modal.classList.add('active');
+      });
+
+      kevinUrlInput?.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          kevinAvatarData = val;
+          if (kevinPreviewImg) {
+            kevinPreviewImg.src = val;
+            kevinPreviewImg.style.display = 'block';
+          }
+          if (kevinPreviewFallback) kevinPreviewFallback.style.display = 'none';
+        }
+      });
+
+      kevinFileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            kevinAvatarData = evt.target.result;
+            if (kevinPreviewImg) {
+              kevinPreviewImg.src = kevinAvatarData;
+              kevinPreviewImg.style.display = 'block';
+            }
+            if (kevinPreviewFallback) kevinPreviewFallback.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      wendyUrlInput?.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          wendyAvatarData = val;
+          if (wendyPreviewImg) {
+            wendyPreviewImg.src = val;
+            wendyPreviewImg.style.display = 'block';
+          }
+          if (wendyPreviewFallback) wendyPreviewFallback.style.display = 'none';
+        }
+      });
+
+      wendyFileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            wendyAvatarData = evt.target.result;
+            if (wendyPreviewImg) {
+              wendyPreviewImg.src = wendyAvatarData;
+              wendyPreviewImg.style.display = 'block';
+            }
+            if (wendyPreviewFallback) wendyPreviewFallback.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const updated = {
+          Kevin: {
+            nickname: (kevinNicknameInput?.value || '').trim() || 'Kevin',
+            avatar: kevinAvatarData
+          },
+          Wendy: {
+            nickname: (wendyNicknameInput?.value || '').trim() || 'Patico ♥️',
+            avatar: wendyAvatarData
+          }
+        };
+
+        window.storage.saveProfiles(updated);
+        modal.classList.remove('active');
+        this.initWhatsAppPresenceUI();
+        this.renderDailyDashboard();
+        window.Utils.showToast('¡Perfiles y apodos actualizados! 💖🌻', 'success');
+      });
+    }
+
+    initNudgeFeature() {
+      document.getElementById('btn-send-nudge')?.addEventListener('click', () => {
+        const currentUser = window.storage.getCurrentUser();
+        const profiles = window.storage.getProfiles();
+        const otherUser = currentUser.toLowerCase() === 'wendy' ? 'Kevin' : 'Wendy';
+        const otherNickname = profiles[otherUser]?.nickname || otherUser;
+
+        window.storage.sendNudge();
+        window.Utils.showToast(`¡Le enviaste un toquecito de amor a ${otherNickname}! 🌻💖`, 'success');
+
+        if (window.confetti) {
+          window.confetti({
+            particleCount: 45,
+            spread: 70,
+            origin: { y: 0.15 },
+            colors: ['#F4C542', '#E040FB', '#00E5FF', '#FF4081']
+          });
+        }
       });
     }
 

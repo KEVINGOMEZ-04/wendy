@@ -22,42 +22,55 @@
   <canvas id="effects-canvas" aria-hidden="true"></canvas>
   <!-- PANTALLA DE DESBLOQUEO / INICIO DE SESIÓN -->
   <div id="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
-    <div class="lock-card" id="lock-card">
+    <div class="lock-card glass-card" id="lock-card">
 
-      <!-- Emblema y título -->
+      <!-- Emblema de Girasol -->
       <div class="lock-hero-emblem">
         <div class="lock-emblem-glow"></div>
         <div class="lock-emblem-circle">🌻</div>
       </div>
       <h1 id="lock-title" class="lock-title">Patico Wrapped</h1>
-      <p class="lock-subtitle">¿Quién está entrando hoy? 💖</p>
+      <p class="lock-subtitle">Entren para seguir escribiendo su historia 💖</p>
 
-      <!-- Paso 1: Dos tarjetas de selección -->
-      <div class="lock-user-grid" id="lock-user-grid">
-        <button type="button" class="lock-user-card" id="lock-card-kevin" data-user="Kevin">
-          <span class="lock-card-emoji">👦🏻</span>
-          <span class="lock-card-name">Kevin</span>
-          <span class="lock-card-nickname kevin-color" id="lock-kevin-nick-display">Su Cielo ☁️</span>
-        </button>
-        <button type="button" class="lock-user-card" id="lock-card-wendy" data-user="Wendy">
-          <span class="lock-card-emoji">👧🏻</span>
-          <span class="lock-card-name">Wendy</span>
-          <span class="lock-card-nickname wendy-color" id="lock-wendy-nick-display">Patico ♥️</span>
-        </button>
-      </div>
-
-      <!-- Paso 2: Caja de contraseña (aparece al seleccionar) -->
-      <div class="lock-password-box" id="lock-password-box" style="display:none;">
-        <div class="lock-who-selected" id="lock-who-selected"></div>
-        <div class="lock-pass-row">
-          <input type="password" id="lock-password" class="lock-pass-field" placeholder="Contraseña (por defecto: 1234)" autocomplete="off" />
-          <button type="button" class="lock-pass-eye-btn" id="btn-toggle-lock-password" title="Ver/ocultar">👁️</button>
+      <form id="lock-form" class="lock-form" autocomplete="off">
+        <!-- Selector de Perfil con Tarjetas Clicables -->
+        <div class="lock-selector-section">
+          <label class="lock-section-label">¿Quién está entrando hoy?</label>
+          <div class="lock-user-cards-grid">
+            <div class="lock-user-card active" data-user="Kevin" id="lock-user-kevin" role="button" tabindex="0">
+              <span class="lock-user-emoji">👦🏻</span>
+              <div class="lock-user-text">
+                <span class="lock-user-name">Kevin</span>
+                <span class="lock-user-tag kevin-color" id="lock-kevin-subtag">Su Cielo ☁️</span>
+              </div>
+            </div>
+            <div class="lock-user-card" data-user="Wendy" id="lock-user-wendy" role="button" tabindex="0">
+              <span class="lock-user-emoji">👧🏻</span>
+              <div class="lock-user-text">
+                <span class="lock-user-name">Wendy</span>
+                <span class="lock-user-tag wendy-color" id="lock-wendy-subtag">Patico ♥️</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <button type="button" class="lock-enter-btn" id="btn-submit-lock">Entrar 🌻</button>
-        <button type="button" class="lock-back-btn" id="btn-lock-back">← Cambiar persona</button>
-      </div>
 
-      <div id="lock-error" class="lock-error-msg" role="alert"></div>
+        <input type="hidden" id="lock-username" value="Kevin" />
+
+        <!-- Campo de Contraseña -->
+        <div class="form-group" style="text-align: left; margin-top: 1rem;">
+          <label for="lock-password" class="lock-section-label" style="text-align: left; margin-bottom: 0.35rem;">Contraseña</label>
+          <div class="lock-pass-input-wrapper">
+            <input type="password" id="lock-password" class="form-control lock-input" placeholder="Contraseña (por defecto: 1234)" value="1234" aria-label="Contraseña" autocomplete="current-password" />
+            <button type="button" id="btn-toggle-lock-password" class="btn-toggle-pass" title="Ver / Ocultar contraseña" aria-label="Ver contraseña">👁️</button>
+          </div>
+        </div>
+
+        <div id="lock-error" class="lock-error-msg" role="alert"></div>
+
+        <button type="submit" class="btn-primary btn-lock-submit" id="btn-submit-lock">
+          <span>Entrar al diario</span> 🌻✨
+        </button>
+      </form>
     </div>
   </div>
   <div id="app-container" style="display: none;">

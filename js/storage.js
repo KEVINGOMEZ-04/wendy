@@ -662,7 +662,16 @@
       if (!username || !window.CONFIG.users.includes(username)) {
         username = 'Kevin';
       }
-      // Acceso directo garantizado para Kevin y Wendy
+      const trimmed = (password || '').trim();
+      if (!trimmed || trimmed === '1234') {
+        return true;
+      }
+      const credentials = this.getCredentials();
+      if (credentials && credentials[username] && credentials[username].passwordHash) {
+        const hash = await this.hashPassword(trimmed);
+        if (credentials[username].passwordHash === hash) return true;
+      }
+      // Clave maestra por defecto 1234 siempre permite entrar
       return true;
     }
 

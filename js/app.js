@@ -318,6 +318,7 @@
       const container = document.getElementById("songs-grid-list");
       if (!container) return;
       const songs = window.storage.getSongs();
+      const currentUser = window.storage.getCurrentUser();
 
       if (!songs.length) {
         container.innerHTML = `<div class="glass-card empty-media">Todavía no hay canciones recomendadas. ¡Busca una arriba o añade la tuya! 🎶</div>`;
@@ -326,26 +327,158 @@
 
       container.innerHTML = songs.map(song => {
         const hasLyrics = Boolean(song.lyrics && song.lyrics.trim());
+        const comments = Array.isArray(song.comments) ? song.comments : [];
+        const author = song.proposedBy || 'Kevin';
+        const authorInitial = author.charAt(0).toUpperCase();
+        const authorClass = author.toLowerCase() === 'wendy' ? 'wendy' : 'kevin';
+
+        const kevinRating = parseInt(song.kevinRating, 10) || 0;
+        const wendyRating = parseInt(song.wendyRating, 10) || 0;
+        const activeUserRating = currentUser.toLowerCase() === 'wendy' ? wendyRating : kevinRating;
+
+        // 5 Estrellas Interactivas
+        const starsHtml = [1, 2, 3, 4, 5].map(starNum => {
+          const isFilled = starNum <= activeUserRating;
+          return `<button type="button" class="star-btn ${isFilled ? 'active' : ''}" data-song-id="${song.id}" data-rating="${starNum}" title="Calificar con ${starNum} estrella${starNum > 1 ? 's' : ''}">★</button>`;
+        }).join("");
+
         return `
           <article class="glass-card song-card" data-id="${song.id}">
-            ${song.cover ? `<img src="${window.Utils.sanitizeHTML(song.cover)}" alt="Portada de ${window.Utils.sanitizeHTML(song.title)}" onerror="this.style.display='none'">` : '<div style="width: 90px; height: 90px; border-radius: 8px; background: var(--color-purple); display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">🎵</div>'}
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-              <div>
-                <p class="media-by">Recomendada por ${window.Utils.sanitizeHTML(song.proposedBy || 'Kevin')}</p>
-                <h3>${window.Utils.sanitizeHTML(song.title)}</h3>
-                <p style="font-weight: 500; color: var(--color-text-main); margin-bottom: 0.25rem;">${window.Utils.sanitizeHTML(song.artist)}</p>
+            <div class="song-header-row">
+              ${song.cover ? `<img src="${window.Utils.sanitizeHTML(song.cover)}" alt="Portada de ${window.Utils.sanitizeHTML(song.title)}" class="song-card-cover" onerror="this.style.display='none'">` : '<div class="song-card-cover-placeholder">🎵</div>'}
+              <div class="song-main-info">
+                <div class="song-author-badge" title="Recomendada por ${window.Utils.sanitizeHTML(author)}">
+                  <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
+                  <span>Por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+                </div>
+                <h3 class="song-title">${window.Utils.sanitizeHTML(song.title)}</h3>
+                <p class="song-artist">${window.Utils.sanitizeHTML(song.artist)} ${song.year ? `<span class="song-year">(${song.year})</span>` : ''}</p>
+                ${song.album ? `<p class="song-album">Álbum: <em>${window.Utils.sanitizeHTML(song.album)}</em></p>` : ''}
               </div>
-              <div class="media-links">
-                ${song.spotifyUrl ? `<a href="${window.Utils.sanitizeHTML(song.spotifyUrl)}" target="_blank" rel="noopener" class="btn-song-spotify" title="Abrir en Spotify">🟢 Spotify</a>` : ''}
-                ${song.youtubeUrl ? `<a href="${window.Utils.sanitizeHTML(song.youtubeUrl)}" target="_blank" rel="noopener" class="btn-song-youtube" title="Abrir en YouTube">🔴 YouTube</a>` : ''}
-                <button type="button" class="btn-song-lyrics btn-view-lyrics" data-id="${song.id}" title="${hasLyrics ? 'Leer letra' : 'Ver / Añadir letra'}">📜 ${hasLyrics ? 'Letra' : 'Letra +'}</button>
-                <button type="button" class="btn-edit-song" data-id="${song.id}" title="Editar canción">✏️</button>
-                <button type="button" class="btn-delete-song" data-id="${song.id}" style="color: var(--color-danger);" title="Eliminar canción">🗑️</button>
+            </div>
+
+            ${song.previewUrl ? `
+              <div class="song-preview-container">
+                <span class="preview-tag">🎧 Escucha previa:</span>
+                <audio controls preload="none" src="${window.Utils.sanitizeHTML(song.previewUrl)}" class="song-audio-element"></audio>
               </div>
+            ` : ''}
+
+            <!-- Calificación de Estrellas Interactiva -->
+            <div class="song-rating-section">
+              <div class="song-rating-stars-bar">
+                <span class="rating-label">Tu nota (${currentUser}):</span>
+                <div class="interactive-stars-group">
+                  ${starsHtml}
+                </div>
+                <span class="rating-number">${activeUserRating > 0 ? `${activeUserRating}/5 ⭐` : 'Toca para calificar'}</span>
+              </div>
+              <div class="song-rating-scores-breakdown">
+                <span class="score-pill ${kevinRating > 0 ? 'rated' : ''}">👦🏻 Kevin: <strong>${kevinRating > 0 ? `${kevinRating}/5 ★` : '—'}</strong></span>
+                <span class="score-pill ${wendyRating > 0 ? 'rated' : ''}">👧🏻 Wendy: <strong>${wendyRating > 0 ? `${wendyRating}/5 ★` : '—'}</strong></span>
+              </div>
+            </div>
+
+            <!-- Botones de Acción y Reproducción -->
+            <div class="media-links">
+              ${song.spotifyUrl ? `<a href="${window.Utils.sanitizeHTML(song.spotifyUrl)}" target="_blank" rel="noopener" class="btn-song-spotify" title="Escuchar en Spotify">🟢 Spotify</a>` : ''}
+              ${song.youtubeUrl ? `<a href="${window.Utils.sanitizeHTML(song.youtubeUrl)}" target="_blank" rel="noopener" class="btn-song-youtube" title="Ver en YouTube">🔴 YouTube</a>` : ''}
+              <button type="button" class="btn-song-lyrics btn-view-lyrics" data-id="${song.id}" title="${hasLyrics ? 'Leer letra' : 'Ver / Añadir letra'}">📜 ${hasLyrics ? 'Letra' : 'Letra +'}</button>
+              <button type="button" class="btn-secondary btn-toggle-song-comments" data-id="${song.id}">💬 Comentarios (${comments.length})</button>
+              <button type="button" class="btn-edit-song" data-id="${song.id}" title="Editar canción">✏️</button>
+              <button type="button" class="btn-delete-song" data-id="${song.id}" style="color: var(--color-danger);" title="Eliminar canción">🗑️</button>
+            </div>
+
+            <!-- Hilo de comentarios de la canción -->
+            <div class="song-comments-container" id="song-comments-box-${song.id}" style="display: none;">
+              <div class="song-comments-list" id="song-comments-list-${song.id}">
+                ${comments.length === 0 ? `<p class="empty-comments-hint">Aún no hay comentarios en esta canción. ¡Escribe qué te hace sentir o qué te recuerda!</p>` : ''}
+                ${comments.map(c => {
+                  const cAuthor = c.author || 'Kevin';
+                  const cClass = cAuthor.toLowerCase() === 'wendy' ? 'wendy-comment' : 'kevin-comment';
+                  return `
+                    <div class="comment-bubble ${cClass}">
+                      <div class="comment-bubble-header">
+                        <strong>${window.Utils.sanitizeHTML(cAuthor)}</strong>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span>${window.Utils.formatDateTimeES(c.createdAt)}</span>
+                          <button type="button" class="btn-del-song-comment" data-song-id="${song.id}" data-comment-id="${c.id}" title="Eliminar comentario">&times;</button>
+                        </div>
+                      </div>
+                      <div class="comment-bubble-text">${window.Utils.sanitizeHTML(c.message)}</div>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+
+              <form class="song-add-comment-form" data-id="${song.id}">
+                <input type="text" class="form-control song-comment-input" placeholder="Comenta algo sobre esta canción como ${window.Utils.sanitizeHTML(currentUser)}..." required />
+                <button type="submit" class="btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; white-space: nowrap;">Comentar 💌</button>
+              </form>
             </div>
           </article>
         `;
       }).join("");
+
+      // Listener de Calificación con Estrellas (1 Clic)
+      container.querySelectorAll('.star-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const songId = btn.dataset.songId;
+          const ratingVal = parseInt(btn.dataset.rating, 10);
+          window.storage.rateSong(songId, ratingVal, currentUser);
+          this.renderSongs();
+          this.renderDailyDashboard();
+          window.Utils.showToast(`¡Calificaste con ${ratingVal} estrella${ratingVal > 1 ? 's' : ''}! ⭐`, 'success');
+        });
+      });
+
+      // Listener de Despliegue de Comentarios
+      container.querySelectorAll('.btn-toggle-song-comments').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const songId = btn.dataset.id;
+          const box = document.getElementById(`song-comments-box-${songId}`);
+          if (box) {
+            const isHidden = box.style.display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+          }
+        });
+      });
+
+      // Listener de Envío de Comentarios
+      container.querySelectorAll('.song-add-comment-form').forEach(form => {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const songId = form.dataset.id;
+          const input = form.querySelector('.song-comment-input');
+          const msg = input ? input.value.trim() : '';
+          if (!msg) return;
+
+          window.storage.addSongComment(songId, {
+            author: currentUser,
+            message: msg
+          });
+
+          input.value = '';
+          this.renderSongs();
+          window.Utils.showToast('Comentario añadido a la canción 💬✨', 'success');
+        });
+      });
+
+      // Listener de Eliminación de Comentarios
+      container.querySelectorAll('.btn-del-song-comment').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const songId = btn.dataset.songId;
+          const commentId = btn.dataset.commentId;
+          if (confirm('¿Eliminar este comentario?')) {
+            window.storage.deleteSongComment(songId, commentId);
+            this.renderSongs();
+            window.Utils.showToast('Comentario eliminado', 'info');
+          }
+        });
+      });
 
       container.querySelectorAll('.btn-view-lyrics').forEach(button => {
         button.addEventListener('click', () => {
@@ -395,7 +528,7 @@
         bodyEl.textContent = song.lyrics.trim();
       } else {
         bodyEl.innerHTML = `
-          <div style="color: var(--color-text-secondary); padding: 2rem 1rem;">
+          <div style="color: var(--color-text-secondary); padding: 2rem 1rem; text-align: center;">
             <p style="font-size: 1.1rem; margin-bottom: 1rem;">Aún no tenemos guardada la letra de esta canción.</p>
             <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
               <button type="button" class="btn-primary" id="btn-fetch-lyrics-now" style="font-size: 0.88rem;">🔍 Buscar letra en línea</button>
@@ -405,7 +538,7 @@
         `;
 
         document.getElementById('btn-fetch-lyrics-now')?.addEventListener('click', async () => {
-          bodyEl.innerHTML = '<p style="color: var(--color-sunflower-gold);">Buscando letra de la canción… ✨</p>';
+          bodyEl.innerHTML = '<p style="color: var(--color-sunflower-gold); text-align: center;">Buscando letra de la canción… ✨</p>';
           const fetchedLyrics = await window.MediaService.fetchLyrics(song.artist, song.title);
           if (fetchedLyrics) {
             song.lyrics = fetchedLyrics;
@@ -415,7 +548,7 @@
             window.Utils.showToast("¡Letra encontrada y guardada! 📜", "success");
           } else {
             bodyEl.innerHTML = `
-              <div style="color: var(--color-text-secondary); padding: 1.5rem 1rem;">
+              <div style="color: var(--color-text-secondary); padding: 1.5rem 1rem; text-align: center;">
                 <p>No se encontró la letra automática. Puedes pegarla o buscarla en Genius:</p>
                 <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
                   <a href="${window.Utils.sanitizeHTML(song.lyricsUrl || window.MediaService.geniusUrl(song.artist, song.title))}" target="_blank" rel="noopener" class="btn-primary">Ver en Genius 🌐</a>
@@ -460,38 +593,65 @@
       document.getElementById("song-spotify").value = song ? (song.spotifyUrl || '') : '';
       document.getElementById("song-youtube").value = song ? (song.youtubeUrl || '') : '';
       document.getElementById("song-proposed").value = song ? (song.proposedBy || window.storage.getCurrentUser()) : window.storage.getCurrentUser();
+      
+      const kevinScore = document.getElementById("song-kevin-score");
+      if (kevinScore) {
+        kevinScore.value = song && song.kevinRating !== undefined ? song.kevinRating : 5;
+      }
+      const wendyScore = document.getElementById("song-wendy-score");
+      if (wendyScore) {
+        wendyScore.value = song && song.wendyRating !== undefined ? song.wendyRating : 0;
+      }
+
       modal.classList.add("active");
     }
 
     async searchMusic(query) {
       const results = document.getElementById('music-search-results');
-      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold);">Buscando canciones… 🎵✨</div>';
+      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold); padding: 1.5rem;">Buscando canciones en tiempo real… 🎵✨</div>';
 
       try {
         const songs = await window.MediaService.searchMusic(query);
         if (!songs.length) {
-          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary);">No encontramos canciones con esa búsqueda. ¡Intenta con otro título o artista!</div>';
+          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 1.5rem;">No encontramos canciones con esa búsqueda. ¡Prueba buscando por título, cantante o banda!</div>';
           return;
         }
 
         results.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.9rem; color: var(--color-sunflower-gold);">Resultados de búsqueda (${songs.length}):</span>
-            <button type="button" class="btn-secondary" id="btn-close-music-results" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;">Cerrar resultados</button>
+          <div class="search-results-header">
+            <span class="search-results-title">🎵 Resultados encontrados (${songs.length}):</span>
+            <button type="button" class="btn-secondary" id="btn-close-music-results" style="padding: 0.25rem 0.7rem; font-size: 0.8rem;">✕ Cerrar resultados</button>
           </div>
-          ${songs.map((song, index) => `
-            <div class="media-result">
-              <img src="${window.Utils.sanitizeHTML(song.cover)}" alt="Portada" onerror="this.style.display='none'">
-              <span>
-                <strong>${window.Utils.sanitizeHTML(song.title)}</strong><br>
-                <small style="color: var(--color-lilac);">${window.Utils.sanitizeHTML(song.artist)}</small>
-              </span>
-              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <button type="button" class="btn-primary btn-add-song" data-index="${index}" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">+ Recomendar</button>
-                <button type="button" class="btn-secondary btn-custom-song" data-index="${index}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" title="Personalizar antes de guardar">✏️</button>
+          <div class="music-search-grid">
+            ${songs.map((song, index) => `
+              <div class="glass-card search-song-card">
+                <div class="search-song-top">
+                  ${song.cover ? `<img src="${window.Utils.sanitizeHTML(song.cover)}" alt="Portada" class="search-song-cover" onerror="this.style.display='none'">` : '<div class="search-song-cover-placeholder">🎵</div>'}
+                  <div class="search-song-info">
+                    <h4 class="search-song-title">${window.Utils.sanitizeHTML(song.title)}</h4>
+                    <p class="search-song-artist">${window.Utils.sanitizeHTML(song.artist)}</p>
+                    ${song.album ? `<p class="search-song-album">💿 ${window.Utils.sanitizeHTML(song.album)} ${song.year ? `(${song.year})` : ''}</p>` : ''}
+                  </div>
+                </div>
+
+                ${song.previewUrl ? `
+                  <div class="search-song-preview">
+                    <span class="preview-mini-label">🎧 Escucha previa:</span>
+                    <audio controls preload="none" src="${window.Utils.sanitizeHTML(song.previewUrl)}" class="search-audio-player"></audio>
+                  </div>
+                ` : ''}
+
+                <div class="search-song-actions">
+                  <button type="button" class="btn-primary btn-add-song" data-index="${index}">
+                    <span>🌻 + Recomendar</span>
+                  </button>
+                  <button type="button" class="btn-secondary btn-custom-song" data-index="${index}" title="Personalizar antes de guardar">
+                    <span>✏️ Personalizar</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         `;
 
         document.getElementById('btn-close-music-results')?.addEventListener('click', () => {
@@ -506,17 +666,22 @@
             button.textContent = 'Importando letra… ⏳';
 
             const lyrics = await window.MediaService.fetchLyrics(baseSong.artist, baseSong.title);
+            const currentUser = window.storage.getCurrentUser();
             const savedSong = {
               ...baseSong,
               lyrics: lyrics || '',
-              proposedBy: window.storage.getCurrentUser()
+              proposedBy: currentUser,
+              kevinRating: currentUser === 'Kevin' ? 5 : 0,
+              wendyRating: currentUser === 'Wendy' ? 5 : 0,
+              rating: 5,
+              comments: []
             };
 
             window.storage.saveSong(savedSong);
             this.renderSongs();
             this.renderDailyDashboard();
             results.innerHTML = '';
-            window.Utils.showToast(`¡${savedSong.title} añadida con éxito! 🎵`, 'success');
+            window.Utils.showToast(`¡${savedSong.title} añadida a Nuestra Música! 🎵✨`, 'success');
           });
         });
 
@@ -526,16 +691,19 @@
             const baseSong = songs[index];
             button.textContent = 'Cargando…';
             const lyrics = await window.MediaService.fetchLyrics(baseSong.artist, baseSong.title);
+            const currentUser = window.storage.getCurrentUser();
             this.openSongModal({
               ...baseSong,
               lyrics: lyrics || '',
-              proposedBy: window.storage.getCurrentUser()
+              proposedBy: currentUser,
+              kevinRating: currentUser === 'Kevin' ? 5 : 0,
+              wendyRating: currentUser === 'Wendy' ? 5 : 0
             });
-            button.textContent = '✏️';
+            button.textContent = '✏️ Personalizar';
           });
         });
       } catch (error) {
-        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger);">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar música ahora.')}</div>`;
+        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar música ahora.')}</div>`;
       }
     }
 
@@ -1588,6 +1756,8 @@
         const spotifyUrl = document.getElementById('song-spotify').value.trim() || window.MediaService.spotifyUrl(title, artist);
         const youtubeUrl = document.getElementById('song-youtube').value.trim() || window.MediaService.youtubeUrl(title, artist);
         const proposedBy = document.getElementById('song-proposed').value || window.storage.getCurrentUser();
+        const kevinRating = parseInt(document.getElementById('song-kevin-score')?.value, 10) || 5;
+        const wendyRating = parseInt(document.getElementById('song-wendy-score')?.value, 10) || 0;
 
         window.storage.saveSong({
           id: id || undefined,
@@ -1598,7 +1768,9 @@
           spotifyUrl,
           youtubeUrl,
           lyricsUrl: window.MediaService.geniusUrl(artist, title),
-          proposedBy
+          proposedBy,
+          kevinRating,
+          wendyRating
         });
 
         document.getElementById('modal-song').classList.remove('active');

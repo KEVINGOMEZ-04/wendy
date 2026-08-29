@@ -755,7 +755,14 @@
     getSongs() {
       return this.get(this.keys.songs, []).map(song => ({
         ...song,
-        lyrics: song.lyrics || ''
+        lyrics: song.lyrics || '',
+        previewUrl: song.previewUrl || '',
+        album: song.album || '',
+        year: song.year || '',
+        rating: song.rating || (song.kevinRating || song.wendyRating || 5),
+        kevinRating: song.kevinRating !== undefined ? song.kevinRating : 5,
+        wendyRating: song.wendyRating !== undefined ? song.wendyRating : 0,
+        comments: Array.isArray(song.comments) ? song.comments : []
       }));
     }
 
@@ -765,24 +772,101 @@
       const cleanSong = {
         title: songData.title ? songData.title.trim() : 'Canción',
         artist: songData.artist ? songData.artist.trim() : 'Artista',
+        album: songData.album ? songData.album.trim() : '',
+        year: songData.year || '',
         cover: songData.cover ? songData.cover.trim() : '',
+        previewUrl: songData.previewUrl || '',
         lyrics: songData.lyrics ? songData.lyrics.trim() : '',
         spotifyUrl: songData.spotifyUrl ? songData.spotifyUrl.trim() : window.MediaService.spotifyUrl(songData.title, songData.artist),
         youtubeUrl: songData.youtubeUrl ? songData.youtubeUrl.trim() : window.MediaService.youtubeUrl(songData.title, songData.artist),
         lyricsUrl: songData.lyricsUrl ? songData.lyricsUrl.trim() : window.MediaService.geniusUrl(songData.title, songData.artist),
-        proposedBy: songData.proposedBy || window.storage?.getCurrentUser() || 'Kevin'
+        proposedBy: songData.proposedBy || this.getCurrentUser() || 'Kevin',
+        rating: typeof songData.rating === 'number' ? songData.rating : (parseInt(songData.rating, 10) || 5),
+        kevinRating: songData.kevinRating !== undefined ? (parseInt(songData.kevinRating, 10) || 0) : 5,
+        wendyRating: songData.wendyRating !== undefined ? (parseInt(songData.wendyRating, 10) || 0) : 0,
+        comments: Array.isArray(songData.comments) ? songData.comments : []
       };
 
       if (songData.id) {
         const index = list.findIndex(song => song.id === songData.id);
         if (index !== -1) {
-          list[index] = { ...list[index], ...cleanSong, updatedAt: now };
+          list[index] = { 
+            ...list[index], 
+            ...cleanSong, 
+            comments: Array.isArray(songData.comments) ? songData.comments : (list[index].comments || []),
+            updatedAt: now 
+          };
         }
       } else {
         list.unshift({ ...cleanSong, id: window.Utils.generateUUID(), addedAt: now, updatedAt: now });
       }
       this.set(this.keys.songs, list);
       return list;
+    }
+
+    rateSong(songId, ratingValue, user) {
+      const list = this.getSongs();
+      const index = list.findIndex(s => s.id === songId);
+      if (index === -1) return false;
+
+      const val = Math.max(0, Math.min(5, parseInt(ratingValue, 10) || 0));
+      const targetUser = user || this.getCurrentUser();
+      
+      if (targetUser.toLowerCase() === 'wendy') {
+        list[index].wendyRating = val;
+      } else {
+        list[index].kevinRating = val;
+      }
+
+      const k = list[index].kevinRating || 0;
+      const w = list[index].wendyRating || 0;
+      if (k > 0 && w > 0) {
+        list[index].rating = Math.round((k + w) / 2);
+      } else {
+        list[index].rating = k > 0 ? k : w;
+      }
+
+      list[index].updatedAt = new Date().toISOString();
+      this.set(this.keys.songs, list);
+      return list[index];
+    }
+
+    addSongComment(songId, commentData) {
+      const list = this.getSongs();
+      const index = list.findIndex(s => s.id === songId);
+      if (index === -1) return null;
+
+      const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
+      const newComment = {
+        id: window.Utils.generateUUID(),
+        author: commentData.author || currentUser,
+        message: commentData.message.trim(),
+        createdAt: now
+      };
+
+      if (!Array.isArray(list[index].comments)) {
+        list[index].comments = [];
+      }
+      list[index].comments.push(newComment);
+      list[index].updatedAt = now;
+
+      this.set(this.keys.songs, list);
+      return newComment;
+    }
+
+    deleteSongComment(songId, commentId) {
+      const list = this.getSongs();
+      const index = list.findIndex(s => s.id === songId);
+      if (index === -1) return false;
+
+      if (Array.isArray(list[index].comments)) {
+        list[index].comments = list[index].comments.filter(c => c.id !== commentId);
+        list[index].updatedAt = new Date().toISOString();
+        this.set(this.keys.songs, list);
+        return true;
+      }
+      return false;
     }
 
     deleteSong(id) {

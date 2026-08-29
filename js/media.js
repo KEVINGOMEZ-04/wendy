@@ -94,6 +94,8 @@ window.MediaService = {
     return data.results.map(song => {
       const title = song.trackName || 'Canción desconocida';
       const artist = song.artistName || 'Artista';
+      const album = song.collectionName || '';
+      const year = song.releaseDate ? new Date(song.releaseDate).getFullYear() : '';
       let cover = song.artworkUrl100 || '';
       if (cover) {
         cover = cover.replace('100x100bb.jpg', '600x600bb.jpg').replace('100x100', '600x600');
@@ -102,6 +104,8 @@ window.MediaService = {
       return {
         title,
         artist,
+        album,
+        year,
         cover,
         spotifyUrl: this.spotifyUrl(title, artist),
         youtubeUrl: this.youtubeUrl(title, artist),

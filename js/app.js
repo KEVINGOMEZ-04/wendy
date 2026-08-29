@@ -75,7 +75,11 @@
             c.classList.remove('active');
           }
         });
-        if (passwordInput) passwordInput.focus();
+        if (lockError) lockError.textContent = '';
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
       };
 
       cards.forEach(card => {
@@ -160,7 +164,12 @@
       lockForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = usernameInput ? usernameInput.value : 'Kevin';
-        const enteredPassword = passwordInput ? passwordInput.value : '1234';
+        const enteredPassword = passwordInput ? passwordInput.value : '';
+        if (!enteredPassword) {
+          if (lockError) lockError.textContent = 'Por favor, ingresa tu contraseña.';
+          if (passwordInput) passwordInput.focus();
+          return;
+        }
         if (submitBtn) submitBtn.disabled = true;
 
         const valid = await window.storage.verifyCredentials(username, enteredPassword);
@@ -168,8 +177,11 @@
           unlockAndOpen(username);
         } else {
           if (submitBtn) submitBtn.disabled = false;
-          if (lockError) lockError.textContent = 'Contraseña incorrecta. (Clave por defecto: 1234)';
-          if (passwordInput) passwordInput.focus();
+          if (lockError) lockError.textContent = '❌ Contraseña incorrecta. (Clave por defecto: 1234)';
+          if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
+          }
         }
       });
 
@@ -178,7 +190,7 @@
         window.storage.setUnlocked(false);
         if (appContainer) appContainer.style.display = 'none';
         if (lockScreen) lockScreen.style.display = 'flex';
-        if (passwordInput) passwordInput.value = '1234';
+        if (passwordInput) passwordInput.value = '';
         if (lockError) lockError.textContent = '';
         updateNicknamesOnCards();
         window.Utils.showToast('Sesión bloqueada de forma segura', 'info');

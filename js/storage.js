@@ -526,6 +526,15 @@
         // Escucha de Presencia estilo WhatsApp (Online / Última vez)
         this.initPresenceListeners();
 
+        // Escucha de credenciales personalizadas
+        this.credentialsRef = db.ref(`rooms/${config.roomId}/credentials`);
+        this.credentialsRef.on('value', snapshot => {
+          const creds = snapshot.val();
+          if (creds && typeof creds === 'object') {
+            localStorage.setItem(this.keys.credentials, JSON.stringify(creds));
+          }
+        });
+
         // Escucha de Toquecito de Amor (Nudge)
         let lastNudgeTime = Date.now();
         this.nudgeRef.on('value', snapshot => {
@@ -660,26 +669,40 @@
 
     async verifyCredentials(username, password) {
       if (!username || !window.CONFIG.users.includes(username)) {
-        username = 'Kevin';
+        return false;
       }
-      const trimmed = (password || '').trim();
-      if (!trimmed || trimmed === '1234') {
-        return true;
+      if (!password || typeof password !== 'string') {
+        return false;
       }
+      const trimmed = password.trim();
+      if (!trimmed) {
+        return false;
+      }
+
       const credentials = this.getCredentials();
-      if (credentials && credentials[username] && credentials[username].passwordHash) {
+      const userCred = credentials[username];
+
+      // Si el usuario ya tiene una contraseña personalizada guardada
+      if (userCred && userCred.passwordHash) {
         const hash = await this.hashPassword(trimmed);
-        if (credentials[username].passwordHash === hash) return true;
+        return userCred.passwordHash === hash;
       }
-      // Clave maestra por defecto 1234 siempre permite entrar
-      return true;
+
+      // Si aún no ha cambiado su contraseña, la clave por defecto es 1234
+      return trimmed === '1234';
     }
 
     async changePassword(username, currentPassword, newPassword) {
-      if (newPassword.length < 4 || !(await this.verifyCredentials(username, currentPassword))) return false;
+      if (!newPassword || newPassword.length < 4 || !(await this.verifyCredentials(username, currentPassword))) {
+        return false;
+      }
       const credentials = this.getCredentials();
-      credentials[username] = { passwordHash: await this.hashPassword(newPassword) };
-      return this.set(this.keys.credentials, credentials);
+      credentials[username] = { passwordHash: await this.hashPassword(newPassword.trim()) };
+      const saved = this.set(this.keys.credentials, credentials);
+      if (this.credentialsRef) {
+        this.credentialsRef.set(credentials).catch(e => console.warn('Error sincronizando credenciales:', e));
+      }
+      return saved;
     }
 
     getMemories() {

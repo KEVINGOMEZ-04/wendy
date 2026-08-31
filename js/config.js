@@ -1,8 +1,9 @@
 /**
- * Patico Wrapped 🌻 - Configuración Centralizada
+ * ATRIA ✨ - Configuración Centralizada
+ * La puerta de entrada a nuestro mundo compartido: Kevin & Wendy
  */
 window.CONFIG = {
-  appName: 'Patico Wrapped 🌻',
+  appName: 'ATRIA ✨',
   version: '1.0.0',
   
   // Claves de LocalStorage

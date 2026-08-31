@@ -3245,8 +3245,8 @@
 
       const slides = [
         {
-          tag: "🌻 Patico Wrapped · 2024 - 2026",
-          icon: "🌻",
+          tag: "🏛️ ATRIA · 2024 - 2026",
+          icon: "🏛️",
           title: "Nuestra Historia en Números",
           bigNumber: "25.378",
           unit: "mensajes intercambiados",

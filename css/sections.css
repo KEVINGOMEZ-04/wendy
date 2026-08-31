@@ -3936,4 +3936,248 @@ img:not([src]), img[src=""] {
   background: radial-gradient(circle at center, rgba(109, 74, 153, 0.3) 0%, rgba(18, 14, 28, 0.8) 100%) !important;
 }
 
+/* =========================================
+   MURO DE NOTAS INTERACTIVO & ESTILOS 💌
+   ========================================= */
+
+.paper-note {
+  position: relative;
+  background: rgba(25, 18, 42, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  backdrop-filter: blur(10px);
+}
+
+.paper-note:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+/* Temas / Estilos de Papelito */
+.paper-note.style-sunflower {
+  background: linear-gradient(145deg, rgba(46, 34, 18, 0.9) 0%, rgba(26, 18, 38, 0.95) 100%);
+  border-color: rgba(244, 197, 66, 0.4);
+}
+
+.paper-note.style-love {
+  background: linear-gradient(145deg, rgba(48, 20, 48, 0.9) 0%, rgba(26, 18, 38, 0.95) 100%);
+  border-color: rgba(224, 64, 251, 0.4);
+}
+
+.paper-note.style-surprise {
+  background: linear-gradient(145deg, rgba(20, 32, 54, 0.9) 0%, rgba(18, 14, 32, 0.95) 100%);
+  border-color: rgba(0, 229, 255, 0.4);
+}
+
+.paper-note.style-reminder {
+  background: linear-gradient(145deg, rgba(38, 28, 20, 0.9) 0%, rgba(22, 16, 30, 0.95) 100%);
+  border-color: rgba(224, 170, 100, 0.4);
+}
+
+/* Nota Fijada con Chincheta 📌 */
+.paper-note.is-pinned {
+  border-width: 2px;
+  border-color: var(--color-sunflower-gold);
+  box-shadow: 0 0 20px rgba(244, 197, 66, 0.25);
+}
+
+.paper-note-pin-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.35rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  z-index: 2;
+  cursor: pointer;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Sticker Flotante */
+.note-floating-sticker {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  font-size: 1.85rem;
+  transform: rotate(12deg);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Foto Polaroid Pegada */
+.note-polaroid-attachment {
+  background: #FFFFFF;
+  padding: 6px 6px 16px 6px;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  transform: rotate(-2deg);
+  margin: 0.75rem auto 0.5rem auto;
+  max-width: 90%;
+  text-align: center;
+  position: relative;
+}
+
+.note-polaroid-attachment::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 12px;
+  background: rgba(244, 197, 66, 0.6);
+  opacity: 0.85;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.note-polaroid-img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+}
+
+/* Efecto Raspa y Gana / Nota Sorpresa */
+.surprise-scratch-box {
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.surprise-scratch-cover {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1C1530 0%, #2A1A45 50%, #151025 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 4;
+}
+
+.surprise-scratch-cover:hover {
+  background: linear-gradient(135deg, #251B40 0%, #352155 50%, #1E1635 100%);
+}
+
+.surprise-scratch-btn {
+  background: var(--gradient-sunflower);
+  color: #120E1C;
+  border: none;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 8px rgba(244, 197, 66, 0.4);
+}
+
+/* Barra de Reacciones con Emojis */
+.note-reactions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.reaction-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 0.18rem 0.55rem;
+  font-size: 0.78rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.reaction-btn:hover {
+  background: rgba(244, 197, 66, 0.15);
+  border-color: var(--color-sunflower-gold);
+  transform: scale(1.08);
+}
+
+.reaction-btn.active {
+  background: rgba(244, 197, 66, 0.25);
+  border-color: var(--color-sunflower-gold);
+  color: var(--color-sunflower-gold);
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(244, 197, 66, 0.3);
+}
+
+/* Selectores dentro del Modal */
+.note-styles-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.note-style-opt input {
+  display: none;
+}
+
+.note-style-box {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-style-opt input:checked + .note-style-box {
+  border-color: var(--color-sunflower-gold);
+  box-shadow: 0 0 12px rgba(244, 197, 66, 0.4);
+  transform: scale(1.02);
+}
+
+.note-stickers-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sticker-opt input {
+  display: none;
+}
+
+.sticker-opt span {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sticker-opt input:checked + span {
+  background: rgba(244, 197, 66, 0.2);
+  border-color: var(--color-sunflower-gold);
+  color: var(--color-sunflower-gold);
+  font-weight: 700;
+}
+
+
 

@@ -555,6 +555,7 @@ window.GoogleDriveService = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'createFolderAndUpload',
+            parentFolderId: window.CONFIG.googleDrive?.parentFolderId || '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
             folderName: folderName,
             folderPrefix: window.CONFIG.googleDrive.folderPrefix,
             files: filesToUpload

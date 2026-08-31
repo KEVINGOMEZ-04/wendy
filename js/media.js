@@ -522,7 +522,7 @@ window.GoogleDriveService = {
 
   async uploadMemory(memoryData, coverFileOrUrl, galleryFilesOrUrls = []) {
     const folderName = this.formatFolderName(memoryData.title, memoryData.date);
-    const scriptUrl = window.CONFIG.googleDrive?.scriptUrl;
+    const scriptUrl = localStorage.getItem("patico_gdrive_script_url") || window.CONFIG.googleDrive?.scriptUrl;
 
     const filesToUpload = [];
 

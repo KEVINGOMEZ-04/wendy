@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#120E1C">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Patico Wrapped">
+  <meta name="application-name" content="Patico Wrapped">
+  <link rel="manifest" href="manifest.json">
   <title>Patico Wrapped 🌻 — Kevin & Wendy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,6 +106,7 @@
 
       <div class="header-actions">
         <button type="button" class="btn-lock btn-nudge" id="btn-send-nudge" title="Enviar un toquecito de amor con girasoles 🌻✨"><span>🌻</span><span class="btn-lock-text"> Toquecito</span></button>
+        <button type="button" class="btn-lock" id="btn-open-gdrive" title="Google Drive para Recuerdos"><span>📁</span><span class="btn-lock-text"> Drive</span></button>
         <button type="button" class="btn-lock" id="btn-open-profiles" title="Personalizar fotos de perfil y apodos"><span>👤</span><span class="btn-lock-text"> Perfiles</span></button>
         <button type="button" class="btn-lock" id="btn-change-password" title="Cambiar contraseña"><span>⚙️</span><span class="btn-lock-text"> Contraseña</span></button>
         <button type="button" class="btn-lock" id="btn-re-lock" title="Bloquear sesión sin borrar datos"><span>🔒</span><span class="btn-lock-text"> Bloquear</span></button>
@@ -125,6 +129,7 @@
           <a href="#recuerdos" class="action-pill"><span>🌻</span> Añadir recuerdo</a>
           <a href="#musica" class="action-pill"><span>🎵</span> Recomendar canción</a>
           <a href="#cine" class="action-pill"><span>🎬</span> Elegir película</a>
+          <a href="#series" class="action-pill"><span>📺</span> Maratón de series</a>
           <a href="#muro" class="action-pill"><span>💌</span> Dejar una nota</a>
           <a href="#suenos" class="action-pill"><span>🌟</span> Nuevo sueño</a>
         </div>
@@ -597,6 +602,30 @@
         <div id="movie-search-results" class="media-results"></div>
         <div class="movies-grid" id="movies-grid-list"></div>
       </section>
+      <!-- NUESTRAS SERIES & ANIME -->
+      <section id="section-series" class="wrapped-section" role="tabpanel">
+        <div class="section-header">
+          <h2 class="section-title">Nuestras Series 📺</h2>
+          <p class="section-quote">«Capítulos, animes y maratones que vivimos juntos.»</p>
+        </div>
+        <div class="trail-controls">
+          <button type="button" class="btn-primary" id="btn-new-series"><span>+ Añadir serie</span> 📺</button>
+          <form id="series-search-form" class="media-search compact">
+            <input id="series-search-input" class="form-control" placeholder="Buscar serie o anime (ej. Arcane, Stranger Things, One Piece)..." required>
+            <button type="submit" class="btn-secondary">Buscar</button>
+          </form>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="filter-series-status" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">Todas las series</option>
+              <option value="Viendo">🍿 Viendo actualmente</option>
+              <option value="Completada">✨ Completadas</option>
+              <option value="Por ver">🌱 Por ver</option>
+            </select>
+          </div>
+        </div>
+        <div id="series-search-results" class="media-results"></div>
+        <div class="series-grid" id="series-grid-list"></div>
+      </section>
       <!-- 8. MURO COMPARTIDO -->
       <section id="section-muro" class="wrapped-section" role="tabpanel">
         <div class="section-header">
@@ -915,6 +944,106 @@
           <button type="submit" class="btn-primary">Guardar película 🎬</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR / PERSONALIZAR SERIE -->
+  <div id="modal-series" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-series-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3 id="modal-series-title">Serie o Anime 📺</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-series" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-series">
+        <input type="hidden" id="series-id" />
+        <input type="hidden" id="series-tmdb-id" />
+        <div class="form-group"><label for="series-title">Título de la serie o anime *</label><input type="text" id="series-title" class="form-control" placeholder="Ej. Arcane, Stranger Things" required /></div>
+        <div class="form-group"><label for="series-poster">Enlace del póster (URL)</label><input type="url" id="series-poster" class="form-control" placeholder="https://image.tmdb.org/..." /></div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="series-year">Año de estreno *</label><input type="number" id="series-year" class="form-control" min="1900" max="2099" required /></div>
+          <div class="form-group"><label for="series-seasons-count">Cantidad de temporadas *</label><input type="number" id="series-seasons-count" class="form-control" min="1" max="99" value="1" required /></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group"><label for="series-status">Estado *</label><select id="series-status" class="form-control" required><option value="Viendo">🍿 Viendo actualmente</option><option value="Por ver">🌱 Por ver</option><option value="Completada">✨ Completada</option></select></div>
+          <div class="form-group">
+            <label>Añadida por</label>
+            <div id="series-author-display" class="form-control" style="background: rgba(109, 74, 153, 0.25); font-weight: 600; color: var(--color-sunflower-gold); display: flex; align-items: center; gap: 0.5rem;">
+              <span class="author-badge-circle" id="series-author-badge">K</span>
+              <span id="series-author-name">Kevin</span>
+            </div>
+            <input type="hidden" id="series-proposed" value="Kevin" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+          <div class="form-group"><label for="series-platforms">Plataformas de streaming</label><input type="text" id="series-platforms" class="form-control" placeholder="Ej. Netflix, Disney+, Max, Crunchyroll" /></div>
+          <div class="form-group"><label for="series-imdb-score">Calificación IMDb / TMDb</label><input type="text" id="series-imdb-score" class="form-control" placeholder="Ej. 9.0" /></div>
+        </div>
+
+        <div class="form-group"><label for="series-synopsis">Sinopsis</label><textarea id="series-synopsis" class="form-control" rows="3" placeholder="Resumen de la serie o anime..."></textarea></div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-series">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar serie 📺</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VISOR INTERACTIVO DE TEMPORADAS Y CAPÍTULOS DE SERIE -->
+  <div id="modal-series-viewer" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="series-viewer-title">
+    <div class="modal-box modal-box-viewer">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.5rem;">📺</span>
+          <div>
+            <h3 id="series-viewer-title" style="margin: 0; line-height: 1.2;">Cargando serie…</h3>
+            <span id="series-viewer-subtitle" style="font-size: 0.82rem; color: var(--color-text-secondary);">Temporadas y capítulos</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-series-viewer" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div class="series-viewer-body" id="series-viewer-content">
+        <!-- Se llena dinámicamente con la cabecera, barra de temporadas, capítulos y comentarios -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIGURACIÓN GOOGLE DRIVE -->
+  <div id="modal-gdrive" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-gdrive-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3 id="modal-gdrive-title">Google Drive para Recuerdos 📁🌻</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-gdrive" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-pad">
+        <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.2rem; line-height: 1.5;">
+          Tus recuerdos se organizan automáticamente en carpetas dentro de Google Drive con el formato: 
+          <strong style="color: var(--color-sunflower-gold);">«Nombre del recuerdo + Fecha»</strong> (ejemplo: <em>"Show de F*cks News 17 de agosto"</em>). 
+          Dentro de cada carpeta estará la <strong>portada en primer lugar</strong> y luego todas las fotos de la galería.
+        </p>
+
+        <div class="glass-card" style="padding: 1.2rem; margin-bottom: 1.2rem; border-color: rgba(244, 197, 66, 0.35);">
+          <h4 style="color: var(--color-sunflower-gold); margin-bottom: 0.5rem; font-size: 1rem;">⚡ Conexión Automática con Google Apps Script</h4>
+          <p style="font-size: 0.83rem; color: var(--color-text-secondary); margin-bottom: 0.85rem;">
+            Pega la URL de tu script de Google Drive para subir directamente fotos en alta calidad:
+          </p>
+          <div class="form-group">
+            <label for="input-gdrive-script-url">URL de Webhook de Google Apps Script</label>
+            <input type="url" id="input-gdrive-script-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec" />
+          </div>
+          <button type="button" class="btn-primary" id="btn-save-gdrive-url" style="margin-top: 0.5rem;">
+            <span>Guardar conexión de Google Drive</span> 📁✨
+          </button>
+        </div>
+
+        <div class="glass-card" style="padding: 1rem; font-size: 0.82rem; color: var(--color-text-muted);">
+          <strong>💡 ¿Cómo funciona?</strong> Al crear o subir un recuerdo con portada y fotos, el sistema crea la carpeta en tu Drive y vincula los enlaces en el diario para que siempre estén disponibles.
+        </div>
+      </div>
     </div>
   </div>
 

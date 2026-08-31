@@ -2361,31 +2361,31 @@
 
               return `
                 <div class="episode-card ${cardClass}" data-ep="${ep.episodeNumber}">
-                  ${ep.stillPath ? `<img src="${window.Utils.sanitizeHTML(ep.stillPath)}" class="episode-still" alt="Capítulo ${ep.episodeNumber}" onerror="this.style.display='none'">` : '<div class="episode-still" style="display:flex; align-items:center; justify-content:center; font-size:1.2rem;">📺</div>'}
-                  
-                  <div class="episode-info">
-                    <div class="episode-title-row">
-                      <span class="episode-num-badge">E${ep.episodeNumber}</span>
-                      <span class="episode-name">${window.Utils.sanitizeHTML(ep.name || `Episodio ${ep.episodeNumber}`)}</span>
-                    </div>
-                    <p class="episode-synopsis">${window.Utils.sanitizeHTML(ep.overview || 'Sinopsis de capítulo no disponible.')}</p>
+                  <div class="episode-main-row">
+                    ${ep.stillPath ? `<img src="${window.Utils.sanitizeHTML(ep.stillPath)}" class="episode-still" alt="Capítulo ${ep.episodeNumber}" onerror="this.style.display='none'">` : '<div class="episode-still" style="display:flex; align-items:center; justify-content:center; font-size:1.2rem;">📺</div>'}
                     
-                    ${!bothSeen && otherUserSeen ? `
-                      <div style="margin-top: 0.35rem; font-size: 0.75rem; color: ${isWendy ? '#00E5FF' : '#E040FB'}; font-weight: 500;">
-                        ✓ ${otherUserName} ya vio este capítulo
+                    <div class="episode-info">
+                      <div class="episode-title-row">
+                        <span class="episode-num-badge">E${ep.episodeNumber}</span>
+                        <span class="episode-name">${window.Utils.sanitizeHTML(ep.name || `Episodio ${ep.episodeNumber}`)}</span>
                       </div>
-                    ` : ''}
+                      <p class="episode-synopsis">${window.Utils.sanitizeHTML(ep.overview || 'Sinopsis no disponible.')}</p>
+                      
+                      ${!bothSeen && otherUserSeen ? `
+                        <div style="margin-top: 0.35rem; font-size: 0.75rem; color: ${isWendy ? '#00E5FF' : '#E040FB'}; font-weight: 600;">
+                          ✓ ${otherUserName} ya vio este capítulo
+                        </div>
+                      ` : ''}
+                    </div>
                   </div>
 
                   <!-- Botones de Visto exclusivos del perfil activo -->
                   <div class="episode-actions-group">
-                    <!-- Opción 1: Marcar solo este capítulo -->
                     <button type="button" class="btn-seen-badge ${bothSeen ? 'seen-both' : (activeUserSeen ? activeUserClass : '')} btn-toggle-ep-self" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Marcar/desmarcar solo este capítulo para tu perfil (${currentUser})">
                       ${bothSeen ? '💑 Visto por ambos ✨' : (activeUserSeen ? `✓ Visto por ti (${currentUser})` : `+ Marcar como visto`)}
                     </button>
 
-                    <!-- Opción 2: Marcar este capítulo y todos los anteriores -->
-                    <button type="button" class="btn-seen-badge btn-mark-ep-upto" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" style="font-size: 0.72rem; opacity: 0.85;" title="Marcar este capítulo y todos los capítulos anteriores como vistos para tu perfil (${currentUser})">
+                    <button type="button" class="btn-seen-badge btn-mark-ep-upto" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Marcar este capítulo y todos los capítulos anteriores como vistos para tu perfil (${currentUser})">
                       ⏩ Visto hasta aquí
                     </button>
                   </div>

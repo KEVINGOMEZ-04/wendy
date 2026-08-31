@@ -30,10 +30,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare Local Web Assets
+      - name: Prepare Local Web Assets & App Icon
         run: |
           mkdir -p www
-          cp -r index.html manifest.json css js data www/ || true
+          cp -r index.html manifest.json css js data assets www/ || true
           cp sw.js www/ || true
 
       - name: Install Dependencies & Initialize Capacitor
@@ -41,6 +41,17 @@ jobs:
           npm install
           npx cap add android || true
           npx cap sync android
+
+      - name: Generate App Icons from Official Logo
+        run: |
+          npm install -g @capacitor/assets
+          if [ -f assets/icon.jpg ]; then
+            mkdir -p resources
+            cp assets/icon.jpg resources/icon.jpg
+            cp assets/icon.jpg resources/splash.jpg
+            # Reemplazar iconos predeterminados de Android mipmap
+            find android/app/src/main/res -name "ic_launcher*.png" -exec cp assets/icon.jpg {} \; || true
+          fi
 
       - name: Build Debug APK
         run: |
@@ -53,7 +64,47 @@ jobs:
           mkdir -p build-output
           cp android/app/build/outputs/apk/debug/app-debug.apk build-output/ATRIA.apk
 
-      - name: Upload APK Artifact
+      - name: Upload APK to Google Drive
+        run: |
+          node -e '
+            const fs = require("fs");
+            const https = require("https");
+            
+            const apkPath = "build-output/ATRIA.apk";
+            if (fs.existsSync(apkPath)) {
+              const apkBuffer = fs.readFileSync(apkPath);
+              const b64 = apkBuffer.toString("base64");
+              const scriptUrl = "https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec";
+              
+              const payload = JSON.stringify({
+                action: "createFolderAndUpload",
+                parentFolderId: "1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm",
+                folderName: "App ATRIA Oficial (APK)",
+                files: [
+                  {
+                    name: "ATRIA",
+                    data: "data:application/vnd.android.package-archive;base64," + b64
+                  }
+                ]
+              });
+              
+              console.log("Enviando APK a Google Drive...");
+              // Enviar a Google Apps Script
+              const req = https.request(scriptUrl, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" }
+              }, (res) => {
+                let data = "";
+                res.on("data", chunk => data += chunk);
+                res.on("end", () => console.log("Google Drive Response:", data));
+              });
+              req.on("error", e => console.warn("Notice on Drive upload:", e.message));
+              req.write(payload);
+              req.end();
+            }
+          ' || true
+
+      - name: Upload APK Artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: ATRIA-APK
@@ -73,7 +124,7 @@ jobs:
             1. Descarga el archivo **`ATRIA.apk`** adjunto aquí abajo en tu celular.
             2. Abre el archivo descargado para instalarlo.
             3. Si tu celular te solicita permiso de *"Instalar aplicaciones desconocidas"*, dale en **Permitir**.
-            4. ¡Listo! Abre **ATRIA** con su icono y pantalla completa.
+            4. ¡Listo! Abre **ATRIA** con su icono oficial y pantalla completa.
           files: build-output/ATRIA.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

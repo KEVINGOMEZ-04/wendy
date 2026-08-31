@@ -11,16 +11,23 @@
       this.stars = [];
       this.particles = [];
       this.isMobile = window.innerWidth <= 768;
-      this.numStars = this.isMobile ? 35 : 90;
-      this.numParticles = this.isMobile ? 6 : 18;
+      this.numStars = this.isMobile ? 25 : 75;
+      this.numParticles = this.isMobile ? 4 : 12;
       this.animationFrameId = null;
       this.isRunning = false;
+      this.lastWidth = 0;
+      this.lastHeight = 0;
+      this.lastFrameTime = 0;
 
       this.resize = this.resize.bind(this);
       this.animate = this.animate.bind(this);
 
-      window.addEventListener('resize', this.resize, { passive: true });
-      window.addEventListener('orientationchange', () => setTimeout(this.resize, 200), { passive: true });
+      let resizeTimeout = null;
+      window.addEventListener('resize', () => {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(this.resize, 200);
+      }, { passive: true });
+      window.addEventListener('orientationchange', () => setTimeout(this.resize, 300), { passive: true });
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           this.stop();
@@ -36,11 +43,21 @@
 
     resize() {
       if (!this.canvas) return;
-      this.isMobile = window.innerWidth <= 768;
-      this.numStars = this.isMobile ? 35 : 90;
-      this.numParticles = this.isMobile ? 6 : 18;
-      this.canvas.width = Math.min(window.innerWidth, 1920);
-      this.canvas.height = window.innerHeight;
+      const currentWidth = window.innerWidth;
+      const currentHeight = window.innerHeight;
+
+      // Evitar redimensionar el canvas en móvil cuando solo cambia la barra de direcciones
+      if (this.lastWidth && Math.abs(currentWidth - this.lastWidth) < 25 && Math.abs(currentHeight - this.lastHeight) < 120) {
+        return;
+      }
+
+      this.lastWidth = currentWidth;
+      this.lastHeight = currentHeight;
+      this.isMobile = currentWidth <= 768;
+      this.numStars = this.isMobile ? 25 : 75;
+      this.numParticles = this.isMobile ? 4 : 12;
+      this.canvas.width = Math.min(currentWidth, 1920);
+      this.canvas.height = currentHeight;
       this.createElements();
     }
 

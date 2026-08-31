@@ -1292,6 +1292,20 @@
     </div>
   </div>
 
+  <!-- VISOR DE FOTOS Y VIDEOS EN PANTALLA COMPLETA (LIGHTBOX) -->
+  <div id="modal-lightbox-viewer" class="modal-overlay modal-lightbox-overlay" role="dialog" aria-modal="true" aria-label="Visor de foto y video en alta resolución">
+    <div class="lightbox-wrapper">
+      <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" title="Cerrar visor">&times;</button>
+      <button type="button" class="lightbox-nav-btn lightbox-prev" id="btn-lightbox-prev" title="Anterior">&#10094;</button>
+      <div class="lightbox-media-viewport" id="lightbox-viewport"></div>
+      <button type="button" class="lightbox-nav-btn lightbox-next" id="btn-lightbox-next" title="Siguiente">&#10095;</button>
+      <div class="lightbox-caption-bar">
+        <span id="lightbox-caption-title" class="lightbox-title-text">Recuerdo</span>
+        <span id="lightbox-counter" class="lightbox-counter-badge">1 / 1</span>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
   <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>

@@ -42,6 +42,7 @@ window.CONFIG = {
   // Configuración de Google Drive para Recuerdos
   googleDrive: {
     enabled: true,
+    parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
     folderPrefix: 'Patico Recuerdos',
     mainFolderUrl: 'https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing',
     get folderUrl() {

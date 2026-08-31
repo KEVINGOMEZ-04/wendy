@@ -1322,12 +1322,15 @@
                   <span>Por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
                 </div>
 
-                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                  <button type="button" class="btn-secondary btn-toggle-comments" data-id="${m.id}" style="padding: 0.3rem 0.8rem; font-size: 0.82rem;">
-                    💬 Comentarios (${comments.length})
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                  <a href="${window.Utils.sanitizeHTML(m.driveFolderUrl || `https://drive.google.com/drive/search?q=${encodeURIComponent(window.GoogleDriveService.formatFolderName(m.title, m.date))}`)}" target="_blank" rel="noopener" class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; color: var(--color-sunflower-gold);" title="Abrir carpeta en Google Drive">
+                    📁 Drive
+                  </a>
+                  <button type="button" class="btn-secondary btn-toggle-comments" data-id="${m.id}" style="padding: 0.3rem 0.75rem; font-size: 0.82rem;">
+                    💬 (${comments.length})
                   </button>
-                  <button type="button" class="btn-secondary btn-edit-memory" data-id="${m.id}" style="padding: 0.3rem 0.7rem; font-size: 0.82rem;">✏️</button>
-                  <button type="button" class="btn-secondary btn-delete-memory" data-id="${m.id}" style="padding: 0.3rem 0.7rem; font-size: 0.82rem; color: var(--color-danger);">🗑️</button>
+                  <button type="button" class="btn-secondary btn-edit-memory" data-id="${m.id}" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;">✏️</button>
+                  <button type="button" class="btn-secondary btn-delete-memory" data-id="${m.id}" style="padding: 0.3rem 0.65rem; font-size: 0.82rem; color: var(--color-danger);">🗑️</button>
                 </div>
               </div>
 

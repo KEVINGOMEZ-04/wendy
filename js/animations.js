@@ -1,5 +1,5 @@
 /**
- * Patico Wrapped 🌻 - Motor de Animaciones y Canvas
+ * ATRIA ✨ - Motor de Animaciones y Canvas
  */
 
 (function() {

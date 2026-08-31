@@ -682,19 +682,55 @@
       <section id="section-suenos" class="wrapped-section" role="tabpanel">
         <div class="section-header">
           <h2 class="section-title">Frasco de sueños ✨</h2>
-          <p class="section-quote">«Metas y deseos que florecerán a su debido tiempo.»</p>
+          <p class="section-quote">«Metas, viajes y deseos que florecerán a su debido tiempo.»</p>
         </div>
+
+        <!-- Tarjeta Visual del Frasco de Cristal Mágico -->
+        <div class="jar-hero-visual glass-card" id="jar-hero-container">
+          <div class="jar-glass-body">
+            <div class="jar-lid"></div>
+            <div class="jar-stars-chamber" id="jar-stars-chamber">
+              <!-- Luces / Estrellas flotantes interactivas -->
+            </div>
+            <div class="jar-glow-halo"></div>
+          </div>
+          <div class="jar-hero-text">
+            <h3 class="jar-hero-title">Nuestro Frasco de Deseos 🏺✨</h3>
+            <p class="jar-hero-desc">Cada sueño es una luz brillante en nuestro camino juntos. ¡Elige uno al azar o añade un nuevo deseo!</p>
+            <div class="jar-hero-actions">
+              <button type="button" class="btn-primary" id="btn-spin-dreams"><span>🎲 Ruleta del Destino</span></button>
+              <button type="button" class="btn-secondary" id="btn-new-dream"><span>+ Añadir Sueño 🌟</span></button>
+            </div>
+          </div>
+        </div>
+
         <div class="dreams-stats-banner" id="dreams-stats-container">
           <div class="glass-card" style="text-align: center;"><span class="stat-label">Total de sueños</span><div class="stat-value" id="stat-dreams-total">0</div></div>
           <div class="glass-card" style="text-align: center;"><span class="stat-label">Cumplidos</span><div class="stat-value" style="color: var(--color-sunflower-gold);" id="stat-dreams-completed">0</div></div>
           <div class="glass-card" style="text-align: center;"><span class="stat-label">Pendientes</span><div class="stat-value" style="color: var(--color-lilac);" id="stat-dreams-pending">0</div></div>
           <div class="glass-card" style="text-align: center;"><span class="stat-label">% Cumplido</span><div class="stat-value" style="color: var(--color-light-yellow);" id="stat-dreams-pct">0,00 %</div></div>
         </div>
-        <div class="trail-controls">
-          <button type="button" class="btn-primary" id="btn-new-dream"><span>+ Nuevo sueño</span> 🌟</button>
-          <p class="stats-note-legend" style="margin: 0;">* Porcentaje = (sueños cumplidos / total de sueños) × 100</p>
+
+        <div class="trail-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <select id="filter-dreams-category" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">🏷️ Todas las categorías</option>
+              <option value="✈️ Viajes & Aventuras">✈️ Viajes & Aventuras</option>
+              <option value="🏡 Hogar & Futuro">🏡 Hogar & Futuro</option>
+              <option value="🍽️ Citas & Momentos">🍽️ Citas & Momentos</option>
+              <option value="🎒 Locuras & Retos">🎒 Locuras & Retos</option>
+              <option value="✨ General">✨ General</option>
+            </select>
+            <select id="filter-dreams-status" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">🌱 Todos los estados</option>
+              <option value="Pendiente">🌱 Pendientes</option>
+              <option value="Cumplido">🌟 Cumplidos con Foto</option>
+            </select>
+          </div>
+          <p class="stats-note-legend" style="margin: 0;">* Respaldado en Google Drive: /Frasco de Sueños</p>
         </div>
-        <div id="dreams-list-container"></div>
+
+        <div id="dreams-list-container" class="dreams-cards-grid"></div>
       </section>
     </main>
   </div>
@@ -1186,22 +1222,158 @@
     </div>
   </div>
 
-  <!-- MODAL SUEÑO -->
+  <!-- MODAL SUEÑO (CREAR / EDITAR) -->
   <div id="modal-dream" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-dream-title">
-    <div class="modal-box">
+    <div class="modal-box modal-box-large">
       <div class="modal-header">
         <h3 id="modal-dream-title">Nuevo Sueño ✨</h3>
         <button type="button" class="modal-close-btn" data-close-modal="modal-dream" aria-label="Cerrar">&times;</button>
       </div>
       <form id="form-dream">
         <input type="hidden" id="dream-id" />
-        <div class="form-group"><label for="dream-title">Título del sueño o meta *</label><input type="text" id="dream-title" class="form-control" placeholder="Ej. Viajar juntos a..." required /></div>
-        <div class="form-group"><label for="dream-status">Estado</label><select id="dream-status" class="form-control"><option value="Pendiente">Pendiente 🌱</option><option value="Cumplido">Cumplido 🌟</option></select></div>
-        <div class="form-actions">
+        <input type="hidden" id="dream-photo-data" />
+
+        <div class="form-group">
+          <label for="dream-title">Título del sueño o meta *</label>
+          <input type="text" id="dream-title" class="form-control" placeholder="Ej. Viajar juntos a Japón, tener un gato..." required />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+          <div class="form-group">
+            <label for="dream-category">Categoría 🏷️</label>
+            <select id="dream-category" class="form-control">
+              <option value="✈️ Viajes & Aventuras">✈️ Viajes & Aventuras</option>
+              <option value="🏡 Hogar & Futuro">🏡 Hogar & Futuro</option>
+              <option value="🍽️ Citas & Momentos">🍽️ Citas & Momentos</option>
+              <option value="🎒 Locuras & Retos">🎒 Locuras & Retos</option>
+              <option value="✨ General">✨ General</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dream-desire">Nivel de Ilusión 🔥</label>
+            <select id="dream-desire" class="form-control">
+              <option value="3">🔥🔥🔥 ¡Nos urge hacerlo!</option>
+              <option value="2">🔥🔥 Muchas ganas</option>
+              <option value="1">🔥 Con calma y amor</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="dream-status">Estado</label>
+          <select id="dream-status" class="form-control">
+            <option value="Pendiente">Pendiente 🌱 (En el frasco)</option>
+            <option value="Cumplido">Cumplido 🌟 (¡Logro desbloqueado!)</option>
+          </select>
+        </div>
+
+        <!-- Sección de Cumplimiento (Foto del Momento) -->
+        <div id="dream-completion-fields" class="glass-card" style="display: none; padding: 1rem; margin-top: 1rem; border-color: rgba(244, 197, 66, 0.4);">
+          <h4 style="color: var(--color-sunflower-gold); margin-bottom: 0.5rem; font-size: 1rem;">📸 Foto del Sueño Cumplido</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.85rem;">
+            Se guardará en la carpeta <strong>/Frasco de Sueños</strong> en Google Drive con el nombre del sueño y fecha.
+          </p>
+
+          <div class="form-group">
+            <label for="dream-completed-date">Fecha en que lo cumplieron</label>
+            <input type="date" id="dream-completed-date" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label for="dream-photo-input">Foto del momento</label>
+            <input type="file" id="dream-photo-input" class="form-control" accept="image/*" />
+          </div>
+
+          <div id="dream-photo-preview-wrap" style="display: none; margin-top: 0.65rem; text-align: center;">
+            <img id="dream-photo-preview-img" src="" alt="Foto del sueño" style="max-height: 180px; max-width: 100%; border-radius: 12px; border: 2px solid var(--color-sunflower-gold);" />
+            <button type="button" id="btn-remove-dream-photo" class="btn-secondary" style="margin-top: 0.4rem; padding: 0.25rem 0.75rem; font-size: 0.78rem; color: var(--color-danger);">Quitar foto 🗑️</button>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.65rem;">
+            <label for="dream-notes">Nota o recuerdo de este día (opcional)</label>
+            <textarea id="dream-notes" class="form-control" rows="2" placeholder="¿Qué sentimos al lograrlo juntos?..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 1.25rem;">
           <button type="button" class="btn-secondary" data-close-modal="modal-dream">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar sueño</button>
+          <button type="submit" class="btn-primary">Guardar sueño 🌟</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL CÁPSULA DE SUEÑO CUMPLIDO 🎉 -->
+  <div id="modal-dream-fulfill" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-dream-fulfill-title">
+    <div class="modal-box modal-box-large" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="modal-dream-fulfill-title">🏆 ¡Sueño Cumplido! 🎉</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-dream-fulfill" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-dream-fulfill" style="text-align: left; margin-top: 1rem;">
+        <input type="hidden" id="fulfill-dream-id" />
+        <input type="hidden" id="fulfill-dream-photo-data" />
+
+        <div class="glass-card" style="text-align: center; padding: 1.2rem; margin-bottom: 1rem; border-color: rgba(244, 197, 66, 0.5);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.4rem;">🌟✨💑</div>
+          <h4 id="fulfill-dream-title-display" style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--color-sunflower-gold); margin-bottom: 0.3rem;"></h4>
+          <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin: 0;">¡Un nuevo logro desbloqueado en nuestra historia!</p>
+        </div>
+
+        <div class="form-group">
+          <label for="fulfill-dream-date">Fecha de cumplimiento</label>
+          <input type="date" id="fulfill-dream-date" class="form-control" required />
+        </div>
+
+        <div class="form-group">
+          <label for="fulfill-dream-photo-file">Foto especial de este momento 📸 (Se sube a Google Drive /Frasco de Sueños)</label>
+          <input type="file" id="fulfill-dream-photo-file" class="form-control" accept="image/*" />
+        </div>
+
+        <div id="fulfill-photo-preview-wrap" style="display: none; margin-bottom: 0.85rem; text-align: center;">
+          <img id="fulfill-photo-preview-img" src="" alt="Foto" style="max-height: 180px; max-width: 100%; border-radius: 12px; border: 2px solid var(--color-sunflower-gold);" />
+        </div>
+
+        <div class="form-group">
+          <label for="fulfill-dream-notes">Nota o anécdota (opcional)</label>
+          <textarea id="fulfill-dream-notes" class="form-control" rows="2" placeholder="Escribe algo lindo sobre cómo fue lograrlo..."></textarea>
+        </div>
+
+        <div class="form-actions" style="margin-top: 1.2rem;">
+          <button type="button" class="btn-secondary" data-close-modal="modal-dream-fulfill">Cerrar</button>
+          <button type="submit" class="btn-primary">Guardar en el Frasco 🌟</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL RULETA DEL DESTINO 🎲✨ -->
+  <div id="modal-dream-roulette" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-roulette-title">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="modal-roulette-title">🎲 Ruleta del Destino ✨</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-dream-roulette" aria-label="Cerrar">&times;</button>
+      </div>
+      <div style="padding: 1.5rem 0.5rem;">
+        <div id="roulette-jar-anim" class="roulette-jar-animation">
+          <span style="font-size: 3.5rem; display: block; animation: floatJar 2s infinite ease-in-out;">🏺</span>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.25rem;">
+          ¿No saben qué plan hacer hoy o cuál será su próxima meta? ¡El universo elige un deseo del frasco!
+        </p>
+
+        <div id="roulette-result-box" class="glass-card" style="display: none; padding: 1.4rem; margin-bottom: 1.25rem; border-color: var(--color-sunflower-gold);">
+          <span id="roulette-category-badge" class="platform-pill" style="margin-bottom: 0.5rem; display: inline-block;"></span>
+          <h3 id="roulette-dream-title" style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-text-main); margin: 0.5rem 0;"></h3>
+          <p id="roulette-desire-badge" style="font-size: 0.9rem; margin: 0; color: #FFA726;"></p>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn-primary" id="btn-spin-again"><span>🎲 Sacar otro deseo</span></button>
+          <button type="button" class="btn-secondary" data-close-modal="modal-dream-roulette">Listo ✨</button>
+        </div>
+      </div>
     </div>
   </div>
 

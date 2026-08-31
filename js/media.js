@@ -522,7 +522,7 @@ window.GoogleDriveService = {
 
   async uploadMemory(memoryData, coverFileOrUrl, galleryFilesOrUrls = []) {
     const folderName = this.formatFolderName(memoryData.title, memoryData.date);
-    const scriptUrl = window.CONFIG.googleDrive?.scriptUrl || 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
 
     const filesToUpload = [];
 
@@ -547,45 +547,33 @@ window.GoogleDriveService = {
       });
     }
 
-    // Si hay un webhook de Google Apps Script configurado
-    if (scriptUrl) {
-      try {
-        const response = await fetch(scriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'createFolderAndUpload',
-            parentFolderId: window.CONFIG.googleDrive?.parentFolderId || '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
-            folderName: folderName,
-            folderPrefix: window.CONFIG.googleDrive.folderPrefix,
-            files: filesToUpload
-          })
-        });
+    try {
+      // Usar mode: 'no-cors' para asegurar que el navegador nunca bloquee el envío por redirección 302
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: 'createFolderAndUpload',
+          parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
+          folderName: folderName,
+          files: filesToUpload
+        })
+      });
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result && result.folderUrl) {
-            return {
-              success: true,
-              folderUrl: result.folderUrl,
-              folderName: folderName,
-              uploadedFiles: result.files || []
-            };
-          }
-        }
-      } catch (e) {
-        console.warn('Error al subir a Google Drive Script:', e);
-      }
+      return {
+        success: true,
+        folderName: folderName,
+        uploadedFiles: filesToUpload
+      };
+    } catch (e) {
+      console.warn('Google Drive Script upload notice:', e);
+      return {
+        success: false,
+        folderName: folderName,
+        error: e.message
+      };
     }
-
-    // Fallback local: Generar enlace directo de búsqueda/creación en Google Drive
-    const driveSearchUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(folderName)}`;
-    return {
-      success: true,
-      folderUrl: driveSearchUrl,
-      folderName: folderName,
-      uploadedFiles: filesToUpload
-    };
   }
 };
 

@@ -2370,29 +2370,133 @@
       if (!container) return;
 
       let list = window.storage.getNotes();
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const currentUser = window.storage.getCurrentUser();
+
+      // Ordenar: Fijadas con chincheta primero, luego cronológico descendente
+      list.sort((a, b) => {
+        const pinA = a.isPinned ? 1 : 0;
+        const pinB = b.isPinned ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
 
       if (list.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary);">El muro está esperando vuestras primeras palabras. 💌</div>`;
+        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">El muro está esperando vuestras primeras notas de amor. 💌✨</div>`;
         return;
       }
 
-      container.innerHTML = list.map(n => `
-        <div class="paper-note" data-id="${n.id}">
-          <div class="paper-note-header">
-            <span class="paper-author" style="color: ${n.author === "Kevin" ? "var(--color-lilac)" : "var(--color-sunflower-gold)"};">${n.author}</span>
-            <span class="paper-date">${window.Utils.formatDateTimeES(n.createdAt)}</span>
-          </div>
-          <div class="paper-content">${window.Utils.sanitizeHTML(n.message)}</div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-            ${n.isDemo ? `<span class="demo-badge">Dato de ejemplo</span>` : `<span></span>`}
-            <div style="display: flex; gap: 0.4rem;">
-              <button type="button" class="btn-secondary btn-edit-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;">Editar</button>
-              <button type="button" class="btn-secondary btn-delete-note" data-id="${n.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem; color: var(--color-danger);">Eliminar</button>
+      container.innerHTML = list.map(n => {
+        const author = n.author || 'Kevin';
+        const isAuthor = author.toLowerCase() === currentUser.toLowerCase() || n.isDemo;
+        const styleClass = `style-${n.style || 'sunflower'}`;
+        const isPinned = n.isPinned === true;
+        const sticker = n.sticker || '';
+        const photoUrl = n.photoUrl || '';
+        const isSurprise = n.style === 'surprise' && !n.isRevealed;
+
+        const reactions = n.reactions || {};
+        const availableReactions = ['❤️', '🥰', '🌻', '😂', '🥺'];
+
+        return `
+          <div class="paper-note ${styleClass} ${isPinned ? 'is-pinned' : ''}" data-id="${n.id}">
+            ${isPinned ? `<span class="paper-note-pin-badge btn-toggle-pin" data-id="${n.id}" title="Nota fijada arriba. Toca para desfijar">📌</span>` : ''}
+            ${sticker ? `<span class="note-floating-sticker" title="Sticker">${window.Utils.sanitizeHTML(sticker)}</span>` : ''}
+
+            <div class="paper-note-header">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="author-badge-circle ${author.toLowerCase() === 'wendy' ? 'wendy' : 'kevin'}" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                  ${author.charAt(0).toUpperCase()}
+                </span>
+                <span class="paper-author" style="color: ${author.toLowerCase() === 'wendy' ? 'var(--color-pink)' : 'var(--color-lilac)'}; font-weight: 700;">
+                  ${window.Utils.sanitizeHTML(author)}
+                </span>
+              </div>
+              <span class="paper-date">${window.Utils.formatDateTimeES(n.createdAt)}</span>
+            </div>
+
+            <!-- Contenido de la Nota (o Raspa & Gana si es Sorpresa) -->
+            ${isSurprise ? `
+              <div class="surprise-scratch-box">
+                <div class="surprise-scratch-cover btn-reveal-surprise" data-id="${n.id}">
+                  <span style="font-size: 1.6rem;">🤫✨</span>
+                  <strong style="color: var(--color-sunflower-gold); font-size: 0.9rem;">Nota Sorpresa Oculta</strong>
+                  <button type="button" class="surprise-scratch-btn">🎁 Toca para raspar y leer</button>
+                </div>
+                <div class="paper-content" style="filter: blur(8px); user-select: none;">${window.Utils.sanitizeHTML(n.message)}</div>
+              </div>
+            ` : `
+              <div class="paper-content">${window.Utils.sanitizeHTML(n.message)}</div>
+            `}
+
+            <!-- Foto Polaroid Adjunta si existe -->
+            ${photoUrl ? `
+              <div class="note-polaroid-attachment">
+                <img src="${window.Utils.sanitizeHTML(photoUrl)}" class="note-polaroid-img" alt="Foto adjunta" onerror="this.parentElement.style.display='none'" />
+              </div>
+            ` : ''}
+
+            <!-- Barra de Reacciones Interactivas -->
+            <div class="note-reactions-bar">
+              ${availableReactions.map(emoji => {
+                const users = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+                const count = users.length;
+                const hasReacted = users.includes(currentUser);
+                const titleText = count > 0 ? `${users.join(' y ')} reaccionó con ${emoji}` : `Reaccionar con ${emoji}`;
+                return `
+                  <button type="button" class="reaction-btn ${hasReacted ? 'active' : ''} btn-react-note" data-id="${n.id}" data-emoji="${emoji}" title="${titleText}">
+                    <span>${emoji}</span>
+                    ${count > 0 ? `<strong>${count}</strong>` : ''}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Acciones de la Nota -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; padding-top: 0.4rem;">
+              <button type="button" class="btn-secondary btn-toggle-pin" data-id="${n.id}" style="padding: 0.18rem 0.55rem; font-size: 0.72rem;" title="${isPinned ? 'Desfijar de la parte superior' : 'Fijar con chincheta'}">
+                ${isPinned ? '📌 Desfijar' : '📌 Fijar'}
+              </button>
+
+              <div style="display: flex; gap: 0.35rem;">
+                ${isAuthor ? `
+                  <button type="button" class="btn-secondary btn-edit-note" data-id="${n.id}" style="padding: 0.18rem 0.55rem; font-size: 0.72rem;">Editar</button>
+                  <button type="button" class="btn-secondary btn-delete-note" data-id="${n.id}" style="padding: 0.18rem 0.55rem; font-size: 0.72rem; color: var(--color-danger);">Eliminar</button>
+                ` : `
+                  <span style="font-size: 0.7rem; color: var(--color-text-muted);">🔒 Nota de ${window.Utils.sanitizeHTML(author)}</span>
+                `}
+              </div>
             </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
+
+      // Listeners
+      container.querySelectorAll(".btn-react-note").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const emoji = btn.dataset.emoji;
+          window.storage.reactToNote(id, emoji, currentUser);
+          this.renderNotes();
+        });
+      });
+
+      container.querySelectorAll(".btn-toggle-pin").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          window.storage.toggleNotePin(id);
+          this.renderNotes();
+          window.Utils.showToast("Estado de chincheta actualizado 📌", "info");
+        });
+      });
+
+      container.querySelectorAll(".btn-reveal-surprise").forEach(cover => {
+        cover.addEventListener("click", () => {
+          const id = cover.dataset.id;
+          window.storage.revealSurpriseNote(id);
+          this.renderNotes();
+          window.Utils.showToast("¡Sorpresa revelada! ✨💖", "success");
+        });
+      });
 
       container.querySelectorAll(".btn-edit-note").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -2406,9 +2510,14 @@
         btn.addEventListener("click", (e) => {
           const id = e.currentTarget.dataset.id;
           if (confirm("¿Eliminar esta nota del muro?")) {
-            window.storage.deleteNote(id);
-            this.renderNotes();
-            window.Utils.showToast("Nota eliminada", "info");
+            try {
+              window.storage.deleteNote(id);
+              this.renderNotes();
+              this.renderDailyDashboard();
+              window.Utils.showToast("Nota eliminada", "info");
+            } catch (err) {
+              window.Utils.showToast(err.message, "warning");
+            }
           }
         });
       });
@@ -2416,9 +2525,52 @@
 
     openNoteModal(n = null) {
       const modal = document.getElementById("modal-note");
+      const currentUser = window.storage.getCurrentUser();
+      const author = n ? n.author : currentUser;
+
       document.getElementById("note-id").value = n ? n.id : "";
-      document.getElementById("note-author").value = n ? n.author : window.storage.getCurrentUser();
+      document.getElementById("note-author").value = author;
       document.getElementById("note-message").value = n ? n.message : "";
+
+      // Insignia visual del autor
+      const authorBadgeEl = document.getElementById("note-modal-author-badge");
+      if (authorBadgeEl) {
+        authorBadgeEl.textContent = author.charAt(0).toUpperCase();
+        authorBadgeEl.className = "author-badge-circle " + (author.toLowerCase() === "wendy" ? "wendy" : "kevin");
+      }
+      const authorNameEl = document.getElementById("note-modal-author-name");
+      if (authorNameEl) {
+        authorNameEl.textContent = `${author} ${author.toLowerCase() === 'wendy' ? '👧🏻 (Patico ♥️)' : '👦🏻'}`;
+      }
+
+      // Estilo de papelito
+      const styleVal = n && n.style ? n.style : "sunflower";
+      const styleRadio = modal.querySelector(`input[name="note-style"][value="${styleVal}"]`);
+      if (styleRadio) styleRadio.checked = true;
+
+      // Sticker
+      const stickerVal = n && n.sticker ? n.sticker : "";
+      const stickerRadio = modal.querySelector(`input[name="note-sticker"][value="${stickerVal}"]`);
+      if (stickerRadio) stickerRadio.checked = true;
+
+      // Polaroid
+      const photoInput = document.getElementById("note-photo-url");
+      const photoPreviewWrap = document.getElementById("note-photo-preview-wrap");
+      const photoPreviewImg = document.getElementById("note-photo-preview-img");
+      if (photoInput) photoInput.value = n && n.photoUrl ? n.photoUrl : "";
+      if (photoPreviewWrap && photoPreviewImg) {
+        if (n && n.photoUrl) {
+          photoPreviewImg.src = n.photoUrl;
+          photoPreviewWrap.style.display = "block";
+        } else {
+          photoPreviewWrap.style.display = "none";
+        }
+      }
+
+      // Pin
+      const pinCheckbox = document.getElementById("note-is-pinned");
+      if (pinCheckbox) pinCheckbox.checked = n && n.isPinned === true;
+
       modal.classList.add("active");
     }
 
@@ -2746,17 +2898,65 @@
         window.Utils.showToast("Película guardada en la biblioteca 🎬", "success");
       });
 
+      // Controles de foto polaroid para notas
+      const notePhotoUrlInput = document.getElementById("note-photo-url");
+      const notePhotoFileInput = document.getElementById("note-photo-file");
+      const notePhotoPreviewWrap = document.getElementById("note-photo-preview-wrap");
+      const notePhotoPreviewImg = document.getElementById("note-photo-preview-img");
+
+      notePhotoUrlInput?.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        if (notePhotoPreviewWrap && notePhotoPreviewImg) {
+          if (val) {
+            notePhotoPreviewImg.src = val;
+            notePhotoPreviewWrap.style.display = "block";
+          } else {
+            notePhotoPreviewWrap.style.display = "none";
+          }
+        }
+      });
+
+      notePhotoFileInput?.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = ev.target.result;
+          if (notePhotoUrlInput) notePhotoUrlInput.value = dataUrl;
+          if (notePhotoPreviewWrap && notePhotoPreviewImg) {
+            notePhotoPreviewImg.src = dataUrl;
+            notePhotoPreviewWrap.style.display = "block";
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
       document.getElementById("form-note")?.addEventListener("submit", (e) => {
         e.preventDefault();
+        const selectedStyle = document.querySelector('input[name="note-style"]:checked')?.value || "sunflower";
+        const selectedSticker = document.querySelector('input[name="note-sticker"]:checked')?.value || "";
+        const photoUrl = document.getElementById("note-photo-url")?.value.trim() || "";
+        const isPinned = document.getElementById("note-is-pinned")?.checked || false;
+
         const noteData = {
-          id: document.getElementById("note-id").value,
+          id: document.getElementById("note-id").value || undefined,
           author: document.getElementById("note-author").value,
-          message: document.getElementById("note-message").value
+          message: document.getElementById("note-message").value.trim(),
+          style: selectedStyle,
+          sticker: selectedSticker,
+          photoUrl: photoUrl,
+          isPinned: isPinned
         };
-        window.storage.saveNote(noteData);
-        document.getElementById("modal-note").classList.remove("active");
-        this.renderNotes();
-        window.Utils.showToast("Nota publicada en el muro 💌", "success");
+
+        try {
+          window.storage.saveNote(noteData);
+          document.getElementById("modal-note").classList.remove("active");
+          this.renderNotes();
+          this.renderDailyDashboard();
+          window.Utils.showToast("¡Nota publicada en el muro! 💌✨", "success");
+        } catch (err) {
+          window.Utils.showToast(err.message, "warning");
+        }
       });
 
       document.getElementById("form-dream")?.addEventListener("submit", (e) => {

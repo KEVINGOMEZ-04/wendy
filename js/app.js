@@ -338,22 +338,101 @@
       updatePresenceBar();
     }
 
+    // Generador de sonido celestial / campana de amor con Web Audio API
+    playNudgeSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // Arpegio celestial de campana dorada (Do5, Mi5, Sol5, Do6)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.11);
+
+          gain.gain.setValueAtTime(0, now + i * 0.11);
+          gain.gain.linearRampToValueAtTime(0.28, now + i * 0.11 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.11 + 0.85);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + i * 0.11);
+          osc.stop(now + i * 0.11 + 0.9);
+        });
+      } catch (e) {
+        console.warn('AudioContext notice:', e);
+      }
+    }
+
+    initNudgeFeature() {
+      const btnNudge = document.getElementById('btn-send-nudge');
+      if (!btnNudge) return;
+
+      btnNudge.addEventListener('click', () => {
+        const currentUser = window.storage.getCurrentUser();
+        const storageKey = `atria_last_nudge_${currentUser}`;
+        const lastSent = parseInt(localStorage.getItem(storageKey), 10) || 0;
+        const now = Date.now();
+        const cooldownMs = 20 * 60 * 1000; // Límite de 20 minutos
+        const elapsed = now - lastSent;
+
+        if (elapsed < cooldownMs) {
+          const remainingMinutes = Math.ceil((cooldownMs - elapsed) / (60 * 1000));
+          window.Utils.showToast(`⏳ Podrás enviar otro toquecito en ${remainingMinutes} min (límite: 1 cada 20 min).`, 'info');
+          return;
+        }
+
+        // Guardar timestamp del toquecito
+        localStorage.setItem(storageKey, now.toString());
+
+        // Enviar a través de Firebase Realtime Database
+        if (window.storage.sendNudge) {
+          window.storage.sendNudge();
+        }
+
+        // Sonido y feedback táctil
+        this.playNudgeSound();
+        if (navigator.vibrate) {
+          try { navigator.vibrate([100, 50, 100]); } catch (_) {}
+        }
+
+        const otherName = currentUser.toLowerCase() === 'wendy' ? 'Kevin' : 'Wendy';
+        window.Utils.showToast(`🌻 ¡Toquecito de amor enviado a ${otherName}! 💖✨`, 'success');
+      });
+    }
+
     showNudgeReceivedAnimation(nudge) {
+      // 1. Sonido celestial
+      this.playNudgeSound();
+
+      // 2. Vibración suave en dispositivos móviles
+      if (navigator.vibrate) {
+        try { navigator.vibrate([200, 100, 200, 100, 300]); } catch (_) {}
+      }
+
+      // 3. Notificación flotante luminosa
       const floater = document.createElement('div');
       floater.className = 'nudge-floater';
       floater.innerHTML = `<span>🌻</span><span>¡<strong>${window.Utils.sanitizeHTML(nudge.fromNickname || nudge.from)}</strong> te envió un toquecito de amor!</span><span>💖</span>`;
       document.body.appendChild(floater);
 
+      // 4. Lluvia de confeti
       if (window.confetti) {
         window.confetti({
-          particleCount: 50,
-          spread: 80,
+          particleCount: 60,
+          spread: 85,
           origin: { y: 0.2 },
           colors: ['#F4C542', '#E040FB', '#00E5FF', '#FF4081']
         });
       }
 
-      setTimeout(() => floater.remove(), 5500);
+      setTimeout(() => floater.remove(), 6000);
     }
 
     // --- 3. Navegación y Enrutamiento Hash ---
@@ -2804,14 +2883,10 @@
         this.renderModalGallery();
       });
 
-      document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
+      document.getElementById("form-memory")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : "Guardar recuerdo 🌻";
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = `<span>Iniciando subida a Google Drive...</span> ⏳`;
-        }
 
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
@@ -2830,28 +2905,10 @@
           author: window.storage.getCurrentUser()
         };
 
-        try {
-          // Carga Lineal Secuencial a Google Drive en Máxima Calidad
-          if (window.GoogleDriveService) {
-            const driveCover = this.driveCoverPayload || coverVal;
-            const driveGallery = (this.driveGalleryPayloads && this.driveGalleryPayloads.length) ? this.driveGalleryPayloads : this.modalGalleryItems;
-            
-            await window.GoogleDriveService.uploadMemory(
-              memData,
-              driveCover,
-              driveGallery,
-              (current, total, label) => {
-                if (submitBtn) {
-                  submitBtn.innerHTML = `<span>Subiendo ${label} (${current}/${total})...</span> ⏳`;
-                }
-              }
-            );
-          }
-        } catch (driveErr) {
-          console.warn("Aviso de subida a Drive:", driveErr);
-        }
+        const driveCover = this.driveCoverPayload || coverVal;
+        const driveGallery = (this.driveGalleryPayloads && this.driveGalleryPayloads.length) ? [...this.driveGalleryPayloads] : [...(this.modalGalleryItems || [])];
 
-        // Guardar recuerdo en el sistema y cerrar modal
+        // 1. Guardar de inmediato en el teléfono para que aparezca en 0 segundos
         window.storage.saveMemory(memData);
         document.getElementById("modal-memory").classList.remove("active");
         if (submitBtn) {
@@ -2860,7 +2917,21 @@
         }
         this.renderMemories();
         this.renderAnnualCalendar();
-        window.Utils.showToast("¡Recuerdo y fotos en máxima calidad guardados en Google Drive! 🌻📁", "success");
+        window.Utils.showToast("¡Recuerdo guardado! 🌻 Respaldando en Google Drive en segundo plano... ✨", "success");
+
+        // 2. Subir en segundo plano a Google Drive creando EXACTAMENTE 1 carpeta con todas sus fotos
+        if (window.GoogleDriveService && (driveCover || driveGallery.length)) {
+          (async () => {
+            try {
+              const res = await window.GoogleDriveService.uploadMemory(memData, driveCover, driveGallery);
+              if (res && res.success) {
+                window.Utils.showToast(`📁 Carpeta y ${res.filesCount || ''} fotos respaldadas en Google Drive ✨`, "success");
+              }
+            } catch (driveErr) {
+              console.warn("Aviso de subida asíncrona a Drive:", driveErr);
+            }
+          })();
+        }
       });
 
       document.getElementById("form-series")?.addEventListener("submit", (e) => {

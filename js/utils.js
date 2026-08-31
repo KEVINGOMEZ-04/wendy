@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Patico Wrapped 🌻 - Utilidades y Formateadores
  */
 
@@ -81,5 +81,48 @@ window.Utils = {
       toast.classList.remove('show');
       setTimeout(() => toast.remove(), 400);
     }, duration);
+  },
+
+  // Compresor de fotos en el navegador (cliente) para soportar alto volumen sin colapsar memoria
+  compressImage: (file, maxWidth = 1400, quality = 0.82) => {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve('');
+      if (!file.type || !file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth || h > maxWidth) {
+            if (w > h) {
+              h = Math.round((h * maxWidth) / w);
+              w = maxWidth;
+            } else {
+              w = Math.round((w * maxWidth) / h);
+              h = maxWidth;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 };

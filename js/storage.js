@@ -566,6 +566,19 @@
           }
         });
 
+        // Escucha de Actividades Cruzadas en Tiempo Real (Películas, Series, Notas, Sueños, Música, Recuerdos)
+        this.activityRef = db.ref(`rooms/${config.roomId}/lastActivity`);
+        let lastActivityTime = Date.now();
+        this.activityRef.on('value', snapshot => {
+          const act = snapshot.val();
+          if (act && act.timestamp && act.timestamp > lastActivityTime) {
+            lastActivityTime = act.timestamp;
+            if (act.user && act.user !== this.getCurrentUser()) {
+              if (this.onActivityReceived) this.onActivityReceived(act);
+            }
+          }
+        });
+
       } catch (error) {
         console.error('Firebase no pudo inicializarse:', error);
         this.remoteRef = null;
@@ -616,6 +629,26 @@
         id: window.Utils.generateUUID()
       };
       this.nudgeRef.set(nudgeData).catch(e => console.warn('Error enviando toquecito:', e));
+      return true;
+    }
+
+    broadcastActivity(type, title, action = 'añadió') {
+      if (!this.activityRef) return false;
+      const currentUser = this.getCurrentUser();
+      const profiles = this.getProfiles();
+      const userProfile = profiles[currentUser] || {};
+      const userDisplayName = userProfile.nickname || currentUser;
+
+      const actData = {
+        id: window.Utils.generateUUID(),
+        user: currentUser,
+        userName: userDisplayName,
+        type: type, // 'película', 'serie', 'canción', 'nota', 'sueño', 'recuerdo'
+        title: title || 'un elemento',
+        action: action,
+        timestamp: Date.now()
+      };
+      this.activityRef.set(actData).catch(e => console.warn('Error emitiendo notificación de actividad:', e));
       return true;
     }
 
@@ -779,6 +812,7 @@
       }
 
       this.set(this.keys.memories, list);
+      this.broadcastActivity('recuerdo', memoryData.title, memoryData.id ? 'actualizó el' : 'guardó el');
       return list;
     }
 
@@ -924,6 +958,7 @@
       }
 
       this.set(this.keys.movies, list);
+      this.broadcastActivity('película', movieData.title, movieData.id ? 'actualizó la' : 'añadió la');
       return list;
     }
 
@@ -1047,6 +1082,7 @@
         list.unshift({ ...cleanSong, id: window.Utils.generateUUID(), addedAt: now, updatedAt: now });
       }
       this.set(this.keys.songs, list);
+      this.broadcastActivity('canción', songData.title, songData.id ? 'actualizó la' : 'recomendó la');
       return list;
     }
 
@@ -1169,6 +1205,8 @@
       }
 
       this.set(this.keys.notes, list);
+      const noteSnippet = (noteData.message || 'una cartita').substring(0, 35) + '...';
+      this.broadcastActivity('nota', noteSnippet, noteData.id ? 'editó la' : 'dejó una nueva');
       return list;
     }
 
@@ -1270,6 +1308,7 @@
       }
 
       this.set(this.keys.dreams, list);
+      this.broadcastActivity('sueño', dreamData.title, dreamData.id ? 'actualizó el' : 'añadió al Frasco el');
       return list;
     }
 
@@ -1285,6 +1324,7 @@
           dream.status = 'Cumplido';
           dream.completedAt = now;
           justCompleted = true;
+          this.broadcastActivity('sueño', dream.title, '¡cumplió el');
         } else {
           dream.status = 'Pendiente';
           dream.completedAt = null;
@@ -1354,6 +1394,7 @@
       }
 
       this.set(this.keys.series, list);
+      this.broadcastActivity('serie', serieData.title, serieData.id ? 'actualizó la' : 'añadió la');
       return list;
     }
 

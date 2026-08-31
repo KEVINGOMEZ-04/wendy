@@ -875,3 +875,41 @@ textarea.form-control {
     font-size: 0.75rem;
   }
 }
+
+/* =========================================
+   EMBLEMA & LOGO OFICIAL ATRIA 🏛️🌻
+   ========================================= */
+.lock-hero-emblem {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-emblem-logo-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid var(--color-sunflower-gold);
+  box-shadow: 0 0 20px rgba(244, 197, 66, 0.45);
+  position: relative;
+  z-index: 2;
+}
+
+.lock-emblem-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 110px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(244, 197, 66, 0.4) 0%, rgba(224, 64, 251, 0) 70%);
+  border-radius: 50%;
+  z-index: 1;
+  animation: gentlePulse 3s infinite ease-in-out;
+}

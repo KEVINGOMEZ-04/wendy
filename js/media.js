@@ -395,22 +395,42 @@ window.MediaService = {
             enriched.imdbRating = details.vote_average.toFixed(1);
           }
 
-          // Construir temporadas iniciales
+          // Construir temporadas iniciales con todos sus capítulos preinicializados
           const validSeasons = (details.seasons || []).filter(s => s.season_number > 0);
-          enriched.seasons = validSeasons.map(s => ({
-            seasonNumber: s.season_number,
-            name: s.name || `Temporada ${s.season_number}`,
-            episodesCount: s.episode_count || 0,
-            poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : '',
-            overview: s.overview || '',
-            episodes: []
-          }));
+          enriched.seasons = validSeasons.map(s => {
+            const epCount = s.episode_count || 0;
+            const initialEpisodes = [];
+            for (let i = 1; i <= epCount; i++) {
+              initialEpisodes.push({
+                episodeNumber: i,
+                name: `Episodio ${i}`,
+                overview: '',
+                airDate: '',
+                stillPath: '',
+                watchedByKevin: false,
+                watchedByWendy: false,
+                watchedAtKevin: null,
+                watchedAtWendy: null
+              });
+            }
 
-          // Cargar automáticamente capítulos de la Temporada 1
+            return {
+              seasonNumber: s.season_number,
+              name: s.name || `Temporada ${s.season_number}`,
+              episodesCount: epCount,
+              poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : '',
+              overview: s.overview || '',
+              episodes: initialEpisodes
+            };
+          });
+
+          // Cargar automáticamente metadatos completos de la Temporada 1
           if (enriched.seasons.length > 0) {
             try {
               const s1Episodes = await this.getSeasonEpisodes(serie.tmdbId, enriched.seasons[0].seasonNumber);
-              enriched.seasons[0].episodes = s1Episodes;
+              if (s1Episodes && s1Episodes.length) {
+                enriched.seasons[0].episodes = s1Episodes;
+              }
             } catch (_) {}
           }
         }

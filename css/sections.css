@@ -551,6 +551,11 @@
 
 @media (max-width: 900px) {
   .col-8, .col-7, .col-6, .col-5, .col-4 { grid-column: span 12; }
+  .wrapped-card, .paper-note, .serie-card-v2, .dream-item-card, .search-song-card, .memory-card-body {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(26, 18, 42, 0.95) !important;
+  }
 }
 
 /* Métrica Gigante Destacada */

@@ -330,12 +330,33 @@
           this.renderDailyDashboard();
         };
         window.storage.onNudgeReceived = (nudge) => this.showNudgeReceivedAnimation(nudge);
+        window.storage.onActivityReceived = (act) => this.showActivityNotification(act);
       }
 
       if (!this.presenceInterval) {
         this.presenceInterval = setInterval(updatePresenceBar, 15000);
       }
       updatePresenceBar();
+    }
+
+    showActivityNotification(act) {
+      if (!act) return;
+      const typeIcons = {
+        'película': '🍿',
+        'serie': '📺',
+        'canción': '🎵',
+        'nota': '💌',
+        'sueño': '🌟',
+        'recuerdo': '🌻'
+      };
+      const icon = typeIcons[act.type] || '✨';
+      const toastMsg = `${icon} <strong>${window.Utils.sanitizeHTML(act.userName || act.user)}</strong> ${window.Utils.sanitizeHTML(act.action)} ${window.Utils.sanitizeHTML(act.type)}: <em>"${window.Utils.sanitizeHTML(act.title)}"</em>`;
+      
+      window.Utils.showToast(toastMsg, 'info');
+      this.playNudgeSound();
+      if (navigator.vibrate) {
+        try { navigator.vibrate([150, 80, 150]); } catch (_) {}
+      }
     }
 
     // Generador de sonido celestial / campana de amor con Web Audio API

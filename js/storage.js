@@ -331,6 +331,7 @@
           updatedBy: this.getCurrentUser(),
           memories: this.get(this.keys.memories, []),
           movies: this.get(this.keys.movies, []),
+          series: this.get(this.keys.series, []),
           notes: this.get(this.keys.notes, []),
           dreams: this.get(this.keys.dreams, []),
           songs: this.get(this.keys.songs, [])
@@ -421,6 +422,7 @@
         user: this.getCurrentUser(),
         memories: this.get(this.keys.memories, []),
         movies: this.get(this.keys.movies, []),
+        series: this.get(this.keys.series, []),
         notes: this.get(this.keys.notes, []),
         dreams: this.get(this.keys.dreams, []),
         songs: this.get(this.keys.songs, [])

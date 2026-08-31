@@ -1254,7 +1254,7 @@
           episodesCount: serieData.episodesCount || 0,
           seasons: serieData.seasons || [],
           proposedBy: serieData.proposedBy || this.getCurrentUser(),
-          status: serieData.status || 'Viendo', // 'Por ver', 'Viendo', 'Completada', 'Favorita'
+          status: serieData.status || 'Por ver', // Empieza como 'Por ver'
           kevinRating: serieData.kevinRating || 0,
           wendyRating: serieData.wendyRating || 0,
           kevinReview: serieData.kevinReview || '',
@@ -1285,10 +1285,19 @@
         serie.isFullyCompletedByKevin = false;
         serie.isFullyCompletedByWendy = false;
         serie.isFullyCompletedByBoth = false;
+        serie.totalEpisodes = 0;
         return;
       }
 
-      let totalEpisodes = 0;
+      // 1. Calcular el total real de capítulos de la serie completa
+      let realTotalEpisodes = serie.episodesCount || 0;
+      if (!realTotalEpisodes || realTotalEpisodes <= 0) {
+        realTotalEpisodes = 0;
+        serie.seasons.forEach(season => {
+          realTotalEpisodes += (season.episodesCount || (season.episodes ? season.episodes.length : 0));
+        });
+      }
+
       let seenKevin = 0;
       let seenWendy = 0;
       let seenBoth = 0;
@@ -1296,7 +1305,6 @@
       serie.seasons.forEach(season => {
         if (season.episodes && season.episodes.length) {
           season.episodes.forEach(ep => {
-            totalEpisodes++;
             const k = ep.watchedByKevin === true;
             const w = ep.watchedByWendy === true;
             if (k) seenKevin++;
@@ -1306,19 +1314,26 @@
         }
       });
 
-      serie.totalEpisodes = totalEpisodes;
-      serie.progressKevin = totalEpisodes > 0 ? Math.round((seenKevin / totalEpisodes) * 100) : 0;
-      serie.progressWendy = totalEpisodes > 0 ? Math.round((seenWendy / totalEpisodes) * 100) : 0;
-      serie.progressBoth = totalEpisodes > 0 ? Math.round((seenBoth / totalEpisodes) * 100) : 0;
+      if (realTotalEpisodes < Math.max(seenKevin, seenWendy, seenBoth)) {
+        realTotalEpisodes = Math.max(seenKevin, seenWendy, seenBoth);
+      }
 
-      serie.isFullyCompletedByKevin = totalEpisodes > 0 && seenKevin >= totalEpisodes;
-      serie.isFullyCompletedByWendy = totalEpisodes > 0 && seenWendy >= totalEpisodes;
-      serie.isFullyCompletedByBoth = totalEpisodes > 0 && seenBoth >= totalEpisodes;
+      serie.totalEpisodes = realTotalEpisodes;
+      serie.progressKevin = realTotalEpisodes > 0 ? Math.round((seenKevin / realTotalEpisodes) * 100) : 0;
+      serie.progressWendy = realTotalEpisodes > 0 ? Math.round((seenWendy / realTotalEpisodes) * 100) : 0;
+      serie.progressBoth = realTotalEpisodes > 0 ? Math.round((seenBoth / realTotalEpisodes) * 100) : 0;
 
+      serie.isFullyCompletedByKevin = realTotalEpisodes > 0 && seenKevin >= realTotalEpisodes;
+      serie.isFullyCompletedByWendy = realTotalEpisodes > 0 && seenWendy >= realTotalEpisodes;
+      serie.isFullyCompletedByBoth = realTotalEpisodes > 0 && seenBoth >= realTotalEpisodes;
+
+      // Estado automático: "Por ver" si no hay capítulos vistos, "Viendo" al marcar al menos 1, "Completada" si ambos terminaron
       if (serie.isFullyCompletedByBoth) {
         serie.status = 'Completada';
       } else if (seenKevin > 0 || seenWendy > 0) {
-        if (serie.status === 'Por ver') serie.status = 'Viendo';
+        serie.status = 'Viendo';
+      } else {
+        serie.status = 'Por ver';
       }
     }
 
@@ -1360,7 +1375,25 @@
       const isWendy = (user || this.getCurrentUser()).toLowerCase() === 'wendy';
 
       for (const season of serie.seasons) {
-        if (!season.episodes) continue;
+        // Asegurar que season.episodes exista
+        if (!season.episodes || !season.episodes.length) {
+          const epCount = season.episodesCount || 10;
+          season.episodes = [];
+          for (let i = 1; i <= epCount; i++) {
+            season.episodes.push({
+              episodeNumber: i,
+              name: `Episodio ${i}`,
+              overview: '',
+              airDate: '',
+              stillPath: '',
+              watchedByKevin: false,
+              watchedByWendy: false,
+              watchedAtKevin: null,
+              watchedAtWendy: null
+            });
+          }
+        }
+
         if (season.seasonNumber < targetSeasonNumber) {
           // Marcar todos los de temporadas anteriores
           for (const ep of season.episodes) {

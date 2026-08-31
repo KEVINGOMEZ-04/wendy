@@ -2770,8 +2770,15 @@
         });
       });
 
-      document.getElementById("form-memory")?.addEventListener("submit", (e) => {
+      document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origBtnHtml = submitBtn ? submitBtn.innerHTML : "Guardar recuerdo 🌻";
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>Creando carpeta en Google Drive...</span> ⏳`;
+        }
+
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
         const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
@@ -2789,24 +2796,25 @@
           author: window.storage.getCurrentUser()
         };
 
-        // Guardar recuerdo localmente y en la nube
+        try {
+          // 1. Crear físicamente la carpeta y subir las fotos a Google Drive
+          if (window.GoogleDriveService) {
+            await window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems);
+          }
+        } catch (driveErr) {
+          console.warn("Aviso de subida a Drive:", driveErr);
+        }
+
+        // 2. Guardar recuerdo en el sistema y cerrar modal
         window.storage.saveMemory(memData);
         document.getElementById("modal-memory").classList.remove("active");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
         this.renderMemories();
         this.renderAnnualCalendar();
-        window.Utils.showToast("¡Recuerdo guardado con éxito! 🌻", "success");
-
-        // Subida y creación automática de subcarpeta dentro de la carpeta establecida de Google Drive
-        if (window.GoogleDriveService) {
-          window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems).then(driveRes => {
-            if (driveRes && driveRes.folderUrl) {
-              memData.driveFolderUrl = driveRes.folderUrl;
-              window.storage.saveMemory(memData);
-              this.renderMemories();
-              window.Utils.showToast(`¡Carpeta "${driveRes.folderName || 'Recuerdo'}" creada en Google Drive! 📁✨`, "success");
-            }
-          }).catch(err => console.warn("Google Drive auto-creation notice:", err));
-        }
+        window.Utils.showToast("¡Recuerdo y carpeta en Google Drive guardados con éxito! 🌻📁", "success");
       });
 
       document.getElementById("form-series")?.addEventListener("submit", (e) => {

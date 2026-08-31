@@ -131,6 +131,7 @@
       const unlockAndOpen = (username) => {
         window.storage.setCurrentUser(username);
         window.storage.setUnlocked(true);
+        localStorage.setItem('patico_session_token', Date.now().toString());
 
         try {
           if (window.presence?.switchUser) window.presence.switchUser(username);
@@ -331,12 +332,28 @@
         };
         window.storage.onNudgeReceived = (nudge) => this.showNudgeReceivedAnimation(nudge);
         window.storage.onActivityReceived = (act) => this.showActivityNotification(act);
+        window.storage.onForceLogout = (msg) => this.forceLogout(msg);
       }
 
       if (!this.presenceInterval) {
         this.presenceInterval = setInterval(updatePresenceBar, 15000);
       }
       updatePresenceBar();
+    }
+
+    forceLogout(msg = 'La sesión se ha cerrado por seguridad.') {
+      window.storage.setUnlocked(false);
+      const appContainer = document.getElementById('app-container');
+      const lockScreen = document.getElementById('lock-screen');
+      const passwordInput = document.getElementById('lock-password');
+      const lockError = document.getElementById('lock-error');
+
+      if (appContainer) appContainer.style.display = 'none';
+      if (lockScreen) lockScreen.style.display = 'flex';
+      if (passwordInput) passwordInput.value = '';
+      if (lockError) lockError.textContent = msg;
+
+      window.Utils.showToast(msg, 'warning');
     }
 
     showActivityNotification(act) {

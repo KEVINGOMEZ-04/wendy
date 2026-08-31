@@ -45,12 +45,12 @@ window.CONFIG = {
     parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
     folderPrefix: 'Patico Recuerdos',
     mainFolderUrl: 'https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing',
+    defaultScriptUrl: 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec',
     get folderUrl() {
       return localStorage.getItem('patico_gdrive_main_url') || this.mainFolderUrl;
     },
-    // Webhook de Google Apps Script o Token de acceso directo (opcional)
     get scriptUrl() {
-      return localStorage.getItem('patico_gdrive_script_url') || '';
+      return localStorage.getItem('patico_gdrive_script_url') || this.defaultScriptUrl;
     }
   },
 

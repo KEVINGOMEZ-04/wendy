@@ -1452,12 +1452,6 @@
       document.getElementById("mem-cover-url").value = coverUrl;
       this.updateCoverPreview(coverUrl);
 
-      // Enlace de Google Drive del recuerdo
-      const driveInput = document.getElementById("mem-drive-url");
-      if (driveInput) {
-        driveInput.value = mem && mem.driveFolderUrl ? mem.driveFolderUrl : "";
-      }
-
       // Galería
       this.modalGalleryItems = mem && Array.isArray(mem.gallery) ? [...mem.gallery] : [];
       this.renderModalGallery();
@@ -2781,7 +2775,6 @@
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
         const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
-        const driveUrl = document.getElementById("mem-drive-url")?.value.trim() || "";
 
         const memData = {
           id: document.getElementById("mem-id").value || undefined,
@@ -2792,7 +2785,6 @@
           coverMedia: coverVal,
           coverType: isVideo ? "video" : "image",
           gallery: this.modalGalleryItems || [],
-          driveFolderUrl: driveUrl,
           status: document.getElementById("mem-status").value,
           author: window.storage.getCurrentUser()
         };

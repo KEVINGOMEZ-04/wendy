@@ -1476,6 +1476,8 @@
 
       // Galería
       this.modalGalleryItems = mem && Array.isArray(mem.gallery) ? [...mem.gallery] : [];
+      this.driveCoverPayload = null;
+      this.driveGalleryPayloads = [];
       this.renderModalGallery();
 
       modal.classList.add("active");
@@ -2755,11 +2757,17 @@
         const file = e.target.files[0];
         if (!file) return;
         try {
-          const dataUrl = await window.Utils.compressImage(file, 1600, 0.82);
+          // 1. Guardar original para Google Drive en máxima calidad
+          const rawReader = new FileReader();
+          rawReader.onload = (ev) => { this.driveCoverPayload = ev.target.result; };
+          rawReader.readAsDataURL(file);
+
+          // 2. Comprimir copia optimizada para visualización local rápida sin saturar memoria
+          const dataUrl = await window.Utils.compressImage(file, 1600, 0.85);
           document.getElementById("mem-cover-url").value = dataUrl;
           this.updateCoverPreview(dataUrl);
         } catch (err) {
-          console.error("Error comprimiendo portada:", err);
+          console.error("Error procesando foto de portada:", err);
         }
       });
 
@@ -2777,13 +2785,20 @@
         const files = Array.from(e.target.files);
         if (!files.length) return;
         if (!this.modalGalleryItems) this.modalGalleryItems = [];
+        if (!this.driveGalleryPayloads) this.driveGalleryPayloads = [];
 
         for (const file of files) {
           try {
-            const dataUrl = await window.Utils.compressImage(file, 1400, 0.80);
+            // Guardar original para Drive
+            const rawReader = new FileReader();
+            rawReader.onload = (ev) => { this.driveGalleryPayloads.push(ev.target.result); };
+            rawReader.readAsDataURL(file);
+
+            // Guardar optimizado para teléfono
+            const dataUrl = await window.Utils.compressImage(file, 1400, 0.82);
             this.modalGalleryItems.push(dataUrl);
           } catch (err) {
-            console.error("Error comprimiendo foto de galería:", err);
+            console.error("Error procesando foto de galería:", err);
           }
         }
         this.renderModalGallery();
@@ -2795,7 +2810,7 @@
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : "Guardar recuerdo 🌻";
         if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.innerHTML = `<span>Creando carpeta en Google Drive...</span> ⏳`;
+          submitBtn.innerHTML = `<span>Iniciando subida a Google Drive...</span> ⏳`;
         }
 
         const coverVal = document.getElementById("mem-cover-url").value.trim();
@@ -2816,15 +2831,27 @@
         };
 
         try {
-          // 1. Crear físicamente la carpeta y subir las fotos a Google Drive
+          // Carga Lineal Secuencial a Google Drive en Máxima Calidad
           if (window.GoogleDriveService) {
-            await window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems);
+            const driveCover = this.driveCoverPayload || coverVal;
+            const driveGallery = (this.driveGalleryPayloads && this.driveGalleryPayloads.length) ? this.driveGalleryPayloads : this.modalGalleryItems;
+            
+            await window.GoogleDriveService.uploadMemory(
+              memData,
+              driveCover,
+              driveGallery,
+              (current, total, label) => {
+                if (submitBtn) {
+                  submitBtn.innerHTML = `<span>Subiendo ${label} (${current}/${total})...</span> ⏳`;
+                }
+              }
+            );
           }
         } catch (driveErr) {
           console.warn("Aviso de subida a Drive:", driveErr);
         }
 
-        // 2. Guardar recuerdo en el sistema y cerrar modal
+        // Guardar recuerdo en el sistema y cerrar modal
         window.storage.saveMemory(memData);
         document.getElementById("modal-memory").classList.remove("active");
         if (submitBtn) {
@@ -2833,7 +2860,7 @@
         }
         this.renderMemories();
         this.renderAnnualCalendar();
-        window.Utils.showToast("¡Recuerdo y carpeta en Google Drive guardados con éxito! 🌻📁", "success");
+        window.Utils.showToast("¡Recuerdo y fotos en máxima calidad guardados en Google Drive! 🌻📁", "success");
       });
 
       document.getElementById("form-series")?.addEventListener("submit", (e) => {

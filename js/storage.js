@@ -168,20 +168,33 @@
     set(key, value) {
       try {
         localStorage.setItem(key, JSON.stringify(value));
-        this.notify(key);
-        const remoteName = Object.keys(this.keys).find(name => this.keys[name] === key);
-        if (this.remoteRef && this.remoteKeys.includes(remoteName)) {
-          this.remoteRef.child(remoteName).set(value).catch(error => console.error('Error al sincronizar con Firebase:', error));
-        }
-        // Solo programar subida a GitHub si Firebase NO está activo
-        if (window.CONFIG.presence?.provider !== 'firebase' && this.remoteKeys.includes(remoteName) && this.scheduleCloudPush) {
-          this.scheduleCloudPush();
-        }
-        return true;
       } catch (e) {
-        console.error(`Error guardando clave ${key} en localStorage:`, e);
-        return false;
+        console.warn(`Aviso de cuota en almacenamiento local (${e.name}):`, e);
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+          try {
+            if (key === this.keys.memories && Array.isArray(value)) {
+              // Si la memoria del navegador está llena, conservar portadas y fotos esenciales
+              const streamlined = value.map(m => ({
+                ...m,
+                gallery: Array.isArray(m.gallery) ? m.gallery.slice(0, 8) : []
+              }));
+              localStorage.setItem(key, JSON.stringify(streamlined));
+            }
+          } catch (retryErr) {
+            console.error('No se pudo guardar copia reducida en localStorage:', retryErr);
+          }
+        }
       }
+      this.notify(key);
+      const remoteName = Object.keys(this.keys).find(name => this.keys[name] === key);
+      if (this.remoteRef && this.remoteKeys.includes(remoteName)) {
+        this.remoteRef.child(remoteName).set(value).catch(error => console.error('Error al sincronizar con Firebase:', error));
+      }
+      // Solo programar subida a GitHub si Firebase NO está activo
+      if (window.CONFIG.presence?.provider !== 'firebase' && this.remoteKeys.includes(remoteName) && this.scheduleCloudPush) {
+        this.scheduleCloudPush();
+      }
+      return true;
     }
 
     subscribe(listener) { this.listeners.push(listener); return () => { this.listeners = this.listeners.filter(item => item !== listener); }; }

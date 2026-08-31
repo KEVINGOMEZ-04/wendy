@@ -1272,12 +1272,21 @@
     }
 
     getDreams() {
-      return this.get(this.keys.dreams, []);
+      return this.get(this.keys.dreams, []).map(d => ({
+        ...d,
+        category: d.category || '✨ General',
+        desireLevel: parseInt(d.desireLevel, 10) || 3,
+        photo: d.photo || '',
+        notes: d.notes || '',
+        status: d.status || 'Pendiente',
+        proposedBy: d.proposedBy || 'Kevin'
+      }));
     }
 
     saveDream(dreamData) {
       const list = this.getDreams();
       const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
 
       if (dreamData.id) {
         const index = list.findIndex(d => d.id === dreamData.id);
@@ -1286,9 +1295,14 @@
           const isCompleted = dreamData.status === 'Cumplido';
           list[index] = {
             ...existing,
-            title: dreamData.title.trim(),
-            status: dreamData.status,
-            completedAt: isCompleted ? (existing.completedAt || now) : null,
+            title: (dreamData.title || '').trim(),
+            category: dreamData.category || existing.category || '✨ General',
+            desireLevel: parseInt(dreamData.desireLevel, 10) || existing.desireLevel || 3,
+            status: dreamData.status || existing.status || 'Pendiente',
+            completedAt: isCompleted ? (dreamData.completedAt || existing.completedAt || now) : null,
+            photo: dreamData.photo !== undefined ? dreamData.photo : (existing.photo || ''),
+            notes: dreamData.notes !== undefined ? dreamData.notes : (existing.notes || ''),
+            proposedBy: existing.proposedBy || currentUser,
             updatedAt: now,
             isDemo: false
           };
@@ -1297,10 +1311,15 @@
         const isCompleted = dreamData.status === 'Cumplido';
         const newDream = {
           id: window.Utils.generateUUID(),
-          title: dreamData.title.trim(),
+          title: (dreamData.title || '').trim(),
+          category: dreamData.category || '✨ General',
+          desireLevel: parseInt(dreamData.desireLevel, 10) || 3,
           status: dreamData.status || 'Pendiente',
           createdAt: now,
-          completedAt: isCompleted ? now : null,
+          completedAt: isCompleted ? (dreamData.completedAt || now) : null,
+          photo: dreamData.photo || '',
+          notes: dreamData.notes || '',
+          proposedBy: currentUser,
           updatedAt: now,
           isDemo: false
         };

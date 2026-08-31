@@ -552,7 +552,7 @@ window.GoogleDriveService = {
       try {
         const response = await fetch(scriptUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'createFolderAndUpload',
             parentFolderId: window.CONFIG.googleDrive?.parentFolderId || '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',

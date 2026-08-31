@@ -1049,18 +1049,95 @@
 
   <!-- MODAL NOTA MURO -->
   <div id="modal-note" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-note-title">
-    <div class="modal-box">
+    <div class="modal-box modal-box-large">
       <div class="modal-header">
         <h3 id="modal-note-title">Nota para el Muro 💌</h3>
         <button type="button" class="modal-close-btn" data-close-modal="modal-note" aria-label="Cerrar">&times;</button>
       </div>
       <form id="form-note">
         <input type="hidden" id="note-id" />
-        <div class="form-group"><label for="note-author">Autor *</label><select id="note-author" class="form-control" required><option value="Kevin">Kevin</option><option value="Wendy">Wendy</option></select></div>
-        <div class="form-group"><label for="note-message">Mensaje *</label><textarea id="note-message" class="form-control" placeholder="Escribe tus palabras aquí..." required></textarea></div>
+        <input type="hidden" id="note-author" />
+
+        <!-- Insignia del Autor Activo Automático -->
+        <div class="glass-card" style="padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; border-color: rgba(244, 197, 66, 0.4);">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div id="note-modal-author-badge" class="author-badge-circle kevin" style="width: 32px; height: 32px; font-size: 0.95rem;">K</div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--color-text-secondary); display: block;">Publicando nota como:</span>
+              <strong id="note-modal-author-name" style="font-size: 0.95rem; color: var(--color-sunflower-gold);">Kevin 👦🏻</strong>
+            </div>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--color-text-muted);">🔒 Asignado automáticamente</span>
+        </div>
+
+        <!-- 1. Estilo / Tipo de Papelito -->
+        <div class="form-group">
+          <label style="margin-bottom: 0.4rem; display: block;">Estilo de Papelito 🎨</label>
+          <div class="note-styles-picker">
+            <label class="note-style-opt">
+              <input type="radio" name="note-style" value="sunflower" checked />
+              <span class="note-style-box style-sunflower">🌻 Girasol Dorado</span>
+            </label>
+            <label class="note-style-opt">
+              <input type="radio" name="note-style" value="love" />
+              <span class="note-style-box style-love">💌 Carta de Amor</span>
+            </label>
+            <label class="note-style-opt">
+              <input type="radio" name="note-style" value="surprise" />
+              <span class="note-style-box style-surprise">🤫 Raspa & Revela</span>
+            </label>
+            <label class="note-style-opt">
+              <input type="radio" name="note-style" value="reminder" />
+              <span class="note-style-box style-reminder">⏰ Recordatorio</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Mensaje -->
+        <div class="form-group">
+          <label for="note-message">Mensaje *</label>
+          <textarea id="note-message" class="form-control" rows="4" placeholder="Escribe tus palabras con todo el cariño..." required></textarea>
+        </div>
+
+        <!-- 3. Foto Polaroid Adjunta (Opcional) -->
+        <div class="glass-card" style="padding: 0.85rem; margin-bottom: 1rem; border-color: rgba(255, 255, 255, 0.1);">
+          <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-sunflower-gold); margin-bottom: 0.35rem; display: block;">
+            📸 Pegar Foto Polaroid (Opcional)
+          </label>
+          <input type="url" id="note-photo-url" class="form-control" placeholder="Enlace de imagen o foto (https://...)" style="margin-bottom: 0.4rem;" />
+          <input type="file" id="note-photo-file" accept="image/*" class="form-control" style="padding: 0.3rem; font-size: 0.78rem;" />
+          <div id="note-photo-preview-wrap" style="display: none; margin-top: 0.5rem; text-align: center;">
+            <img id="note-photo-preview-img" src="" alt="Vista previa polaroid" style="max-height: 120px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" />
+          </div>
+        </div>
+
+        <!-- 4. Sticker Decorativo -->
+        <div class="form-group">
+          <label style="margin-bottom: 0.35rem; display: block; font-size: 0.85rem;">Sticker Flotante ✨</label>
+          <div class="note-stickers-selector">
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="" checked /><span>Ninguno</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="🦆" /><span>🦆 Patico</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="🌻" /><span>🌻 Girasol</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="💖" /><span>💖 Corazón</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="☕" /><span>☕ Café</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="🌙" /><span>🌙 Luna</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="✨" /><span>✨ Brillo</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="🧸" /><span>🧸 Osito</span></label>
+            <label class="sticker-opt"><input type="radio" name="note-sticker" value="🐱" /><span>🐱 Gatito</span></label>
+          </div>
+        </div>
+
+        <!-- 5. Fijar al inicio -->
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+            <input type="checkbox" id="note-is-pinned" style="width: 18px; height: 18px; accent-color: var(--color-sunflower-gold);" />
+            <span>📌 <strong>Fijar con chincheta</strong> en la parte superior del muro</span>
+          </label>
+        </div>
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" data-close-modal="modal-note">Cancelar</button>
-          <button type="submit" class="btn-primary">Publicar nota</button>
+          <button type="submit" class="btn-primary">Publicar nota 💌</button>
         </div>
       </form>
     </div>

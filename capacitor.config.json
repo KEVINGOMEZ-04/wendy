@@ -1,0 +1,14 @@
+{
+  "appId": "com.kevinwendy.atria",
+  "appName": "ATRIA",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://kevingomez-04.github.io/wendy/",
+    "cleartext": true
+  },
+  "android": {
+    "backgroundColor": "#120E1C",
+    "allowMixedContent": true
+  }
+}

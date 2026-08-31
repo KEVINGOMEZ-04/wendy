@@ -637,11 +637,25 @@
     renderSongs() {
       const container = document.getElementById("songs-grid-list");
       if (!container) return;
-      const songs = window.storage.getSongs();
       const currentUser = window.storage.getCurrentUser();
+      const ratingFilter = document.getElementById("filter-songs-rating")?.value || "all";
+      let songs = window.storage.getSongs();
+
+      if (ratingFilter !== "all") {
+        if (ratingFilter === "unrated") {
+          songs = songs.filter(s => (!s.kevinRating && !s.wendyRating) || (parseInt(s.kevinRating, 10) === 0 && parseInt(s.wendyRating, 10) === 0));
+        } else {
+          const minStars = parseInt(ratingFilter, 10);
+          songs = songs.filter(s => {
+            const kR = parseInt(s.kevinRating, 10) || 0;
+            const wR = parseInt(s.wendyRating, 10) || 0;
+            return kR >= minStars || wR >= minStars;
+          });
+        }
+      }
 
       if (!songs.length) {
-        container.innerHTML = `<div class="glass-card empty-media">Todavía no hay canciones recomendadas. ¡Busca una arriba o añade la tuya! 🎶</div>`;
+        container.innerHTML = `<div class="glass-card empty-media">No hay canciones que coincidan con este filtro. ¡Recomienda una arriba! 🎶</div>`;
         return;
       }
 
@@ -841,6 +855,8 @@
           }
         });
       });
+
+      document.getElementById("filter-songs-rating")?.addEventListener("change", () => this.renderSongs());
     }
 
     openLyricsModal(song) {
@@ -1610,18 +1626,40 @@
     // --- 7. Películas (Nuestro Cine) ---
     renderMovies() {
       const container = document.getElementById("movies-grid-list");
-      const filter = document.getElementById("filter-movies-status")?.value || "all";
+      const statusFilter = document.getElementById("filter-movies-status")?.value || "all";
+      const ratingFilter = document.getElementById("filter-movies-rating")?.value || "all";
       if (!container) return;
 
       let list = window.storage.getMovies();
       const currentUser = window.storage.getCurrentUser();
 
-      if (filter !== "all") {
-        list = list.filter(m => m.status === filter);
+      // Filtro por Estado (Por ver / Vista)
+      if (statusFilter !== "all") {
+        list = list.filter(m => {
+          const s = (m.status === 'Me encantó' || m.status === 'Favorita') ? 'Vista' : (m.status || 'Por ver');
+          return s.toLowerCase() === statusFilter.toLowerCase();
+        });
+      }
+
+      // Filtro por Calificación (1 a 10 / ⭐)
+      if (ratingFilter !== "all") {
+        if (ratingFilter === "unrated") {
+          list = list.filter(m => (!m.kevinRating && !m.wendyRating && !m.priority) || (parseInt(m.kevinRating, 10) === 0 && parseInt(m.wendyRating, 10) === 0));
+        } else {
+          const minRating = parseInt(ratingFilter, 10);
+          list = list.filter(m => {
+            const kR = (parseInt(m.kevinRating, 10) || 0) * 2;
+            const wR = (parseInt(m.wendyRating, 10) || 0) * 2;
+            const prio = (parseInt(m.priority, 10) || 0) * 2;
+            const imdb = Math.round(parseFloat(m.imdbRating) || 0);
+            const maxRate = Math.max(kR, wR, prio, imdb);
+            return maxRate >= minRating;
+          });
+        }
       }
 
       if (list.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay películas registradas en esta categoría.</div>`;
+        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay películas que coincidan con estos filtros. ¡Añade una arriba! 🍿</div>`;
         return;
       }
 
@@ -1650,8 +1688,9 @@
           ratingSummaryBadge = `<span class="song-badge-rating" title="Tu calificación">⭐ ${activeUserRating}/5</span>`;
         }
 
-        const statusClass = m.status === 'Me encantó' ? 'encanto' : (m.status === 'Vista' ? 'Vista' : 'por-ver');
-        const statusLabel = m.status === 'Me encantó' ? '💖 Me encantó' : (m.status === 'Vista' ? '🍿 Vista' : '🌱 Por ver');
+        const isWatched = (m.status === 'Vista' || m.status === 'Me encantó' || m.status === 'Favorita');
+        const statusClass = isWatched ? 'Vista' : 'por-ver';
+        const statusLabel = isWatched ? '🍿 Vista' : '🌱 Por ver';
         const platformsList = Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()).filter(Boolean) : []);
 
         return `
@@ -1660,7 +1699,9 @@
               ${m.poster ? `<img class="movie-poster" src="${window.Utils.sanitizeHTML(m.poster)}" alt="Póster de ${window.Utils.sanitizeHTML(m.title)}" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder" style="height: 220px; width: 100%; border-radius: 12px; margin-bottom: 0.85rem;">🎬</div>'}
               
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
-                <span class="movie-badge-status ${statusClass}" data-status="${window.Utils.sanitizeHTML(m.status)}">${statusLabel}</span>
+                <button type="button" class="movie-badge-status btn-toggle-movie-status ${statusClass}" data-id="${m.id}" title="Toca para cambiar estado entre 'Por ver' y 'Vista' (1 solo toque)">
+                  ${statusLabel} <span style="font-size:0.75rem; opacity:0.8; margin-left:2px;">⇄</span>
+                </button>
                 ${ratingSummaryBadge}
               </div>
 
@@ -1695,8 +1736,8 @@
                   ⭐ Calificación y Comentarios (${comments.length})
                 </button>
                 <div style="display: flex; gap: 0.4rem;">
-                  <button type="button" class="btn-secondary btn-edit-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">✏️</button>
-                  <button type="button" class="btn-secondary btn-delete-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);">🗑️</button>
+                  <button type="button" class="btn-secondary btn-edit-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;" title="Editar película">✏️</button>
+                  <button type="button" class="btn-secondary btn-delete-movie" data-id="${m.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);" title="Eliminar película">🗑️</button>
                 </div>
               </div>
 
@@ -1749,6 +1790,23 @@
           </div>
         `;
       }).join("");
+
+      // Listener de Cambio Directo de Estado (1 Solo Toque)
+      container.querySelectorAll('.btn-toggle-movie-status').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const movieId = btn.dataset.id;
+          const movies = window.storage.getMovies();
+          const movie = movies.find(m => m.id === movieId);
+          if (!movie) return;
+          const currentIsWatched = (movie.status === 'Vista' || movie.status === 'Me encantó' || movie.status === 'Favorita');
+          movie.status = currentIsWatched ? 'Por ver' : 'Vista';
+          window.storage.saveMovie(movie);
+          this.renderMovies();
+          this.renderDailyDashboard();
+          window.Utils.showToast(`Estado cambiado a "${movie.status}" 🍿✨`, 'info');
+        });
+      });
 
       // Listeners de Estrellas para Películas
       container.querySelectorAll('.star-btn').forEach(btn => {
@@ -1831,6 +1889,7 @@
       });
 
       document.getElementById("filter-movies-status")?.addEventListener("change", () => this.renderMovies());
+      document.getElementById("filter-movies-rating")?.addEventListener("change", () => this.renderMovies());
     }
 
     openMovieModal(m = null) {
@@ -1966,18 +2025,34 @@
 
     renderSeries() {
       const container = document.getElementById("series-grid-list");
-      const filter = document.getElementById("filter-series-status")?.value || "all";
+      const statusFilter = document.getElementById("filter-series-status")?.value || "all";
+      const ratingFilter = document.getElementById("filter-series-rating")?.value || "all";
       if (!container) return;
 
       let list = window.storage.getSeries();
       const currentUser = window.storage.getCurrentUser();
 
-      if (filter !== "all") {
-        list = list.filter(s => s.status === filter);
+      if (statusFilter !== "all") {
+        list = list.filter(s => (s.status || 'Viendo').toLowerCase() === statusFilter.toLowerCase());
+      }
+
+      if (ratingFilter !== "all") {
+        if (ratingFilter === "unrated") {
+          list = list.filter(s => (!s.kevinRating && !s.wendyRating) || (parseInt(s.kevinRating, 10) === 0 && parseInt(s.wendyRating, 10) === 0));
+        } else {
+          const minRating = parseInt(ratingFilter, 10);
+          list = list.filter(s => {
+            const kR = (parseInt(s.kevinRating, 10) || 0) * 2;
+            const wR = (parseInt(s.wendyRating, 10) || 0) * 2;
+            const imdb = Math.round(parseFloat(s.imdbRating) || 0);
+            const maxRate = Math.max(kR, wR, imdb);
+            return maxRate >= minRating;
+          });
+        }
       }
 
       if (list.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay series registradas en esta categoría. ¡Busca una arriba o añade la tuya! 📺✨</div>`;
+        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay series que coincidan con estos filtros. ¡Busca una arriba o añade la tuya! 📺✨</div>`;
         return;
       }
 
@@ -2099,6 +2174,7 @@
       });
 
       document.getElementById("filter-series-status")?.addEventListener("change", () => this.renderSeries());
+      document.getElementById("filter-series-rating")?.addEventListener("change", () => this.renderSeries());
     }
 
     openSeriesModal(s = null) {
@@ -3737,6 +3813,16 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Pausar automáticamente cualquier otro audio o video cuando uno empieza a sonar
+    document.addEventListener("play", (e) => {
+      const mediaElements = document.querySelectorAll("audio, video");
+      mediaElements.forEach(media => {
+        if (media !== e.target && !media.paused) {
+          media.pause();
+        }
+      });
+    }, true);
+
     window.paticoApp = new PaticoApp();
   });
 })();

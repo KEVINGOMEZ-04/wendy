@@ -1,0 +1,73 @@
+name: Build ATRIA APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dependencies & Initialize Capacitor
+        run: |
+          npm install
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: |
+          mkdir -p build-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk build-output/ATRIA.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ATRIA-APK
+          path: build-output/ATRIA.apk
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "ATRIA v1.0.0 🏛️✨"
+          body: |
+            # 🏛️ ATRIA — La puerta de entrada a nuestro mundo compartido
+            
+            Descarga directa de la aplicación móvil oficial de **Kevin & Wendy**.
+            
+            ### 📱 Instrucciones de instalación en Android:
+            1. Descarga el archivo **`ATRIA.apk`** que está aquí abajo en tu celular.
+            2. Toca el archivo descargado para instalarlo.
+            3. Si tu celular te pide permiso de "Instalar aplicaciones desconocidas", dale en **Permitir**.
+            4. ¡Listo! Abre **ATRIA** y entra con tu contraseña.
+          files: build-output/ATRIA.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

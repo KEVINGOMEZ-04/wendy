@@ -19,12 +19,21 @@
       this.initSections();
       this.initModals();
       this.initWrappedSystem();
+      
+      // Registro de PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration note:', err));
+        });
+      }
+
       window.storage.subscribe((key) => {
         if (key === window.CONFIG.storageKeys.memories) {
           this.renderMemories();
           this.renderAnnualCalendar();
         }
         if (key === window.CONFIG.storageKeys.movies) this.renderMovies();
+        if (key === window.CONFIG.storageKeys.series) this.renderSeries();
         if (key === window.CONFIG.storageKeys.songs) this.renderSongs();
         if (key === window.CONFIG.storageKeys.notes) this.renderNotes();
         if (key === window.CONFIG.storageKeys.dreams) this.renderDreams();
@@ -39,6 +48,7 @@
         this.renderMemories();
         this.renderAnnualCalendar();
         this.renderMovies();
+        this.renderSeries();
         this.renderSongs();
         this.renderNotes();
         this.renderDreams();
@@ -398,6 +408,7 @@
       this.initAnnualCalendar();
       this.renderMemories();
       this.renderMovies();
+      this.renderSeries();
       this.renderSongs();
       this.renderNotes();
       this.renderDreams();
@@ -494,6 +505,7 @@
         ['🌻', window.storage.getMemories().length, 'recuerdos'],
         ['🎵', window.storage.getSongs().length, 'canciones'],
         ['🎬', window.storage.getMovies().length, 'películas'],
+        ['📺', window.storage.getSeries().length, 'series'],
         ['💌', window.storage.getNotes().length, 'notas'],
         ['🌟', window.storage.getDreams().filter(dream => dream.status === 'Pendiente').length, 'sueños pendientes']
       ];
@@ -1754,6 +1766,580 @@
       modal.classList.add("active");
     }
 
+    // =========================================
+    // MÓDULO DE SERIES & ANIME 📺
+    // =========================================
+
+    async searchSeries(query) {
+      const results = document.getElementById('series-search-results');
+      if (!results) return;
+      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold); padding: 1.5rem;">Buscando series y anime… 🔍📺</div>';
+
+      try {
+        const seriesList = await window.MediaService.searchSeries(query);
+        if (!seriesList.length) {
+          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 1.5rem;">No se encontraron series con ese nombre. ¡Prueba con otro título!</div>';
+          return;
+        }
+
+        results.innerHTML = `
+          <div class="search-results-header">
+            <span class="search-results-title">Resultados de series encontrados:</span>
+            <button type="button" class="btn-secondary" id="btn-close-series-results" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">&times; Cerrar</button>
+          </div>
+          <div class="movies-search-grid">
+            ${seriesList.map((s, index) => `
+              <div class="glass-card search-movie-card">
+                ${s.poster ? `<img src="${window.Utils.sanitizeHTML(s.poster)}" alt="Póster" class="search-movie-poster" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder">📺</div>'}
+                <div class="search-movie-info">
+                  <h4 class="search-movie-title">${window.Utils.sanitizeHTML(s.title)} <span style="font-size: 0.85rem; color: var(--color-sunflower-gold);">(${s.year || 'N/A'})</span></h4>
+                  <p class="search-movie-synopsis">${window.Utils.sanitizeHTML(s.synopsis || 'Serie/Anime disponible.')}</p>
+                  <div class="search-movie-meta">
+                    ${s.imdbRating ? `<span class="movie-meta-pill">⭐ TMDb: <strong>${window.Utils.sanitizeHTML(s.imdbRating)}</strong></span>` : ''}
+                    <span class="movie-meta-pill">📺 Series & Anime</span>
+                  </div>
+                </div>
+                <div class="search-movie-actions">
+                  <button type="button" class="btn-primary btn-add-search-series" data-index="${index}">
+                    <span>📺 + Añadir a Series</span>
+                  </button>
+                  <button type="button" class="btn-secondary btn-custom-series" data-index="${index}" title="Personalizar antes de guardar">
+                    <span>✏️ Personalizar</span>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        document.getElementById('btn-close-series-results')?.addEventListener('click', () => {
+          results.innerHTML = '';
+        });
+
+        results.querySelectorAll('.btn-add-search-series').forEach(button => {
+          button.addEventListener('click', async () => {
+            const index = parseInt(button.dataset.index, 10);
+            button.disabled = true;
+            button.textContent = 'Cargando temporadas… ⏳';
+            const baseSerie = seriesList[index];
+            const details = await window.MediaService.seriesDetails(baseSerie);
+            const currentUser = window.storage.getCurrentUser();
+
+            window.storage.saveSeries({
+              ...details,
+              proposedBy: currentUser,
+              status: 'Viendo',
+              comments: []
+            });
+
+            this.renderSeries();
+            this.renderDailyDashboard();
+            results.innerHTML = '';
+            window.Utils.showToast(`¡${details.title} añadida a Nuestras Series! 📺🍿`, 'success');
+          });
+        });
+
+        results.querySelectorAll('.btn-custom-series').forEach(button => {
+          button.addEventListener('click', async () => {
+            const index = parseInt(button.dataset.index, 10);
+            button.textContent = 'Cargando…';
+            const details = await window.MediaService.seriesDetails(seriesList[index]);
+            const currentUser = window.storage.getCurrentUser();
+            this.openSeriesModal({
+              ...details,
+              proposedBy: currentUser,
+              status: 'Viendo'
+            });
+            button.textContent = '✏️ Personalizar';
+          });
+        });
+      } catch (error) {
+        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar series ahora.')}</div>`;
+      }
+    }
+
+    renderSeries() {
+      const container = document.getElementById("series-grid-list");
+      const filter = document.getElementById("filter-series-status")?.value || "all";
+      if (!container) return;
+
+      let list = window.storage.getSeries();
+      const currentUser = window.storage.getCurrentUser();
+
+      if (filter !== "all") {
+        list = list.filter(s => s.status === filter);
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay series registradas en esta categoría. ¡Busca una arriba o añade la tuya! 📺✨</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(s => {
+        const comments = Array.isArray(s.comments) ? s.comments : [];
+        const author = s.proposedBy || 'Kevin';
+        const authorInitial = author.charAt(0).toUpperCase();
+        const authorClass = author.toLowerCase() === 'wendy' ? 'wendy' : 'kevin';
+
+        const totalEps = s.totalEpisodes || 0;
+        const progressBoth = s.progressBoth || 0;
+        const progressKevin = s.progressKevin || 0;
+        const progressWendy = s.progressWendy || 0;
+
+        const isFullySeen = s.isFullyCompletedByBoth || (s.isFullyCompletedByKevin && s.isFullyCompletedByWendy);
+
+        const statusLabel = s.status === 'Completada' ? '✨ Completada' : (s.status === 'Por ver' ? '🌱 Por ver' : '🍿 Viendo');
+        const statusClass = s.status === 'Completada' ? 'encanto' : (s.status === 'Por ver' ? 'por-ver' : 'Vista');
+
+        const platformsList = Array.isArray(s.platforms) ? s.platforms : (typeof s.platforms === 'string' && s.platforms ? s.platforms.split(',').map(p => p.trim()).filter(Boolean) : []);
+
+        // Calificación global si está terminada
+        let ratingBadge = "";
+        if (s.kevinRating > 0 && s.wendyRating > 0) {
+          const avg = ((s.kevinRating + s.wendyRating) / 2).toFixed(1);
+          ratingBadge = `<span class="song-badge-rating" title="Promedio de Kevin y Wendy">⭐ ${avg}/5</span>`;
+        } else if (s.kevinRating > 0 || s.wendyRating > 0) {
+          const userScore = currentUser.toLowerCase() === 'wendy' ? s.wendyRating : s.kevinRating;
+          if (userScore > 0) {
+            ratingBadge = `<span class="song-badge-rating" title="Tu nota">⭐ ${userScore}/5</span>`;
+          }
+        }
+
+        return `
+          <div class="serie-card" data-id="${s.id}">
+            <div>
+              ${s.poster ? `<img class="serie-card-poster" src="${window.Utils.sanitizeHTML(s.poster)}" alt="Póster de ${window.Utils.sanitizeHTML(s.title)}" onerror="this.style.display='none'">` : '<div class="serie-card-poster-placeholder">📺</div>'}
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="movie-badge-status ${statusClass}">${statusLabel}</span>
+                ${ratingBadge}
+              </div>
+
+              <div class="song-author-badge" style="margin-bottom: 0.35rem;" title="Añadida por ${window.Utils.sanitizeHTML(author)}">
+                <span class="author-badge-circle ${authorClass}">${authorInitial}</span>
+                <span>Añadida por <strong>${window.Utils.sanitizeHTML(author)}</strong></span>
+              </div>
+
+              <h3 style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-text-main); margin-bottom: 0.2rem; line-height: 1.25;">
+                ${window.Utils.sanitizeHTML(s.title)} <span style="font-size: 0.95rem; color: var(--color-sunflower-gold); font-family: var(--font-numbers);">(${s.year || ''})</span>
+              </h3>
+
+              ${s.synopsis ? `<p class="movie-synopsis">${window.Utils.sanitizeHTML(s.synopsis)}</p>` : ''}
+
+              <!-- Barra de Progreso Conjunto -->
+              <div class="serie-progress-bar-wrap">
+                <div class="serie-progress-track">
+                  <div class="serie-progress-fill both" style="width: ${progressBoth}%;"></div>
+                </div>
+                <div class="serie-progress-labels">
+                  <span class="serie-progress-tag" style="color: #00E5FF;">👦🏻 Kevin: ${progressKevin}%</span>
+                  <span class="serie-progress-tag" style="color: #7092FD; font-weight: 700;">💑 Juntos: ${progressBoth}%</span>
+                  <span class="serie-progress-tag" style="color: #E040FB;">👧🏻 Wendy: ${progressWendy}%</span>
+                </div>
+              </div>
+
+              ${platformsList.length ? `
+                <div class="movie-platforms" style="margin-top: 0.5rem;">
+                  ${platformsList.map(plat => `<span class="platform-pill">📺 ${window.Utils.sanitizeHTML(plat)}</span>`).join('')}
+                </div>
+              ` : ''}
+
+              ${s.imdbRating ? `
+                <p class="movie-meta" style="margin-top: 0.5rem;">
+                  ⭐ IMDb / TMDb: <strong>${window.Utils.sanitizeHTML(s.imdbRating)}</strong>/10 
+                  ${s.imdbUrl ? `· <a href="${window.Utils.sanitizeHTML(s.imdbUrl)}" target="_blank" rel="noopener">Ver ficha</a>` : ''}
+                </p>
+              ` : ''}
+            </div>
+
+            <div style="margin-top: 1rem; border-top: 1px solid var(--color-border); padding-top: 0.85rem;">
+              <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn-primary btn-open-series-viewer" data-id="${s.id}" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                  <span>▶ Ver Capítulos (${totalEps})</span>
+                </button>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" class="btn-secondary btn-edit-series" data-id="${s.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;" title="Editar serie">✏️</button>
+                  <button type="button" class="btn-secondary btn-delete-series" data-id="${s.id}" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; color: var(--color-danger);" title="Eliminar serie">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Listeners
+      container.querySelectorAll(".btn-open-series-viewer").forEach(btn => {
+        btn.addEventListener("click", () => this.openSeriesViewer(btn.dataset.id));
+      });
+
+      container.querySelectorAll(".btn-edit-series").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const s = window.storage.getSeries().find(item => item.id === id);
+          if (s) this.openSeriesModal(s);
+        });
+      });
+
+      container.querySelectorAll(".btn-delete-series").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          if (confirm("¿Seguro que deseas eliminar esta serie de la lista?")) {
+            window.storage.deleteSeries(id);
+            this.renderSeries();
+            this.renderDailyDashboard();
+            window.Utils.showToast("Serie eliminada", "info");
+          }
+        });
+      });
+
+      document.getElementById("filter-series-status")?.addEventListener("change", () => this.renderSeries());
+    }
+
+    openSeriesModal(s = null) {
+      const modal = document.getElementById("modal-series");
+      const titleEl = document.getElementById("modal-series-title");
+      const currentUser = window.storage.getCurrentUser();
+      const author = s && s.proposedBy ? s.proposedBy : currentUser;
+
+      titleEl.textContent = s && s.id ? "Editar Serie 📺" : "Añadir Serie o Anime 📺";
+      document.getElementById("series-id").value = s && s.id ? s.id : "";
+      document.getElementById("series-tmdb-id").value = s && s.tmdbId ? s.tmdbId : "";
+      document.getElementById("series-title").value = s && s.title ? s.title : "";
+      document.getElementById("series-poster").value = s && s.poster ? s.poster : "";
+      document.getElementById("series-year").value = s && s.year ? s.year : new Date().getFullYear();
+      document.getElementById("series-seasons-count").value = s && s.seasonsCount ? s.seasonsCount : (s && s.seasons ? s.seasons.length : 1);
+      document.getElementById("series-status").value = s && s.status ? s.status : "Viendo";
+      document.getElementById("series-proposed").value = author;
+
+      const authorNameEl = document.getElementById("series-author-name");
+      if (authorNameEl) authorNameEl.textContent = author;
+      const authorBadgeEl = document.getElementById("series-author-badge");
+      if (authorBadgeEl) {
+        authorBadgeEl.textContent = author.charAt(0).toUpperCase();
+        authorBadgeEl.className = "author-badge-circle " + (author.toLowerCase() === "wendy" ? "wendy" : "kevin");
+      }
+
+      const platformsVal = s && s.platforms ? (Array.isArray(s.platforms) ? s.platforms.join(", ") : s.platforms) : "";
+      document.getElementById("series-platforms").value = platformsVal;
+      document.getElementById("series-imdb-score").value = s && s.imdbRating ? s.imdbRating : "";
+      document.getElementById("series-synopsis").value = s && s.synopsis ? s.synopsis : "";
+
+      modal.classList.add("active");
+    }
+
+    async openSeriesViewer(seriesId, activeSeasonNum = 1) {
+      const serie = window.storage.getSeries().find(s => s.id === seriesId);
+      if (!serie) return;
+
+      const modal = document.getElementById("modal-series-viewer");
+      document.getElementById("series-viewer-title").textContent = serie.title;
+      document.getElementById("series-viewer-subtitle").textContent = `${serie.seasonsCount || (serie.seasons ? serie.seasons.length : 1)} Temporadas · ${serie.totalEpisodes || 0} Capítulos`;
+
+      // Si la temporada activa no tiene capítulos cargados y tiene tmdbId, cargarlos
+      const seasonObj = (serie.seasons || []).find(s => s.seasonNumber === activeSeasonNum);
+      if (seasonObj && (!seasonObj.episodes || !seasonObj.episodes.length) && serie.tmdbId) {
+        try {
+          const episodes = await window.MediaService.getSeasonEpisodes(serie.tmdbId, activeSeasonNum);
+          seasonObj.episodes = episodes;
+          window.storage.saveSeries(serie);
+        } catch (_) {}
+      }
+
+      this.renderSeriesViewerContent(seriesId, activeSeasonNum);
+      modal.classList.add("active");
+    }
+
+    renderSeriesViewerContent(seriesId, activeSeasonNum = 1) {
+      const container = document.getElementById("series-viewer-content");
+      const serie = window.storage.getSeries().find(s => s.id === seriesId);
+      if (!container || !serie) return;
+
+      const currentUser = window.storage.getCurrentUser();
+      const isWendy = currentUser.toLowerCase() === 'wendy';
+      const userCompleted = isWendy ? serie.isFullyCompletedByWendy : serie.isFullyCompletedByKevin;
+
+      const seasons = serie.seasons && serie.seasons.length ? serie.seasons : [
+        { seasonNumber: 1, name: 'Temporada 1', episodes: [] }
+      ];
+
+      const activeSeason = seasons.find(s => s.seasonNumber === activeSeasonNum) || seasons[0];
+      const episodes = activeSeason.episodes || [];
+
+      // Calificación de estrellas (desbloqueable)
+      const activeUserRating = isWendy ? (serie.wendyRating || 0) : (serie.kevinRating || 0);
+      const starsHtml = [1, 2, 3, 4, 5].map(starNum => {
+        const isFilled = starNum <= activeUserRating;
+        return `<button type="button" class="star-btn ${isFilled ? 'active' : ''} ${!userCompleted ? 'disabled' : ''}" data-series-id="${serie.id}" data-rating="${starNum}" ${!userCompleted ? 'disabled title="Completa todos los capítulos para calificar"' : `title="Calificar con ${starNum} estrellas"`}>★</button>`;
+      }).join("");
+
+      const comments = Array.isArray(serie.comments) ? serie.comments : [];
+
+      container.innerHTML = `
+        <!-- Cabecera de la Serie -->
+        <div class="series-header-hero">
+          ${serie.poster ? `<img src="${window.Utils.sanitizeHTML(serie.poster)}" alt="Póster" class="series-hero-poster" onerror="this.style.display='none'">` : '<div class="serie-card-poster-placeholder" style="height: 200px;">📺</div>'}
+          <div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap;">
+              <span class="movie-badge-status ${serie.status === 'Completada' ? 'encanto' : 'Vista'}">${serie.status || 'Viendo'}</span>
+              ${serie.imdbRating ? `<span class="movie-meta-pill">⭐ TMDb: <strong>${serie.imdbRating}</strong></span>` : ''}
+              <span class="movie-meta-pill">📅 ${serie.year || ''}</span>
+            </div>
+            <h2 style="font-family: var(--font-heading); font-size: 1.6rem; color: var(--color-sunflower-gold); margin-bottom: 0.4rem;">${window.Utils.sanitizeHTML(serie.title)}</h2>
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); line-height: 1.45; margin-bottom: 0.85rem;">${window.Utils.sanitizeHTML(serie.synopsis || 'Sinopsis no disponible.')}</p>
+            
+            <!-- Barra de Progreso Global -->
+            <div class="serie-progress-bar-wrap">
+              <div class="serie-progress-track" style="height: 12px;">
+                <div class="serie-progress-fill both" style="width: ${serie.progressBoth || 0}%;"></div>
+              </div>
+              <div class="serie-progress-labels">
+                <span style="color: #00E5FF; font-weight: 600;">👦🏻 Kevin: ${serie.progressKevin || 0}%</span>
+                <span style="color: #7092FD; font-weight: 700;">💑 Juntos: ${serie.progressBoth || 0}%</span>
+                <span style="color: #E040FB; font-weight: 600;">👧🏻 Wendy: ${serie.progressWendy || 0}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de Temporadas -->
+        <div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--color-sunflower-gold); margin-bottom: 0.5rem;">Selecciona una Temporada:</div>
+          <div class="season-tabs-bar">
+            ${seasons.map(s => `
+              <button type="button" class="season-tab-btn ${s.seasonNumber === activeSeason.seasonNumber ? 'active' : ''}" data-season-num="${s.seasonNumber}">
+                ${window.Utils.sanitizeHTML(s.name || `Temporada ${s.seasonNumber}`)}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Lista de Capítulos de la Temporada -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main);">
+              Capítulos de ${window.Utils.sanitizeHTML(activeSeason.name || `Temporada ${activeSeason.seasonNumber}`)} (${episodes.length}):
+            </div>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted);">Toca para marcar como visto</span>
+          </div>
+
+          <div class="episodes-grid">
+            ${episodes.length === 0 ? `
+              <div class="glass-card" style="text-align: center; padding: 1.5rem; color: var(--color-text-secondary);">
+                No hay capítulos cargados para esta temporada.
+                <button type="button" class="btn-secondary btn-fetch-episodes" style="margin-top: 0.5rem;" data-season="${activeSeason.seasonNumber}">
+                  🔄 Cargar capítulos oficiales
+                </button>
+              </div>
+            ` : episodes.map(ep => {
+              const kSeen = ep.watchedByKevin === true;
+              const wSeen = ep.watchedByWendy === true;
+              const bothSeen = kSeen && wSeen;
+
+              let cardClass = "";
+              if (bothSeen) cardClass = "watched-both";
+              else if (kSeen) cardClass = "watched-kevin";
+              else if (wSeen) cardClass = "watched-wendy";
+
+              return `
+                <div class="episode-card ${cardClass}" data-ep="${ep.episodeNumber}">
+                  ${ep.stillPath ? `<img src="${window.Utils.sanitizeHTML(ep.stillPath)}" class="episode-still" alt="Capítulo ${ep.episodeNumber}" onerror="this.style.display='none'">` : '<div class="episode-still" style="display:flex; align-items:center; justify-content:center; font-size:1.2rem;">📺</div>'}
+                  
+                  <div class="episode-info">
+                    <div class="episode-title-row">
+                      <span class="episode-num-badge">E${ep.episodeNumber}</span>
+                      <span class="episode-name">${window.Utils.sanitizeHTML(ep.name || `Episodio ${ep.episodeNumber}`)}</span>
+                    </div>
+                    <p class="episode-synopsis">${window.Utils.sanitizeHTML(ep.overview || 'Sinopsis de capítulo no disponible.')}</p>
+                  </div>
+
+                  <!-- Botones de Visto con colores específicos / mezcla dual -->
+                  <div class="episode-actions-group">
+                    <button type="button" class="btn-seen-badge ${bothSeen ? 'seen-both' : ''} btn-toggle-ep-both" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Marcar como visto por los dos juntos">
+                      ${bothSeen ? '💑 Visto Juntos ✨' : '💑 Marcar Juntos'}
+                    </button>
+                    <div style="display: flex; gap: 0.3rem;">
+                      <button type="button" class="btn-seen-badge ${kSeen ? 'seen-kevin' : ''} btn-toggle-ep-user" data-user="Kevin" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Visto por Kevin">
+                        👦🏻 ${kSeen ? '✓' : '+'}
+                      </button>
+                      <button type="button" class="btn-seen-badge ${wSeen ? 'seen-wendy' : ''} btn-toggle-ep-user" data-user="Wendy" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Visto por Wendy">
+                        👧🏻 ${wSeen ? '✓' : '+'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Sección de Calificación (Bloqueada hasta terminar la serie) -->
+        <div class="rating-lock-box ${userCompleted ? 'unlocked' : 'locked'}">
+          ${userCompleted ? `
+            <div style="text-align: center;">
+              <h4 style="color: var(--color-sunflower-gold); margin-bottom: 0.3rem; font-size: 1.15rem;">🏆 ¡Has completado toda la serie! 🌻✨</h4>
+              <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.85rem;">Ya puedes dar tu calificación final de estrellas:</p>
+              
+              <div class="song-rating-stars-bar" style="justify-content: center; margin-bottom: 0.85rem;">
+                <div class="interactive-stars-group">
+                  ${starsHtml}
+                </div>
+                <span class="rating-number">${activeUserRating > 0 ? `${activeUserRating}/5 ⭐` : 'Toca para calificar'}</span>
+              </div>
+
+              <div class="song-rating-scores-breakdown" style="justify-content: center;">
+                <span class="score-pill ${serie.kevinRating > 0 ? 'rated' : ''}">👦🏻 Kevin: <strong>${serie.kevinRating > 0 ? `${serie.kevinRating}/5 ★` : (serie.isFullyCompletedByKevin ? 'Listo para calificar' : 'Viendo')}</strong></span>
+                <span class="score-pill ${serie.wendyRating > 0 ? 'rated' : ''}">👧🏻 Wendy: <strong>${serie.wendyRating > 0 ? `${serie.wendyRating}/5 ★` : (serie.isFullyCompletedByWendy ? 'Listo para calificar' : 'Viendo')}</strong></span>
+              </div>
+            </div>
+          ` : `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.6rem; color: var(--color-text-muted); font-size: 0.88rem;">
+              <span>🔒</span>
+              <span><strong>Calificación bloqueada:</strong> Podrás calificar esta serie cuando hayas marcado todos sus capítulos como vistos.</span>
+            </div>
+          `}
+        </div>
+
+        <!-- Hilo de Comentarios con Indicador de Capítulo Actual -->
+        <div class="glass-card" style="padding: 1.25rem; margin-top: 0.5rem;">
+          <div style="font-size: 1.05rem; font-weight: 700; color: var(--color-sunflower-gold); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>💬</span>
+            <span>Comentarios y Reacciones de la Serie (${comments.length})</span>
+          </div>
+
+          <div class="comments-list-box" style="max-height: 250px; overflow-y: auto;">
+            ${comments.length === 0 ? '<p style="font-size: 0.85rem; color: var(--color-text-secondary);">Aún no hay comentarios en esta serie. ¡Deja el primero y comparte por dónde vas!</p>' : comments.map(c => {
+              const isWendyAuthor = (c.author || '').toLowerCase() === 'wendy';
+              return `
+                <div class="comment-bubble ${isWendyAuthor ? 'wendy-comment' : ''}">
+                  <div class="comment-bubble-header">
+                    <div>
+                      <strong>${window.Utils.sanitizeHTML(c.author || 'Kevin')}</strong>
+                      <span class="comment-progress-tag" title="Iba por este capítulo al comentar">📍 ${window.Utils.sanitizeHTML(c.currentProgress || 'En progreso')}</span>
+                      ${c.isCompleted ? '<span style="color: var(--color-sunflower-gold); font-size: 0.72rem; margin-left: 0.25rem;">(👑 Serie terminada)</span>' : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span>${window.Utils.formatDateTimeES(c.createdAt)}</span>
+                      <button type="button" class="btn-del-series-comment" data-series-id="${serie.id}" data-comment-id="${c.id}" style="background:none; border:none; color:var(--color-danger); cursor:pointer; font-size:1rem;">&times;</button>
+                    </div>
+                  </div>
+                  <div class="comment-bubble-text">${window.Utils.sanitizeHTML(c.message)}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <form id="form-series-add-comment" style="display: flex; gap: 0.5rem; margin-top: 0.85rem;">
+            <input type="text" id="input-series-comment" class="comment-input-field" placeholder="Escribe un comentario como ${window.Utils.sanitizeHTML(currentUser)}..." required />
+            <button type="submit" class="btn-send-comment">Comentar 💬</button>
+          </form>
+        </div>
+      `;
+
+      this.initSeriesViewerHandlers(seriesId, activeSeasonNum);
+    }
+
+    initSeriesViewerHandlers(seriesId, activeSeasonNum) {
+      const container = document.getElementById("series-viewer-content");
+      if (!container) return;
+
+      // Pestañas de temporada
+      container.querySelectorAll(".season-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const sNum = parseInt(btn.dataset.seasonNum, 10);
+          this.openSeriesViewer(seriesId, sNum);
+        });
+      });
+
+      // Cargar capítulos si faltan
+      container.querySelectorAll(".btn-fetch-episodes").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const sNum = parseInt(btn.dataset.season, 10);
+          btn.textContent = 'Cargando capítulos… ⏳';
+          const serie = window.storage.getSeries().find(s => s.id === seriesId);
+          if (serie && serie.tmdbId) {
+            const episodes = await window.MediaService.getSeasonEpisodes(serie.tmdbId, sNum);
+            const seasonObj = (serie.seasons || []).find(s => s.seasonNumber === sNum);
+            if (seasonObj) {
+              seasonObj.episodes = episodes;
+              window.storage.saveSeries(serie);
+              this.renderSeriesViewerContent(seriesId, sNum);
+            }
+          }
+        });
+      });
+
+      // Toggle visto por Kevin / Wendy
+      container.querySelectorAll(".btn-toggle-ep-user").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const user = btn.dataset.user;
+          const sNum = parseInt(btn.dataset.season, 10);
+          const epNum = parseInt(btn.dataset.ep, 10);
+          window.storage.toggleEpisodeWatched(seriesId, sNum, epNum, user);
+          this.renderSeriesViewerContent(seriesId, sNum);
+          this.renderSeries();
+          this.renderDailyDashboard();
+        });
+      });
+
+      // Toggle visto Juntos
+      container.querySelectorAll(".btn-toggle-ep-both").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const sNum = parseInt(btn.dataset.season, 10);
+          const epNum = parseInt(btn.dataset.ep, 10);
+          window.storage.toggleEpisodeWatched(seriesId, sNum, epNum, 'Both');
+          this.renderSeriesViewerContent(seriesId, sNum);
+          this.renderSeries();
+          this.renderDailyDashboard();
+        });
+      });
+
+      // Calificación por estrellas
+      container.querySelectorAll(".star-btn:not(.disabled)").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const rating = parseInt(btn.dataset.rating, 10);
+          const currentUser = window.storage.getCurrentUser();
+          try {
+            window.storage.rateSeries(seriesId, currentUser, rating);
+            this.renderSeriesViewerContent(seriesId, activeSeasonNum);
+            this.renderSeries();
+            window.Utils.showToast(`¡Calificación de ${rating} ⭐ guardada!`, 'success');
+          } catch (err) {
+            window.Utils.showToast(err.message, 'warning');
+          }
+        });
+      });
+
+      // Añadir comentario
+      const commentForm = document.getElementById("form-series-add-comment");
+      commentForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = document.getElementById("input-series-comment");
+        const msg = input ? input.value.trim() : "";
+        if (!msg) return;
+
+        const currentUser = window.storage.getCurrentUser();
+        window.storage.addSeriesComment(seriesId, {
+          author: currentUser,
+          message: msg
+        });
+
+        if (input) input.value = "";
+        this.renderSeriesViewerContent(seriesId, activeSeasonNum);
+        this.renderSeries();
+        window.Utils.showToast("Comentario publicado 💬", "success");
+      });
+
+      // Eliminar comentario
+      container.querySelectorAll(".btn-del-series-comment").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const cId = btn.dataset.commentId;
+          window.storage.deleteSeriesComment(seriesId, cId);
+          this.renderSeriesViewerContent(seriesId, activeSeasonNum);
+          this.renderSeries();
+        });
+      });
+    }
+
     // --- 8. Muro Compartido ---
     renderNotes() {
       const container = document.getElementById("notes-grid-list");
@@ -1899,11 +2485,26 @@
       document.getElementById("btn-new-memory")?.addEventListener("click", () => this.openMemoryModal());
       document.getElementById("btn-new-song")?.addEventListener("click", () => document.getElementById("modal-song").classList.add("active"));
       document.getElementById("btn-new-movie")?.addEventListener("click", () => this.openMovieModal());
+      document.getElementById("btn-new-series")?.addEventListener("click", () => this.openSeriesModal());
       document.getElementById("btn-new-note")?.addEventListener("click", () => this.openNoteModal());
       document.getElementById("btn-new-dream")?.addEventListener("click", () => this.openDreamModal());
+      document.getElementById("btn-open-gdrive")?.addEventListener("click", () => {
+        const inputUrl = document.getElementById("input-gdrive-script-url");
+        if (inputUrl) inputUrl.value = window.CONFIG.googleDrive?.scriptUrl || "";
+        document.getElementById("modal-gdrive").classList.add("active");
+      });
+      document.getElementById("btn-save-gdrive-url")?.addEventListener("click", () => {
+        const inputUrl = document.getElementById("input-gdrive-script-url");
+        const val = inputUrl ? inputUrl.value.trim() : "";
+        localStorage.setItem("patico_gdrive_script_url", val);
+        window.Utils.showToast("Conexión de Google Drive guardada 📁✨", "success");
+        document.getElementById("modal-gdrive").classList.remove("active");
+      });
+
       document.getElementById("btn-change-password")?.addEventListener("click", () => document.getElementById("modal-password").classList.add("active"));
       document.getElementById("music-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMusic(document.getElementById('music-search-input').value); });
       document.getElementById("movie-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchMovies(document.getElementById('movie-search-input').value); });
+      document.getElementById("series-search-form")?.addEventListener("submit", e => { e.preventDefault(); this.searchSeries(document.getElementById('series-search-input').value); });
 
       document.querySelectorAll("[data-close-modal]").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -1979,7 +2580,7 @@
         });
       });
 
-      document.getElementById("form-memory")?.addEventListener("submit", (e) => {
+      document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
@@ -1998,12 +2599,54 @@
           author: window.storage.getCurrentUser()
         };
 
+        // Guardar recuerdo localmente y en la nube
         window.storage.saveMemory(memData);
         document.getElementById("modal-memory").classList.remove("active");
         this.renderMemories();
         this.renderAnnualCalendar();
         window.Utils.showToast("¡Recuerdo guardado con éxito! 🌻", "success");
+
+        // Subida estructurada en segundo plano a Google Drive (carpeta: Nombre + Fecha)
+        if (window.GoogleDriveService) {
+          try {
+            const driveRes = await window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems);
+            if (driveRes && driveRes.folderUrl) {
+              memData.driveFolderUrl = driveRes.folderUrl;
+              window.storage.saveMemory(memData);
+            }
+          } catch (err) {
+            console.warn("Google Drive upload notice:", err);
+          }
+        }
       });
+
+      document.getElementById("form-series")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const currentUser = window.storage.getCurrentUser();
+        const platformsInput = document.getElementById("series-platforms").value.trim();
+        const platforms = platformsInput ? platformsInput.split(",").map(p => p.trim()).filter(Boolean) : ["Streaming"];
+
+        const serieData = {
+          id: document.getElementById("series-id").value || undefined,
+          tmdbId: document.getElementById("series-tmdb-id").value || undefined,
+          title: document.getElementById("series-title").value.trim(),
+          poster: document.getElementById("series-poster").value.trim(),
+          year: parseInt(document.getElementById("series-year").value, 10) || new Date().getFullYear(),
+          seasonsCount: parseInt(document.getElementById("series-seasons-count").value, 10) || 1,
+          status: document.getElementById("series-status").value,
+          proposedBy: document.getElementById("series-proposed").value || currentUser,
+          platforms: platforms,
+          imdbRating: document.getElementById("series-imdb-score").value.trim(),
+          synopsis: document.getElementById("series-synopsis").value.trim()
+        };
+
+        window.storage.saveSeries(serieData);
+        document.getElementById("modal-series").classList.remove("active");
+        this.renderSeries();
+        this.renderDailyDashboard();
+        window.Utils.showToast("¡Serie guardada! 📺🍿", "success");
+      });
+
       document.getElementById("form-password")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const ok = await window.storage.changePassword(

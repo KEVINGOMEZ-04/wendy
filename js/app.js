@@ -2134,6 +2134,10 @@
               const kSeen = ep.watchedByKevin === true;
               const wSeen = ep.watchedByWendy === true;
               const bothSeen = kSeen && wSeen;
+              const activeUserSeen = isWendy ? wSeen : kSeen;
+              const otherUserSeen = isWendy ? kSeen : wSeen;
+              const otherUserName = isWendy ? 'Kevin 👦🏻' : 'Wendy 👧🏻';
+              const activeUserClass = isWendy ? 'seen-wendy' : 'seen-kevin';
 
               let cardClass = "";
               if (bothSeen) cardClass = "watched-both";
@@ -2150,21 +2154,25 @@
                       <span class="episode-name">${window.Utils.sanitizeHTML(ep.name || `Episodio ${ep.episodeNumber}`)}</span>
                     </div>
                     <p class="episode-synopsis">${window.Utils.sanitizeHTML(ep.overview || 'Sinopsis de capítulo no disponible.')}</p>
+                    
+                    ${!bothSeen && otherUserSeen ? `
+                      <div style="margin-top: 0.35rem; font-size: 0.75rem; color: ${isWendy ? '#00E5FF' : '#E040FB'}; font-weight: 500;">
+                        ✓ ${otherUserName} ya vio este capítulo
+                      </div>
+                    ` : ''}
                   </div>
 
-                  <!-- Botones de Visto con colores específicos / mezcla dual -->
+                  <!-- Botones de Visto exclusivos del perfil activo -->
                   <div class="episode-actions-group">
-                    <button type="button" class="btn-seen-badge ${bothSeen ? 'seen-both' : ''} btn-toggle-ep-both" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Marcar como visto por los dos juntos">
-                      ${bothSeen ? '💑 Visto Juntos ✨' : '💑 Marcar Juntos'}
+                    <!-- Opción 1: Marcar solo este capítulo -->
+                    <button type="button" class="btn-seen-badge ${bothSeen ? 'seen-both' : (activeUserSeen ? activeUserClass : '')} btn-toggle-ep-self" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Marcar/desmarcar solo este capítulo para tu perfil (${currentUser})">
+                      ${bothSeen ? '💑 Visto por ambos ✨' : (activeUserSeen ? `✓ Visto por ti (${currentUser})` : `+ Marcar como visto`)}
                     </button>
-                    <div style="display: flex; gap: 0.3rem;">
-                      <button type="button" class="btn-seen-badge ${kSeen ? 'seen-kevin' : ''} btn-toggle-ep-user" data-user="Kevin" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Visto por Kevin">
-                        👦🏻 ${kSeen ? '✓' : '+'}
-                      </button>
-                      <button type="button" class="btn-seen-badge ${wSeen ? 'seen-wendy' : ''} btn-toggle-ep-user" data-user="Wendy" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" title="Visto por Wendy">
-                        👧🏻 ${wSeen ? '✓' : '+'}
-                      </button>
-                    </div>
+
+                    <!-- Opción 2: Marcar este capítulo y todos los anteriores -->
+                    <button type="button" class="btn-seen-badge btn-mark-ep-upto" data-season="${activeSeason.seasonNumber}" data-ep="${ep.episodeNumber}" style="font-size: 0.72rem; opacity: 0.85;" title="Marcar este capítulo y todos los capítulos anteriores como vistos para tu perfil (${currentUser})">
+                      ⏩ Visto hasta aquí
+                    </button>
                   </div>
                 </div>
               `;
@@ -2268,28 +2276,32 @@
         });
       });
 
-      // Toggle visto por Kevin / Wendy
-      container.querySelectorAll(".btn-toggle-ep-user").forEach(btn => {
+      // Toggle visto solo de este capítulo por el usuario activo
+      container.querySelectorAll(".btn-toggle-ep-self").forEach(btn => {
         btn.addEventListener("click", () => {
-          const user = btn.dataset.user;
+          const currentUser = window.storage.getCurrentUser();
           const sNum = parseInt(btn.dataset.season, 10);
           const epNum = parseInt(btn.dataset.ep, 10);
-          window.storage.toggleEpisodeWatched(seriesId, sNum, epNum, user);
+          window.storage.toggleEpisodeWatched(seriesId, sNum, epNum, currentUser);
           this.renderSeriesViewerContent(seriesId, sNum);
           this.renderSeries();
           this.renderDailyDashboard();
         });
       });
 
-      // Toggle visto Juntos
-      container.querySelectorAll(".btn-toggle-ep-both").forEach(btn => {
+      // Marcar visto hasta este capítulo y anteriores
+      container.querySelectorAll(".btn-mark-ep-upto").forEach(btn => {
         btn.addEventListener("click", () => {
+          const currentUser = window.storage.getCurrentUser();
           const sNum = parseInt(btn.dataset.season, 10);
           const epNum = parseInt(btn.dataset.ep, 10);
-          window.storage.toggleEpisodeWatched(seriesId, sNum, epNum, 'Both');
-          this.renderSeriesViewerContent(seriesId, sNum);
-          this.renderSeries();
-          this.renderDailyDashboard();
+          if (confirm(`¿Marcar este capítulo (T${sNum}:E${epNum}) y todos los anteriores como vistos para ${currentUser}?`)) {
+            window.storage.markEpisodesUpTo(seriesId, sNum, epNum, currentUser);
+            this.renderSeriesViewerContent(seriesId, sNum);
+            this.renderSeries();
+            this.renderDailyDashboard();
+            window.Utils.showToast(`Capítulos anteriores marcados como vistos para ${currentUser} 📺✨`, "success");
+          }
         });
       });
 

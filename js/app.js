@@ -2780,9 +2780,11 @@
     // --- 9. Frasco de Sueños ---
     renderDreams() {
       const container = document.getElementById("dreams-list-container");
+      const categoryFilter = document.getElementById("filter-dreams-category")?.value || "all";
+      const statusFilter = document.getElementById("filter-dreams-status")?.value || "all";
       if (!container) return;
 
-      const list = window.storage.getDreams();
+      let list = window.storage.getDreams();
       const total = list.length;
       const completed = list.filter(d => d.status === "Cumplido").length;
       const pending = total - completed;
@@ -2793,41 +2795,127 @@
       document.getElementById("stat-dreams-pending").textContent = window.Utils.formatNumberES(pending);
       document.getElementById("stat-dreams-pct").textContent = window.Utils.formatDecimalES(pct, 2) + " %";
 
-      if (total === 0) {
-        container.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-text-secondary);">El frasco está listo para guardar nuevos sueños juntos. ✨</div>`;
+      // Render Luces y Estrellas en la cámara del frasco
+      const jarStarsChamber = document.getElementById("jar-stars-chamber");
+      if (jarStarsChamber) {
+        const starCount = Math.min(Math.max(total, 6), 24);
+        let starsHtml = '';
+        for (let i = 0; i < starCount; i++) {
+          const isGold = i < completed;
+          const left = 12 + Math.random() * 76;
+          const top = 15 + Math.random() * 70;
+          const delay = (Math.random() * 3).toFixed(1);
+          const size = 8 + Math.floor(Math.random() * 10);
+          starsHtml += `<span class="jar-firefly ${isGold ? 'gold' : 'blue'}" style="left:${left}%; top:${top}%; width:${size}px; height:${size}px; animation-delay:${delay}s;"></span>`;
+        }
+        jarStarsChamber.innerHTML = starsHtml;
+      }
+
+      // Filtros
+      if (categoryFilter !== "all") {
+        list = list.filter(d => (d.category || '✨ General') === categoryFilter);
+      }
+      if (statusFilter !== "all") {
+        list = list.filter(d => d.status === statusFilter);
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 2rem;">No hay sueños que coincidan con estos filtros. ¡Añade un nuevo deseo arriba! ✨</div>`;
         return;
       }
 
-      container.innerHTML = list.map(d => `
-        <div class="dream-item-card ${d.status === "Cumplido" ? "completed" : ""}" data-id="${d.id}">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <button type="button" class="btn-toggle-dream" data-id="${d.id}" style="background: none; border: none; font-size: 1.4rem; cursor: pointer;">
-              ${d.status === "Cumplido" ? "🌟" : "🌱"}
-            </button>
+      // Ordenar: pendientes con más deseo primero, luego cumplidos
+      list.sort((a, b) => {
+        if (a.status === 'Pendiente' && b.status === 'Cumplido') return -1;
+        if (a.status === 'Cumplido' && b.status === 'Pendiente') return 1;
+        return (b.desireLevel || 3) - (a.desireLevel || 3);
+      });
+
+      container.innerHTML = list.map(d => {
+        const isComp = d.status === "Cumplido";
+        const desireFires = '🔥'.repeat(Math.max(1, Math.min(3, d.desireLevel || 3)));
+        const cat = d.category || '✨ General';
+
+        return `
+          <div class="glass-card dream-item-card ${isComp ? "completed" : ""}" data-id="${d.id}">
             <div>
-              <span class="dream-title-text">${window.Utils.sanitizeHTML(d.title)}</span>
-              <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.2rem;">
-                ${d.completedAt ? `Cumplido: ${window.Utils.formatDateES(d.completedAt)}` : `Añadido: ${window.Utils.formatDateES(d.createdAt)}`}
-                ${d.isDemo ? ` · <span class="demo-badge">Dato de ejemplo</span>` : ""}
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                <span class="dream-category-badge">${window.Utils.sanitizeHTML(cat)}</span>
+                <span class="dream-desire-badge" title="Nivel de Ilusión">${desireFires}</span>
               </div>
+
+              <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <button type="button" class="btn-toggle-dream" data-id="${d.id}" title="${isComp ? 'Marcar como pendiente' : '¡Marcar como cumplido!'}" style="background: none; border: none; font-size: 1.6rem; cursor: pointer; padding: 0; line-height: 1;">
+                  ${isComp ? "🌟" : "🌱"}
+                </button>
+                <div style="flex: 1; min-width: 0;">
+                  <h3 class="dream-title-text ${isComp ? 'completed-text' : ''}">${window.Utils.sanitizeHTML(d.title)}</h3>
+                  <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+                    ${d.completedAt ? `🏆 Cumplido el ${window.Utils.formatDateES(d.completedAt)}` : `🌱 Guardado en el frasco`}
+                    ${d.proposedBy ? ` · Propuesto por <strong>${window.Utils.sanitizeHTML(d.proposedBy)}</strong>` : ''}
+                  </div>
+                </div>
+              </div>
+
+              ${d.photo ? `
+                <div class="dream-card-photo-box" data-photo="${window.Utils.sanitizeHTML(d.photo)}" data-title="${window.Utils.sanitizeHTML(d.title)}">
+                  <img src="${window.Utils.sanitizeHTML(d.photo)}" alt="Foto de ${window.Utils.sanitizeHTML(d.title)}" class="dream-card-photo-img" onerror="this.parentElement.style.display='none'">
+                  <span class="dream-photo-pill">📸 Ver foto del recuerdo ↗</span>
+                </div>
+              ` : ''}
+
+              ${d.notes ? `
+                <p class="dream-card-notes">💌 <em>"${window.Utils.sanitizeHTML(d.notes)}"</em></p>
+              ` : ''}
+            </div>
+
+            <div style="display: flex; gap: 0.4rem; justify-content: flex-end; align-items: center; margin-top: 0.85rem; border-top: 1px solid rgba(185, 142, 230, 0.15); padding-top: 0.65rem;">
+              ${!isComp ? `<button type="button" class="btn-primary btn-fulfill-quick" data-id="${d.id}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">¡Cumplido! 🏆</button>` : ''}
+              <button type="button" class="btn-secondary btn-edit-dream" data-id="${d.id}" style="padding: 0.25rem 0.65rem; font-size: 0.78rem;">✏️</button>
+              <button type="button" class="btn-secondary btn-delete-dream" data-id="${d.id}" style="padding: 0.25rem 0.65rem; font-size: 0.78rem; color: var(--color-danger);">🗑️</button>
             </div>
           </div>
-          <div style="display: flex; gap: 0.4rem;">
-            <button type="button" class="btn-secondary btn-edit-dream" data-id="${d.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;">Editar</button>
-            <button type="button" class="btn-secondary btn-delete-dream" data-id="${d.id}" style="padding: 0.2rem 0.55rem; font-size: 0.75rem; color: var(--color-danger);">Eliminar</button>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
 
+      // Listeners
       container.querySelectorAll(".btn-toggle-dream").forEach(btn => {
         btn.addEventListener("click", (e) => {
-          const id = e.currentTarget.dataset.id;
-          const { justCompleted } = window.storage.toggleDreamStatus(id);
-          if (justCompleted) {
-            window.Animations.triggerPetalRain();
-            window.Utils.showToast("¡Sueño cumplido! 🌻✨", "success");
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const dream = window.storage.getDreams().find(d => d.id === id);
+          if (!dream) return;
+
+          if (dream.status === 'Pendiente') {
+            this.openFulfillDreamModal(dream);
+          } else {
+            dream.status = 'Pendiente';
+            dream.completedAt = null;
+            window.storage.saveDream(dream);
+            this.renderDreams();
+            this.renderDailyDashboard();
+            window.Utils.showToast("Sueño devuelto a pendientes 🌱", "info");
           }
-          this.renderDreams();
+        });
+      });
+
+      container.querySelectorAll(".btn-fulfill-quick").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const dream = window.storage.getDreams().find(d => d.id === id);
+          if (dream) this.openFulfillDreamModal(dream);
+        });
+      });
+
+      container.querySelectorAll(".dream-card-photo-box").forEach(box => {
+        box.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const photoUrl = box.dataset.photo;
+          const title = box.dataset.title || 'Sueño Cumplido';
+          if (photoUrl) {
+            this.openLightbox([photoUrl], 0, `🏆 ${title}`);
+          }
         });
       });
 
@@ -2845,18 +2933,140 @@
           if (confirm("¿Eliminar este sueño del frasco?")) {
             window.storage.deleteDream(id);
             this.renderDreams();
+            this.renderDailyDashboard();
             window.Utils.showToast("Sueño eliminado", "info");
           }
         });
       });
+
+      document.getElementById("filter-dreams-category")?.addEventListener("change", () => this.renderDreams());
+      document.getElementById("filter-dreams-status")?.addEventListener("change", () => this.renderDreams());
     }
 
     openDreamModal(d = null) {
       const modal = document.getElementById("modal-dream");
+      const titleEl = document.getElementById("modal-dream-title");
+      titleEl.textContent = d && d.id ? "Editar Sueño 🌟" : "Nuevo Sueño ✨";
+
       document.getElementById("dream-id").value = d ? d.id : "";
       document.getElementById("dream-title").value = d ? d.title : "";
+      document.getElementById("dream-category").value = d ? (d.category || "✈️ Viajes & Aventuras") : "✈️ Viajes & Aventuras";
+      document.getElementById("dream-desire").value = d ? (d.desireLevel || "3") : "3";
       document.getElementById("dream-status").value = d ? d.status : "Pendiente";
+      document.getElementById("dream-photo-data").value = d && d.photo ? d.photo : "";
+      document.getElementById("dream-completed-date").value = d && d.completedAt ? d.completedAt.split('T')[0] : new Date().toISOString().split('T')[0];
+      document.getElementById("dream-notes").value = d && d.notes ? d.notes : "";
+
+      const compFields = document.getElementById("dream-completion-fields");
+      const previewWrap = document.getElementById("dream-photo-preview-wrap");
+      const previewImg = document.getElementById("dream-photo-preview-img");
+
+      if (d && d.status === "Cumplido") {
+        compFields.style.display = "block";
+        if (d.photo) {
+          previewImg.src = d.photo;
+          previewWrap.style.display = "block";
+        } else {
+          previewWrap.style.display = "none";
+        }
+      } else {
+        compFields.style.display = "none";
+        previewWrap.style.display = "none";
+      }
+
+      document.getElementById("dream-status").onchange = (e) => {
+        compFields.style.display = e.target.value === "Cumplido" ? "block" : "none";
+      };
+
+      document.getElementById("dream-photo-input").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const compressed = await window.Utils.compressImage(file, 1200, 0.85);
+          document.getElementById("dream-photo-data").value = compressed;
+          previewImg.src = compressed;
+          previewWrap.style.display = "block";
+        } catch (err) {
+          console.error("Error cargando foto:", err);
+        }
+      };
+
+      document.getElementById("btn-remove-dream-photo").onclick = () => {
+        document.getElementById("dream-photo-data").value = "";
+        document.getElementById("dream-photo-input").value = "";
+        previewWrap.style.display = "none";
+      };
+
       modal.classList.add("active");
+    }
+
+    openFulfillDreamModal(dream) {
+      const modal = document.getElementById("modal-dream-fulfill");
+      if (!modal || !dream) return;
+
+      document.getElementById("fulfill-dream-id").value = dream.id;
+      document.getElementById("fulfill-dream-photo-data").value = dream.photo || "";
+      document.getElementById("fulfill-dream-title-display").textContent = `«${dream.title}»`;
+      document.getElementById("fulfill-dream-date").value = new Date().toISOString().split('T')[0];
+      document.getElementById("fulfill-dream-notes").value = dream.notes || "";
+
+      const previewWrap = document.getElementById("fulfill-photo-preview-wrap");
+      const previewImg = document.getElementById("fulfill-photo-preview-img");
+
+      if (dream.photo) {
+        previewImg.src = dream.photo;
+        previewWrap.style.display = "block";
+      } else {
+        previewWrap.style.display = "none";
+      }
+
+      document.getElementById("fulfill-dream-photo-file").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const compressed = await window.Utils.compressImage(file, 1200, 0.85);
+          document.getElementById("fulfill-dream-photo-data").value = compressed;
+          previewImg.src = compressed;
+          previewWrap.style.display = "block";
+        } catch (err) {
+          console.error("Error comprimiendo foto de sueño cumplido:", err);
+        }
+      };
+
+      modal.classList.add("active");
+    }
+
+    spinRoulette() {
+      const modal = document.getElementById("modal-dream-roulette");
+      const resultBox = document.getElementById("roulette-result-box");
+      const titleEl = document.getElementById("roulette-dream-title");
+      const catEl = document.getElementById("roulette-category-badge");
+      const desireEl = document.getElementById("roulette-desire-badge");
+
+      if (!modal) return;
+      modal.classList.add("active");
+
+      const dreams = window.storage.getDreams();
+      let candidates = dreams.filter(d => d.status === "Pendiente");
+      if (!candidates.length) candidates = dreams;
+
+      if (!candidates.length) {
+        resultBox.style.display = "block";
+        titleEl.textContent = "¡Añade tu primer sueño al frasco! 🌟";
+        catEl.textContent = "✨ Frasco vacío";
+        desireEl.textContent = "";
+        return;
+      }
+
+      resultBox.style.display = "none";
+      setTimeout(() => {
+        const randomDream = candidates[Math.floor(Math.random() * candidates.length)];
+        titleEl.textContent = randomDream.title;
+        catEl.textContent = randomDream.category || "✨ General";
+        desireEl.textContent = '🔥'.repeat(randomDream.desireLevel || 3) + " Nivel de ilusión";
+        resultBox.style.display = "block";
+        window.Animations.triggerPetalRain();
+      }, 500);
     }
 
     // --- 10. Gestión de Formularios y Modales ---
@@ -2867,6 +3077,8 @@
       document.getElementById("btn-new-series")?.addEventListener("click", () => this.openSeriesModal());
       document.getElementById("btn-new-note")?.addEventListener("click", () => this.openNoteModal());
       document.getElementById("btn-new-dream")?.addEventListener("click", () => this.openDreamModal());
+      document.getElementById("btn-spin-dreams")?.addEventListener("click", () => this.spinRoulette());
+      document.getElementById("btn-spin-again")?.addEventListener("click", () => this.spinRoulette());
       document.getElementById("btn-open-gdrive")?.addEventListener("click", () => {
         const defaultUrl = localStorage.getItem('patico_gdrive_main_url') || window.CONFIG.googleDrive?.folderUrl || "https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing";
         const inputUrl = document.getElementById("input-gdrive-folder-url");
@@ -3196,15 +3408,65 @@
 
       document.getElementById("form-dream")?.addEventListener("submit", (e) => {
         e.preventDefault();
+        const dreamId = document.getElementById("dream-id").value;
+        const title = document.getElementById("dream-title").value.trim();
+        const category = document.getElementById("dream-category").value;
+        const desireLevel = parseInt(document.getElementById("dream-desire").value, 10) || 3;
+        const status = document.getElementById("dream-status").value;
+        const photoData = document.getElementById("dream-photo-data").value;
+        const completedDate = document.getElementById("dream-completed-date").value;
+        const notes = document.getElementById("dream-notes").value.trim();
+
         const dreamData = {
-          id: document.getElementById("dream-id").value,
-          title: document.getElementById("dream-title").value,
-          status: document.getElementById("dream-status").value
+          id: dreamId || undefined,
+          title: title,
+          category: category,
+          desireLevel: desireLevel,
+          status: status,
+          photo: photoData,
+          completedAt: status === "Cumplido" ? (completedDate || new Date().toISOString()) : null,
+          notes: notes
         };
+
         window.storage.saveDream(dreamData);
         document.getElementById("modal-dream").classList.remove("active");
         this.renderDreams();
+        this.renderDailyDashboard();
         window.Utils.showToast("Sueño guardado en el frasco ✨", "success");
+
+        // Subir foto a Google Drive /Frasco de Sueños en segundo plano
+        if (status === "Cumplido" && photoData && window.GoogleDriveService) {
+          window.GoogleDriveService.uploadDreamPhoto(title, completedDate, photoData);
+        }
+      });
+
+      document.getElementById("form-dream-fulfill")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const dreamId = document.getElementById("fulfill-dream-id").value;
+        const photoData = document.getElementById("fulfill-dream-photo-data").value;
+        const completedDate = document.getElementById("fulfill-dream-date").value || new Date().toISOString().split('T')[0];
+        const notes = document.getElementById("fulfill-dream-notes").value.trim();
+
+        const dreams = window.storage.getDreams();
+        const dream = dreams.find(d => d.id === dreamId);
+        if (!dream) return;
+
+        dream.status = "Cumplido";
+        dream.completedAt = completedDate;
+        if (photoData) dream.photo = photoData;
+        if (notes) dream.notes = notes;
+
+        window.storage.saveDream(dream);
+        document.getElementById("modal-dream-fulfill").classList.remove("active");
+        this.renderDreams();
+        this.renderDailyDashboard();
+        window.Animations.triggerPetalRain();
+        window.Utils.showToast("¡Felicidades! Logro cumplido y respaldado en Google Drive 🏆🌟", "success");
+
+        // Subir foto a Google Drive /Frasco de Sueños en segundo plano
+        if (photoData && window.GoogleDriveService) {
+          window.GoogleDriveService.uploadDreamPhoto(dream.title, completedDate, photoData);
+        }
       });
     }
 

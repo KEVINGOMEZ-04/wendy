@@ -43,15 +43,13 @@ window.CONFIG = {
   googleDrive: {
     enabled: true,
     folderPrefix: 'Patico Recuerdos',
-    // Webhook de Google Apps Script o Token de acceso directo
+    mainFolderUrl: 'https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing',
+    get folderUrl() {
+      return localStorage.getItem('patico_gdrive_main_url') || this.mainFolderUrl;
+    },
+    // Webhook de Google Apps Script o Token de acceso directo (opcional)
     get scriptUrl() {
       return localStorage.getItem('patico_gdrive_script_url') || '';
-    },
-    get clientId() {
-      return localStorage.getItem('patico_gdrive_client_id') || '';
-    },
-    get apiKey() {
-      return localStorage.getItem('patico_gdrive_api_key') || '';
     }
   },
 

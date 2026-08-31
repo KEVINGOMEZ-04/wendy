@@ -4485,3 +4485,215 @@ img:not([src]), img[src=""] {
   border-color: rgba(0, 229, 255, 0.4);
   color: #80DEEA;
 }
+
+/* =========================================
+   FRASCO DE SUEÑOS INTERACTIVO & CÁPSULA 🏺✨
+   ========================================= */
+.jar-hero-visual {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(30, 22, 48, 0.9) 0%, rgba(48, 20, 56, 0.8) 100%);
+  border: 1px solid rgba(244, 197, 66, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 25px rgba(244, 197, 66, 0.15);
+}
+
+.jar-glass-body {
+  position: relative;
+  width: 110px;
+  height: 140px;
+  border: 3px solid rgba(244, 197, 66, 0.7);
+  border-radius: 20px 20px 35px 35px;
+  background: rgba(244, 197, 66, 0.05);
+  backdrop-filter: blur(5px);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 20px rgba(244, 197, 66, 0.2), 0 0 15px rgba(244, 197, 66, 0.3);
+  overflow: hidden;
+}
+
+.jar-lid {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 14px;
+  background: linear-gradient(135deg, #D4A017 0%, #F4C542 100%);
+  border-radius: 6px;
+  border: 1px solid #FFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.jar-stars-chamber {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.jar-firefly {
+  position: absolute;
+  border-radius: 50%;
+  animation: fireflyGlow 3s infinite alternate ease-in-out;
+}
+
+.jar-firefly.gold {
+  background: radial-gradient(circle, #FFF 0%, #F4C542 60%, rgba(244, 197, 66, 0) 100%);
+  box-shadow: 0 0 8px #F4C542;
+}
+
+.jar-firefly.blue {
+  background: radial-gradient(circle, #FFF 0%, #00E5FF 60%, rgba(0, 229, 255, 0) 100%);
+  box-shadow: 0 0 8px #00E5FF;
+}
+
+@keyframes fireflyGlow {
+  0% { transform: translateY(0) scale(0.8); opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-12px) scale(1.2); opacity: 0.7; }
+}
+
+@keyframes floatJar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.jar-hero-text {
+  flex: 1;
+}
+
+.jar-hero-title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  color: var(--color-sunflower-gold);
+  margin-bottom: 0.35rem;
+}
+
+.jar-hero-desc {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.85rem;
+}
+
+.jar-hero-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Rejilla de Sueños */
+.dreams-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.dream-item-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-left: 4px solid var(--color-lilac);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dream-item-card:hover {
+  transform: translateY(-2px);
+  border-left-color: var(--color-sunflower-gold);
+}
+
+.dream-item-card.completed {
+  border-left-color: var(--color-sunflower-gold);
+  background: rgba(48, 38, 20, 0.55);
+}
+
+.dream-category-badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: rgba(185, 142, 230, 0.2);
+  color: var(--color-light-yellow);
+  font-weight: 500;
+}
+
+.dream-desire-badge {
+  font-size: 0.85rem;
+  letter-spacing: -2px;
+}
+
+.dream-title-text {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--color-text-main);
+  line-height: 1.35;
+}
+
+.dream-title-text.completed-text {
+  color: var(--color-sunflower-gold);
+}
+
+.dream-card-photo-box {
+  margin-top: 0.75rem;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  max-height: 180px;
+}
+
+.dream-card-photo-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.dream-card-photo-box:hover .dream-card-photo-img {
+  transform: scale(1.03);
+}
+
+.dream-photo-pill {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(18, 14, 28, 0.85);
+  backdrop-filter: blur(4px);
+  color: var(--color-sunflower-gold);
+  font-size: 0.73rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(244, 197, 66, 0.4);
+}
+
+.dream-card-notes {
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  margin-top: 0.6rem;
+  background: rgba(18, 14, 28, 0.4);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 600px) {
+  .jar-hero-visual {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  .jar-hero-actions {
+    justify-content: center;
+  }
+  .dreams-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

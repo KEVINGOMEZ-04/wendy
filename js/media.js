@@ -582,6 +582,39 @@ window.GoogleDriveService = {
         error: e.message
       };
     }
+  },
+
+  /**
+   * Sube la foto de un sueño cumplido a la carpeta "Frasco de Sueños" en Google Drive
+   */
+  async uploadDreamPhoto(dreamTitle, completedDate, photoData) {
+    if (!photoData) return { success: false };
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
+    const dateFormatted = this.formatFolderName('', completedDate || new Date().toISOString().split('T')[0]).trim();
+    const cleanTitle = (dreamTitle || 'Sueño Cumplido').replace(/[\\/:*?"<>|]/g, '').trim();
+    const fileName = `${cleanTitle} ${dateFormatted}.jpg`;
+
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: 'createFolderAndUpload',
+          parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
+          folderName: 'Frasco de Sueños',
+          files: [{
+            name: fileName,
+            data: photoData
+          }]
+        })
+      });
+
+      return { success: true, fileName: fileName };
+    } catch (e) {
+      console.warn('Error subiendo foto de sueño a Drive:', e);
+      return { success: false, error: e.message };
+    }
   }
 };
 

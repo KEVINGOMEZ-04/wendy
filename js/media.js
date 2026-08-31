@@ -520,60 +520,80 @@ window.GoogleDriveService = {
     return `${cleanTitle} ${formattedDate}`;
   },
 
-  async uploadMemory(memoryData, coverFileOrUrl, galleryFilesOrUrls = []) {
+  /**
+   * Carga Lineal Secuencial (Imagen por Imagen) en Máxima Calidad
+   * Sube cada archivo uno por uno con reporte de progreso en tiempo real.
+   */
+  async uploadMemory(memoryData, coverFileOrUrl, galleryFilesOrUrls = [], onProgress = null) {
     const folderName = this.formatFolderName(memoryData.title, memoryData.date);
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
 
     const filesToUpload = [];
 
-    // 1. Portada de primera
+    // 1. Portada en máxima resolución
     if (coverFileOrUrl) {
       filesToUpload.push({
         name: '01_Portada',
         data: coverFileOrUrl,
-        isCover: true
+        label: 'Portada'
       });
     }
 
-    // 2. Fotos y videos adicionales
+    // 2. Fotos y videos de la galería en máxima resolución
     if (Array.isArray(galleryFilesOrUrls)) {
       galleryFilesOrUrls.forEach((item, idx) => {
         const fileNum = String(idx + 2).padStart(2, '0');
         filesToUpload.push({
           name: `${fileNum}_Foto_${idx + 1}`,
           data: item,
-          isCover: false
+          label: `Foto ${idx + 1}`
         });
       });
     }
 
-    try {
-      // Usar mode: 'no-cors' para asegurar que el navegador nunca bloquee el envío por redirección 302
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'createFolderAndUpload',
-          parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
-          folderName: folderName,
-          files: filesToUpload
-        })
-      });
-
-      return {
-        success: true,
-        folderName: folderName,
-        uploadedFiles: filesToUpload
-      };
-    } catch (e) {
-      console.warn('Google Drive Script upload notice:', e);
-      return {
-        success: false,
-        folderName: folderName,
-        error: e.message
-      };
+    if (filesToUpload.length === 0) {
+      return { success: true, folderName: folderName, uploadedCount: 0 };
     }
+
+    const totalFiles = filesToUpload.length;
+    let uploadedCount = 0;
+
+    // Subida lineal secuencial: una imagen a la vez
+    for (let i = 0; i < totalFiles; i++) {
+      const currentFile = filesToUpload[i];
+      if (onProgress) {
+        onProgress(i + 1, totalFiles, currentFile.label);
+      }
+
+      try {
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'createFolderAndUpload',
+            parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
+            folderName: folderName,
+            files: [currentFile]
+          })
+        });
+        uploadedCount++;
+      } catch (fileErr) {
+        console.warn(`Aviso al subir ${currentFile.name} a Drive:`, fileErr);
+      }
+
+      // Pequeña pausa de 200ms entre archivos para permitir que la red y el script procesen fluidamente
+      if (i < totalFiles - 1) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    return {
+      success: true,
+      folderName: folderName,
+      uploadedCount: uploadedCount,
+      totalFiles: totalFiles
+    };
   }
 };
 

@@ -1452,6 +1452,12 @@
       document.getElementById("mem-cover-url").value = coverUrl;
       this.updateCoverPreview(coverUrl);
 
+      // Enlace de Google Drive del recuerdo
+      const driveInput = document.getElementById("mem-drive-url");
+      if (driveInput) {
+        driveInput.value = mem && mem.driveFolderUrl ? mem.driveFolderUrl : "";
+      }
+
       // Galería
       this.modalGalleryItems = mem && Array.isArray(mem.gallery) ? [...mem.gallery] : [];
       this.renderModalGallery();
@@ -2668,15 +2674,26 @@
       document.getElementById("btn-new-note")?.addEventListener("click", () => this.openNoteModal());
       document.getElementById("btn-new-dream")?.addEventListener("click", () => this.openDreamModal());
       document.getElementById("btn-open-gdrive")?.addEventListener("click", () => {
-        const inputUrl = document.getElementById("input-gdrive-script-url");
-        if (inputUrl) inputUrl.value = window.CONFIG.googleDrive?.scriptUrl || "";
+        const defaultUrl = localStorage.getItem('patico_gdrive_main_url') || window.CONFIG.googleDrive?.folderUrl || "https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing";
+        const inputUrl = document.getElementById("input-gdrive-folder-url");
+        const openLink = document.getElementById("btn-open-gdrive-link");
+        if (inputUrl) inputUrl.value = defaultUrl;
+        if (openLink) openLink.href = defaultUrl;
         document.getElementById("modal-gdrive").classList.add("active");
       });
+
+      document.getElementById("input-gdrive-folder-url")?.addEventListener("input", (e) => {
+        const openLink = document.getElementById("btn-open-gdrive-link");
+        if (openLink) openLink.href = e.target.value.trim() || "#";
+      });
+
       document.getElementById("btn-save-gdrive-url")?.addEventListener("click", () => {
-        const inputUrl = document.getElementById("input-gdrive-script-url");
+        const inputUrl = document.getElementById("input-gdrive-folder-url");
         const val = inputUrl ? inputUrl.value.trim() : "";
-        localStorage.setItem("patico_gdrive_script_url", val);
-        window.Utils.showToast("Conexión de Google Drive guardada 📁✨", "success");
+        if (val) {
+          localStorage.setItem("patico_gdrive_main_url", val);
+          window.Utils.showToast("Enlace de Google Drive guardado 📁✨", "success");
+        }
         document.getElementById("modal-gdrive").classList.remove("active");
       });
 
@@ -2759,11 +2776,12 @@
         });
       });
 
-      document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
+      document.getElementById("form-memory")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
         const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
+        const driveUrl = document.getElementById("mem-drive-url")?.value.trim() || "";
 
         const memData = {
           id: document.getElementById("mem-id").value || undefined,
@@ -2774,6 +2792,7 @@
           coverMedia: coverVal,
           coverType: isVideo ? "video" : "image",
           gallery: this.modalGalleryItems || [],
+          driveFolderUrl: driveUrl,
           status: document.getElementById("mem-status").value,
           author: window.storage.getCurrentUser()
         };
@@ -2784,19 +2803,6 @@
         this.renderMemories();
         this.renderAnnualCalendar();
         window.Utils.showToast("¡Recuerdo guardado con éxito! 🌻", "success");
-
-        // Subida estructurada en segundo plano a Google Drive (carpeta: Nombre + Fecha)
-        if (window.GoogleDriveService) {
-          try {
-            const driveRes = await window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems);
-            if (driveRes && driveRes.folderUrl) {
-              memData.driveFolderUrl = driveRes.folderUrl;
-              window.storage.saveMemory(memData);
-            }
-          } catch (err) {
-            console.warn("Google Drive upload notice:", err);
-          }
-        }
       });
 
       document.getElementById("form-series")?.addEventListener("submit", (e) => {

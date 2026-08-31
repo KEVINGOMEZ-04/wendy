@@ -18,6 +18,7 @@
       this.initNavigation();
       this.initSections();
       this.initModals();
+      this.initLightbox();
       this.initWrappedSystem();
       
       // Registro de PWA Service Worker
@@ -1418,6 +1419,27 @@
         });
       });
 
+      // Visor de fotos y videos en alta resolución (Lightbox)
+      container.querySelectorAll(".memory-node").forEach(node => {
+        const id = node.dataset.id;
+        const mem = window.storage.getMemories().find(m => m.id === id);
+        if (!mem) return;
+        const allMedia = [mem.coverMedia, ...(mem.gallery || [])].filter(Boolean);
+        if (allMedia.length === 0) return;
+
+        node.querySelector(".memory-cover-wrapper")?.addEventListener("click", () => {
+          this.openLightbox(allMedia, 0, mem.title);
+        });
+
+        node.querySelectorAll(".gallery-preview-item").forEach((thumb, tIdx) => {
+          thumb.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const startIdx = mem.coverMedia ? tIdx + 1 : tIdx;
+            this.openLightbox(allMedia, startIdx, mem.title);
+          });
+        });
+      });
+
       document.getElementById("select-sort-memories")?.addEventListener("change", () => this.renderMemories());
     }
 
@@ -2729,16 +2751,16 @@
         this.updateCoverPreview(e.target.value.trim());
       });
 
-      document.getElementById("mem-cover-file")?.addEventListener("change", (e) => {
+      document.getElementById("mem-cover-file")?.addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const dataUrl = ev.target.result;
+        try {
+          const dataUrl = await window.Utils.compressImage(file, 1600, 0.82);
           document.getElementById("mem-cover-url").value = dataUrl;
           this.updateCoverPreview(dataUrl);
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+          console.error("Error comprimiendo portada:", err);
+        }
       });
 
       document.getElementById("btn-add-gallery-item")?.addEventListener("click", () => {
@@ -2751,23 +2773,20 @@
         this.renderModalGallery();
       });
 
-      document.getElementById("mem-gallery-file")?.addEventListener("change", (e) => {
+      document.getElementById("mem-gallery-file")?.addEventListener("change", async (e) => {
         const files = Array.from(e.target.files);
         if (!files.length) return;
         if (!this.modalGalleryItems) this.modalGalleryItems = [];
 
-        let remaining = files.length;
-        files.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            this.modalGalleryItems.push(ev.target.result);
-            remaining--;
-            if (remaining === 0) {
-              this.renderModalGallery();
-            }
-          };
-          reader.readAsDataURL(file);
-        });
+        for (const file of files) {
+          try {
+            const dataUrl = await window.Utils.compressImage(file, 1400, 0.80);
+            this.modalGalleryItems.push(dataUrl);
+          } catch (err) {
+            console.error("Error comprimiendo foto de galería:", err);
+          }
+        }
+        this.renderModalGallery();
       });
 
       document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
@@ -3511,6 +3530,92 @@
         if (e.key === "ArrowRight" || e.key === " ") nextSlide();
         if (e.key === "ArrowLeft") prevSlide();
       });
+    }
+
+    initLightbox() {
+      this.lightboxItems = [];
+      this.lightboxIndex = 0;
+      this.lightboxTitle = "";
+
+      const modal = document.getElementById("modal-lightbox-viewer");
+      const btnClose = document.getElementById("btn-close-lightbox");
+      const btnPrev = document.getElementById("btn-lightbox-prev");
+      const btnNext = document.getElementById("btn-lightbox-next");
+
+      if (!modal) return;
+
+      btnClose?.addEventListener("click", () => {
+        modal.classList.remove("active");
+        const vp = document.getElementById("lightbox-viewport");
+        if (vp) vp.innerHTML = "";
+      });
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("active");
+          const vp = document.getElementById("lightbox-viewport");
+          if (vp) vp.innerHTML = "";
+        }
+      });
+
+      btnPrev?.addEventListener("click", () => {
+        if (!this.lightboxItems || this.lightboxItems.length === 0) return;
+        this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxItems.length) % this.lightboxItems.length;
+        this.renderLightboxCurrent();
+      });
+
+      btnNext?.addEventListener("click", () => {
+        if (!this.lightboxItems || this.lightboxItems.length === 0) return;
+        this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxItems.length;
+        this.renderLightboxCurrent();
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (!modal.classList.contains("active")) return;
+        if (e.key === "ArrowLeft") btnPrev?.click();
+        if (e.key === "ArrowRight") btnNext?.click();
+        if (e.key === "Escape") btnClose?.click();
+      });
+    }
+
+    openLightbox(items = [], startIndex = 0, title = "Recuerdo") {
+      const modal = document.getElementById("modal-lightbox-viewer");
+      if (!modal || !items.length) return;
+
+      this.lightboxItems = items;
+      this.lightboxIndex = Math.max(0, Math.min(startIndex, items.length - 1));
+      this.lightboxTitle = title;
+
+      modal.classList.add("active");
+      this.renderLightboxCurrent();
+    }
+
+    renderLightboxCurrent() {
+      const vp = document.getElementById("lightbox-viewport");
+      const counterEl = document.getElementById("lightbox-counter");
+      const titleEl = document.getElementById("lightbox-caption-title");
+      const btnPrev = document.getElementById("btn-lightbox-prev");
+      const btnNext = document.getElementById("btn-lightbox-next");
+
+      if (!vp) return;
+
+      const itemUrl = this.lightboxItems[this.lightboxIndex];
+      if (!itemUrl) return;
+      const isVideo = itemUrl.match(/\.(mp4|webm|ogg|mov)$/i) || itemUrl.startsWith("data:video/");
+
+      if (isVideo) {
+        vp.innerHTML = `<video src="${window.Utils.sanitizeHTML(itemUrl)}" controls autoplay style="max-height: 80vh; max-width: 90vw; border-radius: 12px;"></video>`;
+      } else {
+        vp.innerHTML = `<img src="${window.Utils.sanitizeHTML(itemUrl)}" alt="Foto en alta resolución" style="max-height: 80vh; max-width: 90vw; border-radius: 12px; object-fit: contain;">`;
+      }
+
+      if (titleEl) titleEl.textContent = this.lightboxTitle;
+      if (counterEl) counterEl.textContent = `${this.lightboxIndex + 1} / ${this.lightboxItems.length}`;
+
+      if (btnPrev && btnNext) {
+        btnPrev.style.display = this.lightboxItems.length > 1 ? "flex" : "none";
+        btnNext.style.display = this.lightboxItems.length > 1 ? "flex" : "none";
+      }
     }
 
     initCounterAnimations() {

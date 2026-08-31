@@ -1113,14 +1113,24 @@
     saveNote(noteData) {
       const list = this.getNotes();
       const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
 
       if (noteData.id) {
         const index = list.findIndex(n => n.id === noteData.id);
         if (index !== -1) {
+          const existing = list[index];
+          // Solo el autor original o el creador puede editar su propia nota
+          if (existing.author && existing.author.toLowerCase() !== currentUser.toLowerCase() && !existing.isDemo) {
+            throw new Error('Solo puedes editar las notas que tú mismo has creado.');
+          }
+
           list[index] = {
-            ...list[index],
-            author: noteData.author,
-            message: noteData.message.trim(),
+            ...existing,
+            message: (noteData.message || '').trim(),
+            style: noteData.style || existing.style || 'sunflower',
+            sticker: noteData.sticker !== undefined ? noteData.sticker : (existing.sticker || ''),
+            photoUrl: noteData.photoUrl !== undefined ? noteData.photoUrl : (existing.photoUrl || ''),
+            isPinned: noteData.isPinned !== undefined ? Boolean(noteData.isPinned) : (existing.isPinned || false),
             updatedAt: now,
             isDemo: false
           };
@@ -1128,8 +1138,14 @@
       } else {
         const newNote = {
           id: window.Utils.generateUUID(),
-          author: noteData.author,
-          message: noteData.message.trim(),
+          author: currentUser,
+          message: (noteData.message || '').trim(),
+          style: noteData.style || 'sunflower',
+          sticker: noteData.sticker || '',
+          photoUrl: noteData.photoUrl || '',
+          isPinned: Boolean(noteData.isPinned),
+          isRevealed: noteData.style === 'surprise' ? false : true,
+          reactions: {},
           createdAt: now,
           updatedAt: now,
           isDemo: false
@@ -1142,8 +1158,63 @@
     }
 
     deleteNote(id) {
-      const list = this.getNotes().filter(n => n.id !== id);
+      const list = this.getNotes();
+      const currentUser = this.getCurrentUser();
+      const note = list.find(n => n.id === id);
+
+      if (note && note.author && note.author.toLowerCase() !== currentUser.toLowerCase() && !note.isDemo) {
+        throw new Error('Solo puedes eliminar las notas que tú mismo has creado.');
+      }
+
+      const filtered = list.filter(n => n.id !== id);
+      this.set(this.keys.notes, filtered);
+      return filtered;
+    }
+
+    toggleNotePin(id) {
+      const list = this.getNotes();
+      const note = list.find(n => n.id === id);
+      if (note) {
+        note.isPinned = !note.isPinned;
+        note.updatedAt = new Date().toISOString();
+        this.set(this.keys.notes, list);
+      }
+      return list;
+    }
+
+    reactToNote(id, emoji, user) {
+      const list = this.getNotes();
+      const note = list.find(n => n.id === id);
+      if (!note) return list;
+
+      if (!note.reactions) note.reactions = {};
+      if (!Array.isArray(note.reactions[emoji])) note.reactions[emoji] = [];
+
+      const activeUser = user || this.getCurrentUser();
+      const userIndex = note.reactions[emoji].indexOf(activeUser);
+
+      if (userIndex !== -1) {
+        note.reactions[emoji].splice(userIndex, 1);
+        if (note.reactions[emoji].length === 0) {
+          delete note.reactions[emoji];
+        }
+      } else {
+        note.reactions[emoji].push(activeUser);
+      }
+
+      note.updatedAt = new Date().toISOString();
       this.set(this.keys.notes, list);
+      return list;
+    }
+
+    revealSurpriseNote(id) {
+      const list = this.getNotes();
+      const note = list.find(n => n.id === id);
+      if (note) {
+        note.isRevealed = true;
+        note.updatedAt = new Date().toISOString();
+        this.set(this.keys.notes, list);
+      }
       return list;
     }
 

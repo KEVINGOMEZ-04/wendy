@@ -118,14 +118,15 @@
         isDemo: true
       }
     ],
-    songs: []
+    songs: [],
+    series: []
   };
 
   class StorageManager {
     constructor() {
       this.keys = window.CONFIG.storageKeys;
       this.listeners = [];
-      this.remoteKeys = ['memories', 'movies', 'notes', 'dreams', 'songs'];
+      this.remoteKeys = ['memories', 'movies', 'series', 'notes', 'dreams', 'songs'];
       this.remoteRef = null;
       this.initDefaults();
       this.initRemoteSync();
@@ -138,6 +139,9 @@
       }
       if (!localStorage.getItem(this.keys.movies)) {
         this.set(this.keys.movies, INITIAL_DATA.movies);
+      }
+      if (!localStorage.getItem(this.keys.series)) {
+        this.set(this.keys.series, INITIAL_DATA.series);
       }
       if (!localStorage.getItem(this.keys.notes)) {
         this.set(this.keys.notes, INITIAL_DATA.notes);
@@ -1209,6 +1213,233 @@
       const list = this.getDreams().filter(d => d.id !== id);
       this.set(this.keys.dreams, list);
       return list;
+    }
+
+    // =========================================
+    // MÓDULO DE SERIES & ANIME 📺
+    // =========================================
+
+    getSeries() {
+      return this.get(this.keys.series, []);
+    }
+
+    saveSeries(serieData) {
+      const list = this.getSeries();
+      const now = new Date().toISOString();
+
+      if (serieData.id) {
+        const index = list.findIndex(s => s.id === serieData.id);
+        if (index !== -1) {
+          const existing = list[index];
+          list[index] = {
+            ...existing,
+            ...serieData,
+            updatedAt: now
+          };
+          this.recalculateSeriesCompletion(list[index]);
+        }
+      } else {
+        const newSerie = {
+          id: window.Utils.generateUUID(),
+          tmdbId: serieData.tmdbId || null,
+          title: (serieData.title || '').trim(),
+          originalTitle: (serieData.originalTitle || serieData.title || '').trim(),
+          year: serieData.year || new Date().getFullYear(),
+          poster: serieData.poster || '',
+          synopsis: serieData.synopsis || '',
+          platforms: Array.isArray(serieData.platforms) ? serieData.platforms : (serieData.platforms ? [serieData.platforms] : ['Streaming']),
+          imdbRating: serieData.imdbRating || '',
+          imdbUrl: serieData.imdbUrl || '',
+          seasonsCount: serieData.seasonsCount || 1,
+          episodesCount: serieData.episodesCount || 0,
+          seasons: serieData.seasons || [],
+          proposedBy: serieData.proposedBy || this.getCurrentUser(),
+          status: serieData.status || 'Viendo', // 'Por ver', 'Viendo', 'Completada', 'Favorita'
+          kevinRating: serieData.kevinRating || 0,
+          wendyRating: serieData.wendyRating || 0,
+          kevinReview: serieData.kevinReview || '',
+          wendyReview: serieData.wendyReview || '',
+          comments: Array.isArray(serieData.comments) ? serieData.comments : [],
+          createdAt: now,
+          updatedAt: now
+        };
+        this.recalculateSeriesCompletion(newSerie);
+        list.push(newSerie);
+      }
+
+      this.set(this.keys.series, list);
+      return list;
+    }
+
+    deleteSeries(id) {
+      const list = this.getSeries().filter(s => s.id !== id);
+      this.set(this.keys.series, list);
+      return list;
+    }
+
+    recalculateSeriesCompletion(serie) {
+      if (!serie.seasons || !serie.seasons.length) {
+        serie.progressKevin = 0;
+        serie.progressWendy = 0;
+        serie.progressBoth = 0;
+        serie.isFullyCompletedByKevin = false;
+        serie.isFullyCompletedByWendy = false;
+        serie.isFullyCompletedByBoth = false;
+        return;
+      }
+
+      let totalEpisodes = 0;
+      let seenKevin = 0;
+      let seenWendy = 0;
+      let seenBoth = 0;
+
+      serie.seasons.forEach(season => {
+        if (season.episodes && season.episodes.length) {
+          season.episodes.forEach(ep => {
+            totalEpisodes++;
+            const k = ep.watchedByKevin === true;
+            const w = ep.watchedByWendy === true;
+            if (k) seenKevin++;
+            if (w) seenWendy++;
+            if (k && w) seenBoth++;
+          });
+        }
+      });
+
+      serie.totalEpisodes = totalEpisodes;
+      serie.progressKevin = totalEpisodes > 0 ? Math.round((seenKevin / totalEpisodes) * 100) : 0;
+      serie.progressWendy = totalEpisodes > 0 ? Math.round((seenWendy / totalEpisodes) * 100) : 0;
+      serie.progressBoth = totalEpisodes > 0 ? Math.round((seenBoth / totalEpisodes) * 100) : 0;
+
+      serie.isFullyCompletedByKevin = totalEpisodes > 0 && seenKevin >= totalEpisodes;
+      serie.isFullyCompletedByWendy = totalEpisodes > 0 && seenWendy >= totalEpisodes;
+      serie.isFullyCompletedByBoth = totalEpisodes > 0 && seenBoth >= totalEpisodes;
+
+      if (serie.isFullyCompletedByBoth) {
+        serie.status = 'Completada';
+      } else if (seenKevin > 0 || seenWendy > 0) {
+        if (serie.status === 'Por ver') serie.status = 'Viendo';
+      }
+    }
+
+    toggleEpisodeWatched(seriesId, seasonNumber, episodeNumber, user, mode = 'toggle') {
+      const list = this.getSeries();
+      const serie = list.find(s => s.id === seriesId);
+      if (!serie) return null;
+
+      const season = (serie.seasons || []).find(s => s.seasonNumber === seasonNumber);
+      if (!season || !season.episodes) return null;
+
+      const episode = season.episodes.find(e => e.episodeNumber === episodeNumber);
+      if (!episode) return null;
+
+      const now = new Date().toISOString();
+
+      if (user === 'Both') {
+        const currentlyBoth = episode.watchedByKevin && episode.watchedByWendy;
+        const newState = !currentlyBoth;
+        episode.watchedByKevin = newState;
+        episode.watchedByWendy = newState;
+        if (newState) {
+          episode.watchedAtKevin = now;
+          episode.watchedAtWendy = now;
+        }
+      } else if (user.toLowerCase() === 'wendy') {
+        episode.watchedByWendy = !episode.watchedByWendy;
+        episode.watchedAtWendy = episode.watchedByWendy ? now : null;
+      } else {
+        episode.watchedByKevin = !episode.watchedByKevin;
+        episode.watchedAtKevin = episode.watchedByKevin ? now : null;
+      }
+
+      this.recalculateSeriesCompletion(serie);
+      serie.updatedAt = now;
+
+      this.set(this.keys.series, list);
+      return { serie, episode };
+    }
+
+    getUserCurrentProgress(serie, user) {
+      if (!serie || !serie.seasons || !serie.seasons.length) return 'Sin empezar';
+      const isWendy = user.toLowerCase() === 'wendy';
+
+      let lastWatched = null;
+      for (const season of serie.seasons) {
+        if (season.episodes) {
+          for (const ep of season.episodes) {
+            const watched = isWendy ? ep.watchedByWendy : ep.watchedByKevin;
+            if (watched) {
+              lastWatched = `T${season.seasonNumber}:E${ep.episodeNumber}`;
+            }
+          }
+        }
+      }
+
+      return lastWatched || 'T1:E1';
+    }
+
+    addSeriesComment(seriesId, { author, message, rating = 0 }) {
+      const list = this.getSeries();
+      const serie = list.find(s => s.id === seriesId);
+      if (!serie) return null;
+
+      if (!Array.isArray(serie.comments)) serie.comments = [];
+
+      const currentProgress = this.getUserCurrentProgress(serie, author);
+      const isCompleted = author.toLowerCase() === 'wendy' ? serie.isFullyCompletedByWendy : serie.isFullyCompletedByKevin;
+
+      const newComment = {
+        id: window.Utils.generateUUID(),
+        author: author || this.getCurrentUser(),
+        message: message.trim(),
+        currentProgress: currentProgress,
+        isCompleted: isCompleted,
+        rating: rating || 0,
+        createdAt: new Date().toISOString()
+      };
+
+      serie.comments.push(newComment);
+      serie.updatedAt = new Date().toISOString();
+
+      this.set(this.keys.series, list);
+      return newComment;
+    }
+
+    deleteSeriesComment(seriesId, commentId) {
+      const list = this.getSeries();
+      const serie = list.find(s => s.id === seriesId);
+      if (!serie || !Array.isArray(serie.comments)) return null;
+
+      serie.comments = serie.comments.filter(c => c.id !== commentId);
+      serie.updatedAt = new Date().toISOString();
+
+      this.set(this.keys.series, list);
+      return serie;
+    }
+
+    rateSeries(seriesId, user, rating, review = '') {
+      const list = this.getSeries();
+      const serie = list.find(s => s.id === seriesId);
+      if (!serie) return null;
+
+      const isWendy = user.toLowerCase() === 'wendy';
+      const isCompleted = isWendy ? serie.isFullyCompletedByWendy : serie.isFullyCompletedByKevin;
+
+      if (!isCompleted) {
+        throw new Error('Solo puedes calificar la serie cuando hayas visto todos los capítulos 🌻📺');
+      }
+
+      if (isWendy) {
+        serie.wendyRating = rating;
+        if (review) serie.wendyReview = review;
+      } else {
+        serie.kevinRating = rating;
+        if (review) serie.kevinReview = review;
+      }
+
+      serie.updatedAt = new Date().toISOString();
+      this.set(this.keys.series, list);
+      return serie;
     }
   }
 

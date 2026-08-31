@@ -2811,6 +2811,7 @@
               memData.driveFolderUrl = driveRes.folderUrl;
               window.storage.saveMemory(memData);
               this.renderMemories();
+              window.Utils.showToast(`¡Carpeta "${driveRes.folderName || 'Recuerdo'}" creada en Google Drive! 📁✨`, "success");
             }
           }).catch(err => console.warn("Google Drive auto-creation notice:", err));
         }

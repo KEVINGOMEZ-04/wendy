@@ -1828,7 +1828,7 @@
             window.storage.saveSeries({
               ...details,
               proposedBy: currentUser,
-              status: 'Viendo',
+              status: 'Por ver',
               comments: []
             });
 
@@ -2035,13 +2035,25 @@
       document.getElementById("series-viewer-title").textContent = serie.title;
       document.getElementById("series-viewer-subtitle").textContent = `${serie.seasonsCount || (serie.seasons ? serie.seasons.length : 1)} Temporadas · ${serie.totalEpisodes || 0} Capítulos`;
 
-      // Si la temporada activa no tiene capítulos cargados y tiene tmdbId, cargarlos
+      // Si la temporada activa no tiene metadatos completos y tiene tmdbId, enriquecerla preservando vistos
       const seasonObj = (serie.seasons || []).find(s => s.seasonNumber === activeSeasonNum);
-      if (seasonObj && (!seasonObj.episodes || !seasonObj.episodes.length) && serie.tmdbId) {
+      if (seasonObj && serie.tmdbId && (!seasonObj.episodes || !seasonObj.episodes.length || !seasonObj.episodes[0]?.stillPath)) {
         try {
           const episodes = await window.MediaService.getSeasonEpisodes(serie.tmdbId, activeSeasonNum);
-          seasonObj.episodes = episodes;
-          window.storage.saveSeries(serie);
+          if (episodes && episodes.length) {
+            const existingEpisodes = seasonObj.episodes || [];
+            seasonObj.episodes = episodes.map(newEp => {
+              const prev = existingEpisodes.find(p => p.episodeNumber === newEp.episodeNumber);
+              return {
+                ...newEp,
+                watchedByKevin: prev ? prev.watchedByKevin : false,
+                watchedByWendy: prev ? prev.watchedByWendy : false,
+                watchedAtKevin: prev ? prev.watchedAtKevin : null,
+                watchedAtWendy: prev ? prev.watchedAtWendy : null
+              };
+            });
+            window.storage.saveSeries(serie);
+          }
         } catch (_) {}
       }
 

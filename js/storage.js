@@ -545,12 +545,27 @@
         // Escucha de Presencia estilo WhatsApp (Online / Última vez)
         this.initPresenceListeners();
 
-        // Escucha de credenciales personalizadas
+        // Escucha de credenciales personalizadas y Cierre de Sesión Global en todos los dispositivos
         this.credentialsRef = db.ref(`rooms/${config.roomId}/credentials`);
         this.credentialsRef.on('value', snapshot => {
           const creds = snapshot.val();
           if (creds && typeof creds === 'object') {
             localStorage.setItem(this.keys.credentials, JSON.stringify(creds));
+            
+            const localSessionToken = localStorage.getItem('patico_session_token');
+            const currentUser = this.getCurrentUser();
+            const userCred = creds[currentUser];
+            const changeTime = (userCred && userCred.updatedAt) || creds.lastGlobalPasswordChange || 0;
+
+            if (this.isUnlocked() && changeTime > 0) {
+              if (!localSessionToken || parseInt(localSessionToken, 10) < changeTime) {
+                this.setUnlocked(false);
+                localStorage.removeItem('patico_session_token');
+                if (this.onForceLogout) {
+                  this.onForceLogout('🔒 La contraseña fue cambiada. Se cerró la sesión en todos los dispositivos por seguridad.');
+                }
+              }
+            }
           }
         });
 
@@ -711,7 +726,14 @@
       return false;
     }
 
-    getCredentials() { return this.get(this.keys.credentials, {}); }
+    getCredentials() {
+      const defaultCreds = {
+        Kevin: { passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', updatedAt: 1700000000000 },
+        Wendy: { passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', updatedAt: 1700000000000 },
+        lastGlobalPasswordChange: 1700000000000
+      };
+      return this.get(this.keys.credentials, defaultCreds);
+    }
 
     async hashPassword(password) {
       const bytes = new TextEncoder().encode(password);
@@ -733,15 +755,14 @@
 
       const credentials = this.getCredentials();
       const userCred = credentials[username];
+      const enteredHash = await this.hashPassword(trimmed);
 
-      // Si el usuario ya tiene una contraseña personalizada guardada
       if (userCred && userCred.passwordHash) {
-        const hash = await this.hashPassword(trimmed);
-        return userCred.passwordHash === hash;
+        return userCred.passwordHash === enteredHash;
       }
 
       // Si aún no ha cambiado su contraseña, la clave por defecto es 1234
-      return trimmed === '1234';
+      return trimmed === '1234' || enteredHash === '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
     }
 
     async changePassword(username, currentPassword, newPassword) {
@@ -749,8 +770,20 @@
         return false;
       }
       const credentials = this.getCredentials();
-      credentials[username] = { passwordHash: await this.hashPassword(newPassword.trim()) };
+      const now = Date.now();
+      const newHash = await this.hashPassword(newPassword.trim());
+
+      credentials[username] = {
+        passwordHash: newHash,
+        updatedAt: now
+      };
+      credentials.lastGlobalPasswordChange = now;
+
+      // Guardar token local en este dispositivo para mantener su sesión activa
       const saved = this.set(this.keys.credentials, credentials);
+      localStorage.setItem('patico_session_token', now.toString());
+
+      // Sincronizar en Firebase para forzar cierre de sesión en todos los demás dispositivos
       if (this.credentialsRef) {
         this.credentialsRef.set(credentials).catch(e => console.warn('Error sincronizando credenciales:', e));
       }

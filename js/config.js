@@ -11,13 +11,15 @@ window.CONFIG = {
     currentUser: 'patico_current_user_v1',
     memories: 'patico_memories_v1',
     movies: 'patico_movies_v1',
+    series: 'patico_series_v1',
     notes: 'patico_notes_v1',
     dreams: 'patico_dreams_v1',
     songs: 'patico_songs_v1',
     credentials: 'patico_credentials_v1',
     profiles: 'patico_profiles_v1',
     localPresence: 'patico_presence_local_v1',
-    remoteConfig: 'patico_presence_remote_config_v1'
+    remoteConfig: 'patico_presence_remote_config_v1',
+    googleDrive: 'patico_gdrive_config_v1'
   },
 
   // Configuración de Presencia Compartida y Sincronización en Tiempo Real
@@ -34,6 +36,22 @@ window.CONFIG = {
       storageBucket: "patico-diario.firebasestorage.app",
       messagingSenderId: "209914552110",
       appId: "1:209914552110:web:fc718cd6fd49356b14e4bf"
+    }
+  },
+
+  // Configuración de Google Drive para Recuerdos
+  googleDrive: {
+    enabled: true,
+    folderPrefix: 'Patico Recuerdos',
+    // Webhook de Google Apps Script o Token de acceso directo
+    get scriptUrl() {
+      return localStorage.getItem('patico_gdrive_script_url') || '';
+    },
+    get clientId() {
+      return localStorage.getItem('patico_gdrive_client_id') || '';
+    },
+    get apiKey() {
+      return localStorage.getItem('patico_gdrive_api_key') || '';
     }
   },
 
@@ -69,7 +87,10 @@ window.CONFIG = {
     sunflowerGold: '#F4C542',
     lightYellow: '#F8D96B',
     textMain: '#F1E9FB',
-    textSecondary: '#B7A7CC'
+    textSecondary: '#B7A7CC',
+    kevinColor: '#00E5FF',
+    wendyColor: '#E040FB',
+    dualBlendColor: '#7092FD'
   },
 
   // Secciones
@@ -78,7 +99,8 @@ window.CONFIG = {
     { id: 'recuerdos', number: 2, label: 'Recuerdos', icon: '🌻' },
     { id: 'musica', number: 3, label: 'Música', icon: '🎵' },
     { id: 'cine', number: 4, label: 'Películas', icon: '🎬' },
-    { id: 'muro', number: 5, label: 'Notas', icon: '💌' },
-    { id: 'suenos', number: 6, label: 'Sueños', icon: '🌟' }
+    { id: 'series', number: 5, label: 'Series', icon: '📺' },
+    { id: 'muro', number: 6, label: 'Notas', icon: '💌' },
+    { id: 'suenos', number: 7, label: 'Sueños', icon: '🌟' }
   ]
 };

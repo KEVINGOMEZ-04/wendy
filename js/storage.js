@@ -1322,7 +1322,7 @@
       }
     }
 
-    toggleEpisodeWatched(seriesId, seasonNumber, episodeNumber, user, mode = 'toggle') {
+    toggleEpisodeWatched(seriesId, seasonNumber, episodeNumber, user) {
       const list = this.getSeries();
       const serie = list.find(s => s.id === seriesId);
       if (!serie) return null;
@@ -1334,17 +1334,9 @@
       if (!episode) return null;
 
       const now = new Date().toISOString();
+      const isWendy = (user || this.getCurrentUser()).toLowerCase() === 'wendy';
 
-      if (user === 'Both') {
-        const currentlyBoth = episode.watchedByKevin && episode.watchedByWendy;
-        const newState = !currentlyBoth;
-        episode.watchedByKevin = newState;
-        episode.watchedByWendy = newState;
-        if (newState) {
-          episode.watchedAtKevin = now;
-          episode.watchedAtWendy = now;
-        }
-      } else if (user.toLowerCase() === 'wendy') {
+      if (isWendy) {
         episode.watchedByWendy = !episode.watchedByWendy;
         episode.watchedAtWendy = episode.watchedByWendy ? now : null;
       } else {
@@ -1357,6 +1349,49 @@
 
       this.set(this.keys.series, list);
       return { serie, episode };
+    }
+
+    markEpisodesUpTo(seriesId, targetSeasonNumber, targetEpisodeNumber, user) {
+      const list = this.getSeries();
+      const serie = list.find(s => s.id === seriesId);
+      if (!serie || !serie.seasons) return null;
+
+      const now = new Date().toISOString();
+      const isWendy = (user || this.getCurrentUser()).toLowerCase() === 'wendy';
+
+      for (const season of serie.seasons) {
+        if (!season.episodes) continue;
+        if (season.seasonNumber < targetSeasonNumber) {
+          // Marcar todos los de temporadas anteriores
+          for (const ep of season.episodes) {
+            if (isWendy) {
+              ep.watchedByWendy = true;
+              ep.watchedAtWendy = ep.watchedAtWendy || now;
+            } else {
+              ep.watchedByKevin = true;
+              ep.watchedAtKevin = ep.watchedAtKevin || now;
+            }
+          }
+        } else if (season.seasonNumber === targetSeasonNumber) {
+          // Marcar hasta el capítulo indicado
+          for (const ep of season.episodes) {
+            if (ep.episodeNumber <= targetEpisodeNumber) {
+              if (isWendy) {
+                ep.watchedByWendy = true;
+                ep.watchedAtWendy = ep.watchedAtWendy || now;
+              } else {
+                ep.watchedByKevin = true;
+                ep.watchedAtKevin = ep.watchedAtKevin || now;
+              }
+            }
+          }
+        }
+      }
+
+      this.recalculateSeriesCompletion(serie);
+      serie.updatedAt = now;
+      this.set(this.keys.series, list);
+      return serie;
     }
 
     getUserCurrentProgress(serie, user) {

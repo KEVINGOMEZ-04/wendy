@@ -30,6 +30,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Prepare Local Web Assets
+        run: |
+          mkdir -p www
+          cp -r index.html manifest.json css js data www/ || true
+          cp sw.js www/ || true
+
       - name: Install Dependencies & Initialize Capacitor
         run: |
           npm install
@@ -42,7 +48,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Rename APK
+      - name: Rename & Prepare APK Output
         run: |
           mkdir -p build-output
           cp android/app/build/outputs/apk/debug/app-debug.apk build-output/ATRIA.apk
@@ -53,21 +59,21 @@ jobs:
           name: ATRIA-APK
           path: build-output/ATRIA.apk
 
-      - name: Create or Update GitHub Release
+      - name: Publish Release with ATRIA.apk
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0
-          name: "ATRIA v1.0.0 🏛️✨"
+          name: "ATRIA v1.0.0 🏛️✨ (APK Oficial)"
           body: |
             # 🏛️ ATRIA — La puerta de entrada a nuestro mundo compartido
             
-            Descarga directa de la aplicación móvil oficial de **Kevin & Wendy**.
+            Aplicación móvil nativa oficial de **Kevin & Wendy**.
             
-            ### 📱 Instrucciones de instalación en Android:
-            1. Descarga el archivo **`ATRIA.apk`** que está aquí abajo en tu celular.
-            2. Toca el archivo descargado para instalarlo.
-            3. Si tu celular te pide permiso de "Instalar aplicaciones desconocidas", dale en **Permitir**.
-            4. ¡Listo! Abre **ATRIA** y entra con tu contraseña.
+            ### 📱 Instalación directa en Android:
+            1. Descarga el archivo **`ATRIA.apk`** adjunto aquí abajo en tu celular.
+            2. Abre el archivo descargado para instalarlo.
+            3. Si tu celular te solicita permiso de *"Instalar aplicaciones desconocidas"*, dale en **Permitir**.
+            4. ¡Listo! Abre **ATRIA** con su icono y pantalla completa.
           files: build-output/ATRIA.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

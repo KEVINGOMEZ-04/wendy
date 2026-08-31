@@ -15,6 +15,7 @@
       this.initWhatsAppPresenceUI();
       this.initProfilesModal();
       this.initNudgeFeature();
+      this.initSystemNotifications();
       this.initNavigation();
       this.initSections();
       this.initModals();
@@ -367,13 +368,27 @@
         'recuerdo': '🌻'
       };
       const icon = typeIcons[act.type] || '✨';
-      const toastMsg = `${icon} <strong>${window.Utils.sanitizeHTML(act.userName || act.user)}</strong> ${window.Utils.sanitizeHTML(act.action)} ${window.Utils.sanitizeHTML(act.type)}: <em>"${window.Utils.sanitizeHTML(act.title)}"</em>`;
+      const senderName = act.userName || act.user || 'Tu amor';
+      const actionText = `${act.action} ${act.type}: "${act.title}"`;
+      const toastMsg = `${icon} <strong>${window.Utils.sanitizeHTML(senderName)}</strong> ${window.Utils.sanitizeHTML(act.action)} ${window.Utils.sanitizeHTML(act.type)}: <em>"${window.Utils.sanitizeHTML(act.title)}"</em>`;
       
       window.Utils.showToast(toastMsg, 'info');
       this.playNudgeSound();
       if (navigator.vibrate) {
         try { navigator.vibrate([150, 80, 150]); } catch (_) {}
       }
+
+      // 📱 Notificación nativa en la barra superior del sistema (WhatsApp / YouTube style)
+      const sectionMap = {
+        'película': './#peliculas',
+        'serie': './#series',
+        'canción': './#musica',
+        'nota': './#muro',
+        'sueño': './#suenos',
+        'recuerdo': './#recuerdos'
+      };
+      const targetUrl = sectionMap[act.type] || './';
+      this.sendSystemNotification(`${senderName} · ATRIA ✨`, `${icon} ${actionText}`, targetUrl);
     }
 
     // Generador de sonido celestial / campana de amor con Web Audio API
@@ -454,13 +469,17 @@
         try { navigator.vibrate([200, 100, 200, 100, 300]); } catch (_) {}
       }
 
-      // 3. Notificación flotante luminosa
+      // 3. Notificación nativa en la barra superior del sistema
+      const sender = nudge.fromNickname || nudge.from || 'Tu amor';
+      this.sendSystemNotification('🔔 ¡Toquecito de amor! 💕', `${sender} te acaba de mandar un toquecito en ATRIA ✨`, './#inicio');
+
+      // 4. Notificación flotante luminosa
       const floater = document.createElement('div');
       floater.className = 'nudge-floater';
-      floater.innerHTML = `<span>🌻</span><span>¡<strong>${window.Utils.sanitizeHTML(nudge.fromNickname || nudge.from)}</strong> te envió un toquecito de amor!</span><span>💖</span>`;
+      floater.innerHTML = `<span>🌻</span><span>¡<strong>${window.Utils.sanitizeHTML(sender)}</strong> te envió un toquecito de amor!</span><span>💖</span>`;
       document.body.appendChild(floater);
 
-      // 4. Lluvia de confeti
+      // 5. Lluvia de confeti
       if (window.confetti) {
         window.confetti({
           particleCount: 60,
@@ -471,6 +490,67 @@
       }
 
       setTimeout(() => floater.remove(), 6000);
+    }
+
+    // --- Sistema de Notificaciones del Sistema / Barra de Estado (WhatsApp / YouTube style) ---
+    initSystemNotifications() {
+      if (!('Notification' in window)) return;
+
+      // Solicitar permiso amigable al primer toque o interacción
+      const reqPerm = () => {
+        if (Notification.permission === 'default') {
+          try {
+            Notification.requestPermission().then(perm => {
+              if (perm === 'granted') {
+                console.log('Permiso de notificaciones del sistema concedido ✨');
+              }
+            });
+          } catch (_) {}
+        }
+      };
+
+      document.addEventListener('click', reqPerm, { once: true });
+      document.addEventListener('touchstart', reqPerm, { once: true });
+    }
+
+    async sendSystemNotification(title, body, url = './') {
+      if (!('Notification' in window)) return;
+
+      if (Notification.permission !== 'granted') {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') return;
+        } catch (_) {
+          return;
+        }
+      }
+
+      const options = {
+        body: body,
+        icon: 'assets/icon.jpg',
+        badge: 'assets/icon.jpg',
+        vibrate: [200, 100, 200, 100, 200],
+        tag: 'atria-notification-' + Date.now(),
+        renotify: true,
+        data: { url: url },
+        silent: false,
+        requireInteraction: false
+      };
+
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg && reg.showNotification) {
+            await reg.showNotification(title, options);
+            return;
+          }
+        }
+        new Notification(title, options);
+      } catch (err) {
+        try {
+          new Notification(title, options);
+        } catch (_) {}
+      }
     }
 
     // --- 3. Navegación y Enrutamiento Hash ---

@@ -357,7 +357,7 @@
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/vnd.github+json',
-            'User-Agent': 'Patico-App'
+            'User-Agent': 'ATRIA-App'
           },
           body: JSON.stringify(bodyData)
         });
@@ -431,14 +431,14 @@
       const bytes = new TextEncoder().encode(json);
       let binary = '';
       bytes.forEach(b => binary += String.fromCharCode(b));
-      return 'PATICO_SYNC::' + btoa(binary);
+      return 'ATRIA_SYNC::' + btoa(binary);
     }
 
     importTransferCode(codeString) {
       if (!codeString || typeof codeString !== 'string') return { success: false, error: 'Código vacío o inválido' };
       try {
         const clean = codeString.trim();
-        const rawB64 = clean.startsWith('PATICO_SYNC::') ? clean.slice(13) : clean;
+        const rawB64 = clean.startsWith('ATRIA_SYNC::') ? clean.slice(12) : (clean.startsWith('PATICO_SYNC::') ? clean.slice(13) : clean);
         
         const binary = atob(rawB64);
         const bytes = new Uint8Array(binary.length);

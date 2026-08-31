@@ -853,6 +853,13 @@
           <div id="mem-gallery-list" class="gallery-thumbs-grid"></div>
         </div>
 
+        <!-- Enlace a Carpeta de Google Drive (Opcional / Por recuerdo) -->
+        <div class="form-group">
+          <label for="mem-drive-url">📁 Enlace a Carpeta de Google Drive (Opcional)</label>
+          <input type="url" id="mem-drive-url" class="form-control" placeholder="https://drive.google.com/drive/folders/..." />
+          <small style="color: var(--color-text-secondary); font-size: 0.76rem;">Pega el enlace de la carpeta en Google Drive donde tengas guardadas las fotos de este recuerdo.</small>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
             <label for="mem-status">Estado</label>
@@ -1016,32 +1023,35 @@
   <div id="modal-gdrive" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-gdrive-title">
     <div class="modal-box modal-box-large">
       <div class="modal-header">
-        <h3 id="modal-gdrive-title">Google Drive para Recuerdos 📁🌻</h3>
+        <h3 id="modal-gdrive-title">Carpeta de Google Drive 📁🌻</h3>
         <button type="button" class="modal-close-btn" data-close-modal="modal-gdrive" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body-pad">
         <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.2rem; line-height: 1.5;">
-          Tus recuerdos se organizan automáticamente en carpetas dentro de Google Drive con el formato: 
-          <strong style="color: var(--color-sunflower-gold);">«Nombre del recuerdo + Fecha»</strong> (ejemplo: <em>"Show de F*cks News 17 de agosto"</em>). 
-          Dentro de cada carpeta estará la <strong>portada en primer lugar</strong> y luego todas las fotos de la galería.
+          Accede y gestiona la carpeta compartida en Google Drive donde guardan las fotos, videos y recuerdos de ambos.
         </p>
 
         <div class="glass-card" style="padding: 1.2rem; margin-bottom: 1.2rem; border-color: rgba(244, 197, 66, 0.35);">
-          <h4 style="color: var(--color-sunflower-gold); margin-bottom: 0.5rem; font-size: 1rem;">⚡ Conexión Automática con Google Apps Script</h4>
+          <h4 style="color: var(--color-sunflower-gold); margin-bottom: 0.5rem; font-size: 1.05rem;">📁 Enlace de la Carpeta Principal</h4>
           <p style="font-size: 0.83rem; color: var(--color-text-secondary); margin-bottom: 0.85rem;">
-            Pega la URL de tu script de Google Drive para subir directamente fotos en alta calidad:
+            Enlace de acceso a la carpeta en Google Drive:
           </p>
           <div class="form-group">
-            <label for="input-gdrive-script-url">URL de Webhook de Google Apps Script</label>
-            <input type="url" id="input-gdrive-script-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec" />
+            <label for="input-gdrive-folder-url">URL de la Carpeta Compartida</label>
+            <input type="url" id="input-gdrive-folder-url" class="form-control" value="https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing" placeholder="https://drive.google.com/drive/folders/..." />
           </div>
-          <button type="button" class="btn-primary" id="btn-save-gdrive-url" style="margin-top: 0.5rem;">
-            <span>Guardar conexión de Google Drive</span> 📁✨
-          </button>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.85rem;">
+            <a id="btn-open-gdrive-link" href="https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing" target="_blank" rel="noopener" class="btn-primary" style="padding: 0.45rem 1.1rem; font-size: 0.88rem;">
+              <span>Abrir Carpeta en Google Drive ↗</span>
+            </a>
+            <button type="button" class="btn-secondary" id="btn-save-gdrive-url" style="padding: 0.45rem 1.1rem; font-size: 0.88rem;">
+              <span>Guardar Enlace</span> 💾
+            </button>
+          </div>
         </div>
 
         <div class="glass-card" style="padding: 1rem; font-size: 0.82rem; color: var(--color-text-muted);">
-          <strong>💡 ¿Cómo funciona?</strong> Al crear o subir un recuerdo con portada y fotos, el sistema crea la carpeta en tu Drive y vincula los enlaces en el diario para que siempre estén disponibles.
+          <strong>💡 Tip:</strong> En cada recuerdo individual también puedes pegar el enlace a su subcarpeta específica para abrirla en un solo toque desde la línea de tiempo.
         </div>
       </div>
     </div>

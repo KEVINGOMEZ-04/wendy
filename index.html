@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#120E1C">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,7 +30,7 @@
       <!-- Emblema ATRIA -->
       <div class="lock-hero-emblem">
         <div class="lock-emblem-glow"></div>
-        <div class="lock-emblem-circle">🏛️</div>
+        <img src="assets/icon.jpg" alt="Logo ATRIA" class="lock-emblem-logo-img">
       </div>
       <h1 id="lock-title" class="lock-title" style="letter-spacing: 3px; font-family: 'Space Grotesk', sans-serif;">ATRIA</h1>
       <p class="lock-subtitle">La puerta de entrada a nuestro mundo compartido ✨</p>
@@ -588,7 +588,16 @@
             <input id="music-search-input" class="form-control" placeholder="Busca una canción o artista (ej. Yellow Coldplay, Morat)..." required>
             <button type="submit" class="btn-primary">Buscar</button>
           </form>
-          <button type="button" id="btn-new-song" class="btn-secondary">+ Recomendar canción</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <select id="filter-songs-rating" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">⭐ Todas las calificaciones</option>
+              <option value="5">⭐⭐⭐⭐⭐ (5 estrellas)</option>
+              <option value="4">⭐⭐⭐⭐ (4+ estrellas)</option>
+              <option value="3">⭐⭐⭐ (3+ estrellas)</option>
+              <option value="unrated">Sin calificar aún</option>
+            </select>
+            <button type="button" id="btn-new-song" class="btn-secondary">+ Recomendar canción</button>
+          </div>
         </div>
         <div id="music-search-results" class="media-results"></div>
         <div class="section-subtitle">Nuestras recomendaciones</div>
@@ -606,12 +615,19 @@
             <input id="movie-search-input" class="form-control" placeholder="Buscar película (ej. Elementos, Enredados)..." required>
             <button type="submit" class="btn-secondary">Buscar</button>
           </form>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <select id="filter-movies-status" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
               <option value="all">Todas las películas</option>
-              <option value="Me encantó">💖 Me encantó</option>
               <option value="Vista">🍿 Vistas</option>
               <option value="Por ver">🌱 Por ver</option>
+            </select>
+            <select id="filter-movies-rating" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">⭐ Calificación (Todas)</option>
+              <option value="10">⭐⭐⭐⭐⭐ (10 / 10)</option>
+              <option value="9">⭐ 9+ estrellas</option>
+              <option value="8">⭐ 8+ estrellas</option>
+              <option value="7">⭐ 7+ estrellas</option>
+              <option value="unrated">Sin calificar aún</option>
             </select>
           </div>
         </div>
@@ -630,12 +646,20 @@
             <input id="series-search-input" class="form-control" placeholder="Buscar serie o anime (ej. Arcane, Stranger Things, One Piece)..." required>
             <button type="submit" class="btn-secondary">Buscar</button>
           </form>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <select id="filter-series-status" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
               <option value="all">Todas las series</option>
               <option value="Viendo">🍿 Viendo actualmente</option>
               <option value="Completada">✨ Completadas</option>
               <option value="Por ver">🌱 Por ver</option>
+            </select>
+            <select id="filter-series-rating" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">⭐ Calificación (Todas)</option>
+              <option value="10">⭐⭐⭐⭐⭐ (10 / 10)</option>
+              <option value="9">⭐ 9+ estrellas</option>
+              <option value="8">⭐ 8+ estrellas</option>
+              <option value="7">⭐ 7+ estrellas</option>
+              <option value="unrated">Sin calificar aún</option>
             </select>
           </div>
         </div>
@@ -920,7 +944,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group"><label for="movie-priority">Prioridad (1 a 5) *</label><select id="movie-priority" class="form-control" required><option value="5">⭐⭐⭐⭐⭐ (5/5)</option><option value="4">⭐⭐⭐⭐ (4/5)</option><option value="3">⭐⭐⭐ (3/5)</option><option value="2">⭐⭐ (2/5)</option><option value="1">⭐ (1/5)</option></select></div>
-          <div class="form-group"><label for="movie-status">Etiqueta de estado *</label><select id="movie-status" class="form-control" required><option value="Por ver">🌱 Por ver</option><option value="Vista">🍿 Vista</option><option value="Me encantó">💖 Me encantó</option></select></div>
+          <div class="form-group"><label for="movie-status">Etiqueta de estado *</label><select id="movie-status" class="form-control" required><option value="Por ver">🌱 Por ver</option><option value="Vista">🍿 Vista</option></select></div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">

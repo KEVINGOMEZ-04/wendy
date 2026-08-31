@@ -2803,6 +2803,17 @@
         this.renderMemories();
         this.renderAnnualCalendar();
         window.Utils.showToast("¡Recuerdo guardado con éxito! 🌻", "success");
+
+        // Subida y creación automática de subcarpeta dentro de la carpeta establecida de Google Drive
+        if (window.GoogleDriveService) {
+          window.GoogleDriveService.uploadMemory(memData, coverVal, this.modalGalleryItems).then(driveRes => {
+            if (driveRes && driveRes.folderUrl) {
+              memData.driveFolderUrl = driveRes.folderUrl;
+              window.storage.saveMemory(memData);
+              this.renderMemories();
+            }
+          }).catch(err => console.warn("Google Drive auto-creation notice:", err));
+        }
       });
 
       document.getElementById("form-series")?.addEventListener("submit", (e) => {

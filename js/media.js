@@ -3,6 +3,65 @@
  */
 
 window.MediaService = {
+  /**
+   * Comprime una imagen (File, Blob o base64 DataURL) usando Canvas
+   * Retorna una promesa con la versión comprimida en DataURL JPEG optimizada.
+   */
+  compressImage(fileOrDataUrl, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
+    return new Promise((resolve) => {
+      if (!fileOrDataUrl) return resolve('');
+
+      const processImg = (src) => {
+        if (!src || typeof src !== 'string') return resolve('');
+        if (src.startsWith('http://') || src.startsWith('https://')) {
+          // Si es una URL externa, no intentar comprimir en canvas por CORS
+          return resolve(src);
+        }
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width / height > maxWidth / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          try {
+            const compressed = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressed);
+          } catch (e) {
+            resolve(src);
+          }
+        };
+        img.onerror = () => resolve(src);
+        img.src = src;
+      };
+
+      if (typeof fileOrDataUrl === 'string') {
+        processImg(fileOrDataUrl);
+      } else if (fileOrDataUrl instanceof Blob || fileOrDataUrl instanceof File) {
+        const reader = new FileReader();
+        reader.onload = (e) => processImg(e.target.result);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(fileOrDataUrl);
+      } else {
+        resolve('');
+      }
+    });
+  },
+
   spotifyUrl(title, artist) {
     return `https://open.spotify.com/search/${encodeURIComponent(`${title} ${artist}`)}`;
   },
@@ -505,6 +564,49 @@ window.MediaService = {
  * ========================================================
  */
 window.GoogleDriveService = {
+  // Estado del gestor de subidas en vivo
+  uploadState: {
+    isUploading: false,
+    activeJob: null,
+    queue: [],
+    completedJobs: [],
+    listeners: []
+  },
+
+  subscribe(listener) {
+    if (typeof listener === 'function') {
+      this.uploadState.listeners.push(listener);
+      listener(this.getState());
+    }
+  },
+
+  notify() {
+    const state = this.getState();
+    this.uploadState.listeners.forEach(fn => {
+      try { fn(state); } catch (e) { console.warn('Upload listener error:', e); }
+    });
+  },
+
+  getState() {
+    const { isUploading, activeJob, queue, completedJobs } = this.uploadState;
+    const totalFiles = (activeJob ? activeJob.files.length : 0) + queue.reduce((acc, j) => acc + j.files.length, 0);
+    const uploadedFiles = (activeJob ? activeJob.uploadedCount : 0);
+    const percent = activeJob ? Math.round((activeJob.uploadedCount / Math.max(1, activeJob.files.length)) * 100) : (queue.length > 0 ? 0 : 100);
+
+    return {
+      isUploading,
+      activeJob,
+      queue,
+      completedJobs,
+      totalPendingFiles: totalFiles,
+      uploadedFiles,
+      percent: isUploading ? percent : 100,
+      statusSummary: isUploading
+        ? (activeJob ? `Subiendo ${activeJob.title} (${activeJob.uploadedCount}/${activeJob.files.length})` : 'Subiendo medios...')
+        : (completedJobs.length > 0 ? 'Todo sincronizado con Google Drive ☁️' : 'Sin subidas activas')
+    };
+  },
+
   formatFolderName(title, dateStr) {
     const cleanTitle = (title || 'Recuerdo').replace(/[\\/:*?"<>|]/g, '').trim();
     let formattedDate = dateStr;
@@ -521,99 +623,153 @@ window.GoogleDriveService = {
   },
 
   /**
-   * Crea EXACTAMENTE 1 carpeta en Google Drive y sube todas las fotos juntas.
-   * Ejecuta la subida de forma asíncrona sin bloquear la interfaz.
+   * Encola la subida de un recuerdo a Google Drive
    */
   async uploadMemory(memoryData, coverFileOrUrl, galleryFilesOrUrls = []) {
     const folderName = this.formatFolderName(memoryData.title, memoryData.date);
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
+    const rawFiles = [];
 
-    const filesToUpload = [];
-
-    // 1. Portada
     if (coverFileOrUrl) {
-      filesToUpload.push({
+      rawFiles.push({
         name: '01_Portada',
         data: coverFileOrUrl,
-        isCover: true
+        isCover: true,
+        displayName: 'Foto de Portada'
       });
     }
 
-    // 2. Fotos y videos adicionales
     if (Array.isArray(galleryFilesOrUrls)) {
       galleryFilesOrUrls.forEach((item, idx) => {
         const fileNum = String(idx + 2).padStart(2, '0');
-        filesToUpload.push({
+        rawFiles.push({
           name: `${fileNum}_Foto_${idx + 1}`,
           data: item,
-          isCover: false
+          isCover: false,
+          displayName: `Foto Galería #${idx + 1}`
         });
       });
     }
 
-    if (filesToUpload.length === 0) {
-      return { success: true, folderName: folderName };
+    if (rawFiles.length === 0) {
+      return { success: true, folderName };
     }
 
-    try {
-      // Envío en 1 sola llamada para garantizar que se cree ÚNICAMENTE 1 carpeta con todas las fotos dentro
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'createFolderAndUpload',
-          parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
-          folderName: folderName,
-          files: filesToUpload
-        })
-      });
+    const job = {
+      id: 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      type: 'memory',
+      title: memoryData.title || 'Recuerdo',
+      folderName: folderName,
+      files: rawFiles,
+      uploadedCount: 0,
+      status: 'pending',
+      percent: 0,
+      createdAt: new Date().toISOString()
+    };
 
-      return {
-        success: true,
-        folderName: folderName,
-        filesCount: filesToUpload.length
-      };
-    } catch (e) {
-      console.warn('Google Drive upload notice:', e);
-      return {
-        success: false,
-        folderName: folderName,
-        error: e.message
-      };
-    }
+    this.uploadState.queue.push(job);
+    this.notify();
+    this.processQueue();
+
+    return { success: true, folderName, jobId: job.id };
   },
 
   /**
-   * Sube la foto de un sueño cumplido a la carpeta "Frasco de Sueños" en Google Drive
+   * Encola la subida de una foto de sueño a la carpeta Frasco de Sueños
    */
   async uploadDreamPhoto(dreamTitle, completedDate, photoData) {
     if (!photoData) return { success: false };
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
     const dateFormatted = this.formatFolderName('', completedDate || new Date().toISOString().split('T')[0]).trim();
     const cleanTitle = (dreamTitle || 'Sueño Cumplido').replace(/[\\/:*?"<>|]/g, '').trim();
     const fileName = `${cleanTitle} ${dateFormatted}.jpg`;
 
-    try {
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'createFolderAndUpload',
-          parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
-          folderName: 'Frasco de Sueños',
-          files: [{
-            name: fileName,
-            data: photoData
-          }]
-        })
-      });
+    const job = {
+      id: 'job_dream_' + Date.now(),
+      type: 'dream',
+      title: cleanTitle,
+      folderName: 'Frasco de Sueños',
+      files: [{
+        name: fileName,
+        data: photoData,
+        displayName: fileName
+      }],
+      uploadedCount: 0,
+      status: 'pending',
+      percent: 0,
+      createdAt: new Date().toISOString()
+    };
 
-      return { success: true, fileName: fileName };
-    } catch (e) {
-      console.warn('Error subiendo foto de sueño a Drive:', e);
-      return { success: false, error: e.message };
+    this.uploadState.queue.push(job);
+    this.notify();
+    this.processQueue();
+
+    return { success: true, fileName, jobId: job.id };
+  },
+
+  /**
+   * Procesador secuencial de la cola en segundo plano (chunked upload)
+   */
+  async processQueue() {
+    if (this.uploadState.isUploading) return;
+    if (this.uploadState.queue.length === 0) {
+      this.uploadState.isUploading = false;
+      this.uploadState.activeJob = null;
+      this.notify();
+      return;
+    }
+
+    this.uploadState.isUploading = true;
+    const currentJob = this.uploadState.queue.shift();
+    this.uploadState.activeJob = currentJob;
+    currentJob.status = 'uploading';
+    this.notify();
+
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwlvCsQoPOFWsE1JEirVv16Fy2IFwzsOAUxwJtFn-QRg9u4HWpv8JowqniTGZ72OY4o/exec';
+    const chunkSize = 2; // Sube de a 2 fotos por lote para evitar exceder el límite de Google Apps Script
+
+    try {
+      for (let i = 0; i < currentJob.files.length; i += chunkSize) {
+        const batch = currentJob.files.slice(i, i + chunkSize);
+        
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'createFolderAndUpload',
+            parentFolderId: '1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm',
+            folderName: currentJob.folderName,
+            files: batch
+          })
+        });
+
+        currentJob.uploadedCount += batch.length;
+        currentJob.percent = Math.round((currentJob.uploadedCount / currentJob.files.length) * 100);
+        this.notify();
+
+        // Breve pausa para no saturar la red
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      currentJob.status = 'completed';
+      currentJob.completedAt = new Date().toISOString();
+      this.uploadState.completedJobs.unshift(currentJob);
+      if (this.uploadState.completedJobs.length > 8) {
+        this.uploadState.completedJobs.pop();
+      }
+    } catch (err) {
+      console.warn('Error en subida de medios a Google Drive:', err);
+      currentJob.status = 'error';
+      currentJob.error = err.message;
+      this.uploadState.completedJobs.unshift(currentJob);
+    } finally {
+      this.uploadState.activeJob = null;
+      this.uploadState.isUploading = false;
+      this.notify();
+
+      // Procesar siguiente trabajo en la cola si existe
+      if (this.uploadState.queue.length > 0) {
+        setTimeout(() => this.processQueue(), 500);
+      }
     }
   }
 };

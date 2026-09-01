@@ -794,206 +794,220 @@ window.GoogleDriveService = {
         setTimeout(() => this.processQueue(), 500);
       }
     }
+};
+
+/**
+ * =========================================================================
+ * SERVICIO DE GRABACIÓN DE NOTAS DE VOZ NATIVAS 🎙️
+ * =========================================================================
+ */
+window.VoiceRecorder = {
+  mediaRecorder: null,
+  audioChunks: [],
+  stream: null,
+  startTime: 0,
+  timerInterval: null,
+  isRecording: false,
+
+  isSupported() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   },
 
-  /**
-   * =========================================================================
-   * SERVICIO DE GRABACIÓN DE NOTAS DE VOZ NATIVAS 🎙️
-   * =========================================================================
-   */
-  VoiceRecorder: {
-    mediaRecorder: null,
-    audioChunks: [],
-    stream: null,
-    startTime: 0,
-    timerInterval: null,
-    isRecording: false,
+  async startRecording(onTimerTick = null) {
+    this.cleanup();
+    this.audioChunks = [];
 
-    isSupported() {
-      return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-    },
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Tu navegador o dispositivo no soporta grabación directa de audio.');
+    }
 
-    async startRecording(onTimerTick = null) {
-      if (!this.isSupported()) {
-        throw new Error('Tu navegador o dispositivo no soporta grabación directa de audio.');
-      }
-
-      this.audioChunks = [];
-      try {
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        let mimeType = 'audio/webm;codecs=opus';
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      let mimeType = 'audio/webm;codecs=opus';
+      if (typeof MediaRecorder !== 'undefined') {
         if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : (MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : '');
+          mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : (MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''));
         }
-
-        const options = mimeType ? { mimeType } : {};
-        this.mediaRecorder = new MediaRecorder(this.stream, options);
-
-        this.mediaRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            this.audioChunks.push(event.data);
-          }
-        };
-
-        this.mediaRecorder.start(250); // trozos cada 250ms
-        this.isRecording = true;
-        this.startTime = Date.now();
-
-        if (onTimerTick) {
-          this.timerInterval = setInterval(() => {
-            const elapsedMs = Date.now() - this.startTime;
-            const totalSec = Math.floor(elapsedMs / 1000);
-            const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
-            const secs = String(totalSec % 60).padStart(2, '0');
-            onTimerTick(`${mins}:${secs}`, totalSec);
-          }, 500);
-        }
-
-        return true;
-      } catch (err) {
-        this.cleanup();
-        console.error('Error al iniciar grabación de voz:', err);
-        throw err;
       }
-    },
 
-    stopRecording() {
-      return new Promise((resolve, reject) => {
-        if (!this.mediaRecorder || !this.isRecording) {
-          this.cleanup();
-          resolve(null);
-          return;
+      const options = mimeType ? { mimeType } : {};
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.audioChunks.push(event.data);
         }
+      };
 
-        const durationSec = Math.max(1, Math.round((Date.now() - this.startTime) / 1000));
+      this.mediaRecorder.start(250); // trozos cada 250ms
+      this.isRecording = true;
+      this.startTime = Date.now();
 
-        this.mediaRecorder.onstop = () => {
-          try {
-            const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
-            const audioBlob = new Blob(this.audioChunks, { type: mimeType });
-            
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const dataUrl = reader.result;
-              this.cleanup();
-              resolve({
-                blob: audioBlob,
-                dataUrl: dataUrl,
-                durationSec: durationSec
-              });
-            };
-            reader.onerror = (e) => {
-              this.cleanup();
-              reject(e);
-            };
-            reader.readAsDataURL(audioBlob);
-          } catch (e) {
+      if (onTimerTick) {
+        this.timerInterval = setInterval(() => {
+          const elapsedMs = Date.now() - this.startTime;
+          const totalSec = Math.floor(elapsedMs / 1000);
+          const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+          const secs = String(totalSec % 60).padStart(2, '0');
+          onTimerTick(`${mins}:${secs}`, totalSec);
+        }, 500);
+      }
+
+      return true;
+    } catch (err) {
+      this.cleanup();
+      console.error('Error al iniciar grabación de voz:', err);
+      throw err;
+    }
+  },
+
+  stopRecording() {
+    return new Promise((resolve, reject) => {
+      if (!this.mediaRecorder || !this.isRecording) {
+        this.cleanup();
+        resolve(null);
+        return;
+      }
+
+      const durationSec = Math.max(1, Math.round((Date.now() - this.startTime) / 1000));
+
+      this.mediaRecorder.onstop = () => {
+        try {
+          const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+          const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+          
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result;
+            this.cleanup();
+            resolve({
+              blob: audioBlob,
+              dataUrl: dataUrl,
+              durationSec: durationSec
+            });
+          };
+          reader.onerror = (e) => {
             this.cleanup();
             reject(e);
-          }
-        };
+          };
+          reader.readAsDataURL(audioBlob);
+        } catch (e) {
+          this.cleanup();
+          reject(e);
+        }
+      };
 
+      try {
         this.mediaRecorder.stop();
-      });
-    },
-
-    cancelRecording() {
-      if (this.mediaRecorder && this.isRecording) {
-        this.mediaRecorder.onstop = null;
-        try { this.mediaRecorder.stop(); } catch (_) {}
+      } catch (_) {
+        this.cleanup();
+        resolve(null);
       }
-      this.cleanup();
-    },
-
-    cleanup() {
-      this.isRecording = false;
-      if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
-      }
-      if (this.stream) {
-        this.stream.getTracks().forEach(track => track.stop());
-        this.stream = null;
-      }
-      this.mediaRecorder = null;
-      this.audioChunks = [];
-    }
+    });
   },
 
-  /**
-   * =========================================================================
-   * BANCO DE PREGUNTAS DIARIAS DE PAREJA 💌✨
-   * =========================================================================
-   */
-  DailyQuestions: {
-    BANK: [
-      "¿Cuál fue el momento exacto en el que sentiste que te habías enamorado de mí?",
-      "¿Qué es lo que más te hace sonreír cuando te acuerdas de mí en un día cualquiera?",
-      "Si pudiéramos teletransportarnos a cualquier lugar del mundo ahora mismo, ¿a dónde iríamos?",
-      "¿Cuál es tu recuerdo favorito de cuando empezamos a salir?",
-      "¿Qué comida o postre me prepararías con mucho amor si tuvieras todo el día libre?",
-      "¿Cuál es esa pequeña manía o gesto mío que te parece súper tierno?",
-      "¿Qué canción sientes que cuenta mejor nuestra historia de amor?",
-      "Si tuviéramos un día entero sin celulares ni responsabilidades, ¿cómo sería nuestro día perfecto?",
-      "¿Cuál ha sido la cita más divertida o inesperada que hemos tenido?",
-      "¿Qué es lo que más admiras de mi personalidad?",
-      "¿En qué película o serie sientes que nos parecemos aunque sea un poquito?",
-      "¿Cuál es el abrazo o beso nuestro que más grabado tienes en la mente?",
-      "Si pudieras pedir un deseo para nuestro futuro dentro de 5 años, ¿cuál sería?",
-      "¿Qué detalle que he tenido contigo te ha llegado más al corazón?",
-      "¿Cuál es nuestro chiste o momento de risa incontrolable que nunca olvidarás?",
-      "¿Qué apodo o forma cariñosa de llamarte es tu favorita?",
-      "¿Qué es lo primero que pensaste cuando me viste por primera vez?",
-      "Si tuviéramos que elegir una mascota imaginaria juntos, ¿cuál sería?",
-      "¿Qué viaje o escapada juntos sueñas con hacer muy pronto?",
-      "¿Qué es algo que aprendiste o mejoraste desde que estamos juntos?",
-      "¿Cuál es la foto nuestra que más te encanta y por qué?",
-      "¿Cómo describirías nuestro amor en tres palabras?",
-      "¿Cuál es tu plan favorito para un día de lluvia y frío juntos?",
-      "¿Qué es lo que más te gusta de cuando nos quedamos hablando hasta tarde?",
-      "Si creáramos un restaurante juntos, ¿cómo se llamaría y qué serviríamos?",
-      "¿Cuál fue el primer mensaje que te hizo sentir mariposas en el estómago?",
-      "¿Qué es lo que más extrañas de mí cuando pasamos unos días sin vernos?",
-      "¿Qué regalo o sorpresa mía te ha hecho más ilusión?",
-      "Si escribiéramos un libro de nuestra historia, ¿cuál sería el título?",
-      "¿Cuál es ese lugar secreto o rincón donde sientes que el tiempo se detiene con nosotros?",
-      "¿Qué canción te gustaría que bailemos abrazados en la sala?",
-      "¿Qué prenda o atuendo mío te parece que me queda mejor?",
-      "¿Cuál ha sido nuestro mayor logro como equipo hasta ahora?",
-      "¿Qué es algo nuevo que te gustaría que intentemos juntos este mes?",
-      "¿Qué superpoder crees que tiene nuestra relación?",
-      "Si tuvieras que describir mi abrazo, ¿cómo se siente?",
-      "¿Qué aroma o perfume te recuerda de inmediato a mí?",
-      "¿Cuál ha sido la conversación más profunda o bonita que hemos tenido?",
-      "¿Qué juego, película o serie te mueres de ganas de ver o jugar conmigo?",
-      "¿Qué es lo que más agradeces de tenernos el uno al otro hoy?",
-      "¿Cuál es ese sueño loco que sabes que cumpliremos juntos?",
-      "Si pudieras revivir un solo día de nuestra historia exactamente igual, ¿cuál sería?",
-      "¿Qué es lo que más te calma o te da paz cuando estás conmigo?",
-      "¿Cuál es la comida que siempre nos une o nos alegra el día?",
-      "¿Qué promesa para nosotros quieres que recordemos siempre?",
-      "¿Cómo supiste que éramos el uno para el otro?",
-      "¿Qué es lo que más te emociona de nuestro futuro?",
-      "Si tuviéramos una casa frente al mar o en la montaña, ¿cómo la decoraríamos?",
-      "¿Qué es lo más lindo que te he dicho?",
-      "¿Por qué soy tu persona favorita en todo el universo?"
-    ],
-
-    getQuestionForDate(dateStr) {
-      if (!dateStr) {
-        dateStr = new Date().toISOString().split('T')[0];
-      }
-      // Hash determinista a partir de la fecha (YYYY-MM-DD)
-      let hash = 0;
-      for (let i = 0; i < dateStr.length; i++) {
-        hash = (hash << 5) - hash + dateStr.charCodeAt(i);
-        hash |= 0;
-      }
-      const index = Math.abs(hash) % this.BANK.length;
-      return this.BANK[index];
+  cancelRecording() {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.onstop = null;
+      try { this.mediaRecorder.stop(); } catch (_) {}
     }
+    this.cleanup();
+  },
+
+  cleanup() {
+    this.isRecording = false;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.stream) {
+      try {
+        this.stream.getTracks().forEach(track => track.stop());
+      } catch (_) {}
+      this.stream = null;
+    }
+    this.mediaRecorder = null;
+    this.audioChunks = [];
   }
 };
+
+window.MediaService.VoiceRecorder = window.VoiceRecorder;
+
+/**
+ * =========================================================================
+ * BANCO DE PREGUNTAS DIARIAS DE PAREJA 💌✨
+ * =========================================================================
+ */
+window.DailyQuestions = {
+  BANK: [
+    "¿Cuál fue el momento exacto en el que sentiste que te habías enamorado de mí?",
+    "¿Qué es lo que más te hace sonreír cuando te acuerdas de mí en un día cualquiera?",
+    "Si pudiéramos teletransportarnos a cualquier lugar del mundo ahora mismo, ¿a dónde iríamos?",
+    "¿Cuál es tu recuerdo favorito de cuando empezamos a salir?",
+    "¿Qué comida o postre me prepararías con mucho amor si tuvieras todo el día libre?",
+    "¿Cuál es esa pequeña manía o gesto mío que te parece súper tierno?",
+    "¿Qué canción sientes que cuenta mejor nuestra historia de amor?",
+    "Si tuviéramos un día entero sin celulares ni responsabilidades, ¿cómo sería nuestro día perfecto?",
+    "¿Cuál ha sido la cita más divertida o inesperada que hemos tenido?",
+    "¿Qué es lo que más admiras de mi personalidad?",
+    "¿En qué película o serie sientes que nos parecemos aunque sea un poquito?",
+    "¿Cuál es el abrazo o beso nuestro que más grabado tienes en la mente?",
+    "Si pudieras pedir un deseo para nuestro futuro dentro de 5 años, ¿cuál sería?",
+    "¿Qué detalle que he tenido contigo te ha llegado más al corazón?",
+    "¿Cuál es nuestro chiste o momento de risa incontrolable que nunca olvidarás?",
+    "¿Qué apodo o forma cariñosa de llamarte es tu favorita?",
+    "¿Qué es lo primero que pensaste cuando me viste por primera vez?",
+    "Si tuviéramos que elegir una mascota imaginaria juntos, ¿cuál sería?",
+    "¿Qué viaje o escapada juntos sueñas con hacer muy pronto?",
+    "¿Qué es algo que aprendiste o mejoraste desde que estamos juntos?",
+    "¿Cuál es la foto nuestra que más te encanta y por qué?",
+    "¿Cómo describirías nuestro amor en tres palabras?",
+    "¿Cuál es tu plan favorito para un día de lluvia y frío juntos?",
+    "¿Qué es lo que más te gusta de cuando nos quedamos hablando hasta tarde?",
+    "Si creáramos un restaurante juntos, ¿cómo se llamaría y qué serviríamos?",
+    "¿Cuál fue el primer mensaje que te hizo sentir mariposas en el estómago?",
+    "¿Qué es lo que más extrañas de mí cuando pasamos unos días sin vernos?",
+    "¿Qué regalo o sorpresa mía te ha hecho más ilusión?",
+    "Si escribiéramos un libro de nuestra historia, ¿cuál sería el título?",
+    "¿Cuál es ese lugar secreto o rincón donde sientes que el tiempo se detiene con nosotros?",
+    "¿Qué canción te gustaría que bailemos abrazados en la sala?",
+    "¿Qué prenda o atuendo mío te parece que me queda mejor?",
+    "¿Cuál ha sido nuestro mayor logro como equipo hasta ahora?",
+    "¿Qué es algo nuevo que te gustaría que intentemos juntos este mes?",
+    "¿Qué superpoder crees que tiene nuestra relación?",
+    "Si tuvieras que describir mi abrazo, ¿cómo se siente?",
+    "¿Qué aroma o perfume te recuerda de inmediato a mí?",
+    "¿Cuál ha sido la conversación más profunda o bonita que hemos tenido?",
+    "¿Qué juego, película o serie te mueres de ganas de ver o jugar conmigo?",
+    "¿Qué es lo que más agradeces de tenernos el uno al otro hoy?",
+    "¿Cuál es ese sueño loco que sabes que cumpliremos juntos?",
+    "Si pudieras revivir un solo día de nuestra historia exactamente igual, ¿cuál sería?",
+    "¿Qué es lo que más te calma o te da paz cuando estás conmigo?",
+    "¿Cuál es la comida que siempre nos une o nos alegra el día?",
+    "¿Qué promesa para nosotros quieres que recordemos siempre?",
+    "¿Cómo supiste que éramos el uno para el otro?",
+    "¿Qué es lo que más te emociona de nuestro futuro?",
+    "Si tuviéramos una casa frente al mar o en la montaña, ¿cómo la decoraríamos?",
+    "¿Qué es lo más lindo que te he dicho?",
+    "¿Por qué soy tu persona favorita en todo el universo?"
+  ],
+
+  getQuestionForDate(dateStr) {
+    if (!dateStr) {
+      dateStr = new Date().toISOString().split('T')[0];
+    }
+    // Hash determinista a partir de la fecha (YYYY-MM-DD)
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = (hash << 5) - hash + dateStr.charCodeAt(i);
+      hash |= 0;
+    }
+    const index = Math.abs(hash) % this.BANK.length;
+    return this.BANK[index];
+  }
+};
+
+window.MediaService.DailyQuestions = window.DailyQuestions;
 
 

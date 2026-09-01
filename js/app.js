@@ -587,6 +587,14 @@
       if (window.Capacitor?.Plugins?.LocalNotifications) {
         try {
           const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+          
+          try {
+            const check = await LocalNotifications.checkPermissions();
+            if (check.display !== 'granted') {
+              await LocalNotifications.requestPermissions();
+            }
+          } catch (_) {}
+
           try {
             await LocalNotifications.createChannel({
               id: 'atria_channel',
@@ -602,11 +610,10 @@
           await LocalNotifications.schedule({
             notifications: [
               {
-                id: Math.floor(Math.random() * 1000000) + 1,
+                id: Math.floor(Math.random() * 900000) + 100000,
                 title: title,
                 body: body,
                 channelId: 'atria_channel',
-                schedule: { at: new Date(Date.now() + 150) },
                 sound: 'default',
                 actionTypeId: '',
                 extra: { url: url }

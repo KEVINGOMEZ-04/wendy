@@ -170,6 +170,11 @@
           <p id="daily-tip-text"></p>
         </div>
 
+        <!-- WIDGET INTERACTIVO DE LA PREGUNTA DIARIA 💌✨ -->
+        <div class="glass-card daily-prompt-container" id="daily-prompt-card">
+          <!-- Se renderiza dinámicamente desde js/app.js -->
+        </div>
+
         <!-- =========================================
              UNIVERSO ATRIA ✨ — ESTADÍSTICAS DEL CHAT
              ========================================= -->
@@ -572,6 +577,26 @@
           </div>
         </div>
 
+        <!-- CÁPSULAS DEL TIEMPO ⏳💎 -->
+        <div class="glass-card time-capsules-section-card" id="time-capsules-widget" style="margin-top: 1.5rem;">
+          <div class="time-capsules-header-bar">
+            <div class="time-capsules-title-group">
+              <span class="capsule-header-icon" style="font-size: 1.6rem;">⏳</span>
+              <div>
+                <h3 class="capsule-heading" style="font-size: 1.15rem; color: var(--color-sunflower-gold); margin: 0;">Cápsulas del Tiempo</h3>
+                <p class="capsule-subtext" style="font-size: 0.82rem; color: var(--color-text-secondary); margin: 0.2rem 0 0;">Mensajes y audios sellados para abrir en fechas futuras especiales:</p>
+              </div>
+            </div>
+            <button type="button" class="btn-primary" id="btn-new-capsule" style="padding: 0.45rem 1rem; font-size: 0.85rem; white-space: nowrap;">
+              <span>+ Sellar Cápsula ⏳✨</span>
+            </button>
+          </div>
+
+          <div class="time-capsules-grid" id="time-capsules-grid" style="margin-top: 1rem;">
+            <!-- Renderizado dinámico de cápsulas -->
+          </div>
+        </div>
+
         <div class="trail-controls" style="margin-top: 2rem;">
           <button type="button" class="btn-primary" id="btn-new-memory"><span>+ Nuevo recuerdo</span> 🌻</button>
           <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -961,6 +986,31 @@
           <input type="hidden" id="mem-song-audio" />
         </div>
 
+        <!-- Nota de Voz Grabada / Audio de Recuerdos -->
+        <div class="form-group">
+          <label>Nota de Voz / Audio de Recuerdos 🎙️ (Opcional)</label>
+          <div class="voice-recorder-widget" id="mem-voice-recorder">
+            <input type="hidden" id="mem-voice-url" />
+            <input type="hidden" id="mem-voice-duration" />
+            <div class="voice-recorder-controls" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-voice-record" id="btn-mem-record" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(244, 197, 66, 0.15); border: 1px solid rgba(244, 197, 66, 0.4); color: var(--color-sunflower-gold); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                <span class="mic-icon">🎙️</span>
+                <span class="record-label">Grabar nota de voz</span>
+              </button>
+              <button type="button" class="btn-voice-stop" id="btn-mem-stop" style="display: none; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.2); border: 1px solid #FF5252; color: #FF5252; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                <span class="recording-pulse-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FF5252; animation: gentlePulse 1s infinite;"></span>
+                <span>Detener (<span class="record-timer" id="mem-record-timer">00:00</span>)</span>
+              </button>
+              <button type="button" class="btn-voice-delete" id="btn-mem-delete-audio" style="display: none; padding: 0.4rem 0.7rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.15); border: 1px solid rgba(255, 82, 82, 0.3); color: #FF5252; font-size: 0.82rem; cursor: pointer;" title="Eliminar audio grabado">
+                🗑️ Eliminar audio
+              </button>
+            </div>
+            <div class="voice-audio-preview" id="mem-voice-preview" style="display: none; margin-top: 0.6rem;">
+              <audio id="mem-voice-audio-player" controls style="width: 100%; height: 38px; border-radius: 8px;"></audio>
+            </div>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
             <label for="mem-status">Estado</label>
@@ -1221,6 +1271,33 @@
           <input type="file" id="note-photo-file" accept="image/*" class="form-control" style="padding: 0.3rem; font-size: 0.78rem;" />
           <div id="note-photo-preview-wrap" style="display: none; margin-top: 0.5rem; text-align: center;">
             <img id="note-photo-preview-img" src="" alt="Vista previa polaroid" style="max-height: 120px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" />
+          </div>
+        </div>
+
+        <!-- Nota de Voz para el Muro -->
+        <div class="glass-card" style="padding: 0.85rem; margin-bottom: 1rem; border-color: rgba(255, 255, 255, 0.1);">
+          <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-sunflower-gold); margin-bottom: 0.35rem; display: block;">
+            🎙️ Nota de Voz / Dedicatoria de Audio (Opcional)
+          </label>
+          <div class="voice-recorder-widget" id="note-voice-recorder">
+            <input type="hidden" id="note-voice-url" />
+            <input type="hidden" id="note-voice-duration" />
+            <div class="voice-recorder-controls" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-voice-record" id="btn-note-record" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(244, 197, 66, 0.15); border: 1px solid rgba(244, 197, 66, 0.4); color: var(--color-sunflower-gold); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                <span class="mic-icon">🎙️</span>
+                <span class="record-label">Grabar nota de voz</span>
+              </button>
+              <button type="button" class="btn-voice-stop" id="btn-note-stop" style="display: none; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.2); border: 1px solid #FF5252; color: #FF5252; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                <span class="recording-pulse-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FF5252; animation: gentlePulse 1s infinite;"></span>
+                <span>Detener (<span class="record-timer" id="note-record-timer">00:00</span>)</span>
+              </button>
+              <button type="button" class="btn-voice-delete" id="btn-note-delete-audio" style="display: none; padding: 0.4rem 0.7rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.15); border: 1px solid rgba(255, 82, 82, 0.3); color: #FF5252; font-size: 0.82rem; cursor: pointer;" title="Eliminar audio grabado">
+                🗑️ Eliminar audio
+              </button>
+            </div>
+            <div class="voice-audio-preview" id="note-voice-preview" style="display: none; margin-top: 0.6rem;">
+              <audio id="note-voice-audio-player" controls style="width: 100%; height: 38px; border-radius: 8px;"></audio>
+            </div>
           </div>
         </div>
 
@@ -1573,6 +1650,140 @@
       <div class="form-actions" style="justify-content: space-between; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; gap: 0.75rem;">
         <a href="https://drive.google.com/drive/folders/1qXPifAHV5fTVX7HdI1ab6UzAjDTpiwjm?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 0.82rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">📁 Abrir carpeta en Google Drive</a>
         <button type="button" class="btn-primary" data-close-modal="modal-upload-monitor">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORIAL DE PREGUNTAS DIARIAS 💌📖 -->
+  <div id="modal-daily-prompts-history" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-daily-prompts-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.5rem;">📖</span>
+          <div>
+            <h3 id="modal-daily-prompts-title" style="margin: 0; line-height: 1.2;">Álbum de Preguntas Diarias</h3>
+            <span style="font-size: 0.82rem; color: var(--color-text-secondary);">Respuestas y confesiones compartidas</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-daily-prompts-history" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-pad" style="max-height: 65vh; overflow-y: auto; padding: 1rem 0;">
+        <div id="daily-prompts-history-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top: 1rem;">
+        <button type="button" class="btn-primary" data-close-modal="modal-daily-prompts-history">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CREAR / SELLAR CÁPSULA DEL TIEMPO ⏳💎 -->
+  <div id="modal-time-capsule" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-capsule-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.5rem;">⏳</span>
+          <div>
+            <h3 id="modal-capsule-title" style="margin: 0; line-height: 1.2;">Sellar Cápsula del Tiempo</h3>
+            <span style="font-size: 0.82rem; color: var(--color-text-secondary);">Un cofre secreto que solo se abrirá en el futuro</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-time-capsule" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="form-time-capsule">
+        <input type="hidden" id="capsule-id" />
+        
+        <div class="form-group">
+          <label for="capsule-title">Título o Motivo de la Cápsula *</label>
+          <input type="text" id="capsule-title" class="form-control" placeholder="Ej. Para abrir en nuestro próximo aniversario ✨" required />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="capsule-unlock-date">Fecha de Apertura (Desbloqueo) *</label>
+            <input type="date" id="capsule-unlock-date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="capsule-theme">Estilo del Cofre</label>
+            <select id="capsule-theme" class="form-control">
+              <option value="gold">✨ Relicario de Oro</option>
+              <option value="galaxy">🌌 Cristal Cósmico</option>
+              <option value="rose">💖 Cofre Romántico</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="capsule-message">Carta / Mensaje Secreto *</label>
+          <textarea id="capsule-message" class="form-control" rows="4" placeholder="Escribe lo que sientes hoy, tus promesas, anhelos o lo que quieres que recordemos cuando abramos este cofre..." required></textarea>
+        </div>
+
+        <!-- Foto Opcional -->
+        <div class="glass-card" style="padding: 0.85rem; margin-bottom: 1rem; border-color: rgba(244, 197, 66, 0.3);">
+          <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-sunflower-gold); margin-bottom: 0.35rem; display: block;">
+            📸 Foto o Recuerdo Oculto (Opcional)
+          </label>
+          <input type="url" id="capsule-photo-url" class="form-control" placeholder="Enlace de foto (https://...)" style="margin-bottom: 0.4rem;" />
+          <input type="file" id="capsule-photo-file" accept="image/*" class="form-control" style="padding: 0.3rem; font-size: 0.78rem;" />
+          <div id="capsule-photo-preview-wrap" style="display: none; margin-top: 0.5rem; text-align: center;">
+            <img id="capsule-photo-preview-img" src="" alt="Vista previa foto" style="max-height: 120px; border-radius: 8px;" />
+          </div>
+        </div>
+
+        <!-- Grabación de Audio Opcional -->
+        <div class="glass-card" style="padding: 0.85rem; margin-bottom: 1rem; border-color: rgba(224, 64, 251, 0.3);">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #F8BBD0; margin-bottom: 0.35rem; display: block;">
+            🎙️ Mensaje de Voz para el Futuro (Opcional)
+          </label>
+          <div class="voice-recorder-widget" id="capsule-voice-recorder">
+            <input type="hidden" id="capsule-voice-url" />
+            <input type="hidden" id="capsule-voice-duration" />
+            <div class="voice-recorder-controls" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-voice-record" id="btn-capsule-record" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(224, 64, 251, 0.15); border: 1px solid rgba(224, 64, 251, 0.4); color: #E040FB; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                <span class="mic-icon">🎙️</span>
+                <span class="record-label">Grabar audio futuro</span>
+              </button>
+              <button type="button" class="btn-voice-stop" id="btn-capsule-stop" style="display: none; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.2); border: 1px solid #FF5252; color: #FF5252; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                <span class="recording-pulse-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FF5252; animation: gentlePulse 1s infinite;"></span>
+                <span>Detener (<span class="record-timer" id="capsule-record-timer">00:00</span>)</span>
+              </button>
+              <button type="button" class="btn-voice-delete" id="btn-capsule-delete-audio" style="display: none; padding: 0.4rem 0.7rem; border-radius: var(--radius-full); background: rgba(255, 82, 82, 0.15); border: 1px solid rgba(255, 82, 82, 0.3); color: #FF5252; font-size: 0.82rem; cursor: pointer;" title="Eliminar audio grabado">
+                🗑️ Eliminar audio
+              </button>
+            </div>
+            <div class="voice-audio-preview" id="capsule-voice-preview" style="display: none; margin-top: 0.6rem;">
+              <audio id="capsule-voice-audio-player" controls style="width: 100%; height: 38px; border-radius: 8px;"></audio>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" data-close-modal="modal-time-capsule">Cancelar</button>
+          <button type="submit" class="btn-primary">Sellar Cápsula 🔒✨</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VISOR DE CÁPSULA DESBLOQUEADA 💎🔓 -->
+  <div id="modal-capsule-viewer" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-capsule-viewer-title">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.6rem;">🔓</span>
+          <div>
+            <h3 id="modal-capsule-viewer-title" style="margin: 0; line-height: 1.2; color: var(--color-sunflower-gold);">Cápsula Desbloqueada</h3>
+            <span id="modal-capsule-viewer-date" style="font-size: 0.82rem; color: var(--color-text-secondary);">Sellada con amor</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-capsule-viewer" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-pad" id="modal-capsule-viewer-body" style="padding: 1rem 0;">
+        <!-- Se llena dinámicamente con la carta, fotos y reproductor de voz -->
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-primary" data-close-modal="modal-capsule-viewer">Cerrar Cofre ✨</button>
       </div>
     </div>
   </div>

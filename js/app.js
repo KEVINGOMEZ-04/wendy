@@ -1962,11 +1962,40 @@
     renderMovies() {
       const container = document.getElementById("movies-grid-list");
       const statusFilter = document.getElementById("filter-movies-status")?.value || "all";
+      const genreFilter = document.getElementById("filter-movies-genre")?.value || "all";
       const ratingFilter = document.getElementById("filter-movies-rating")?.value || "all";
       if (!container) return;
 
-      let list = window.storage.getMovies();
+      const allMovies = window.storage.getMovies();
       const currentUser = window.storage.getCurrentUser();
+
+      // Poblar dinámicamente las opciones del selector de género si existe
+      const genreSelect = document.getElementById("filter-movies-genre");
+      if (genreSelect) {
+        const uniqueGenres = new Set();
+        allMovies.forEach(m => {
+          if (m.genre) {
+            m.genre.split(',').forEach(g => {
+              const clean = g.trim();
+              if (clean) uniqueGenres.add(clean);
+            });
+          }
+        });
+        const currentSelected = genreSelect.value;
+        let optionsHtml = `<option value="all">🎭 Todos los géneros (${uniqueGenres.size})</option>`;
+        Array.from(uniqueGenres).sort().forEach(g => {
+          const isSel = currentSelected === g ? 'selected' : '';
+          optionsHtml += `<option value="${window.Utils.sanitizeHTML(g)}" ${isSel}>${window.Utils.sanitizeHTML(g)}</option>`;
+        });
+        genreSelect.innerHTML = optionsHtml;
+      }
+
+      let list = [...allMovies];
+
+      // Filtro por Género
+      if (genreFilter !== "all") {
+        list = list.filter(m => (m.genre || '').toLowerCase().includes(genreFilter.toLowerCase()));
+      }
 
       // Filtro por Estado (Por ver / Vista)
       if (statusFilter !== "all") {
@@ -2049,20 +2078,15 @@
                 ${window.Utils.sanitizeHTML(m.title)} <span style="font-size: 0.95rem; color: var(--color-sunflower-gold); font-family: var(--font-numbers);">(${m.year})</span>
               </h3>
 
+              <div class="movie-meta-tags" style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                ${m.genre ? `<span class="movie-meta-pill movie-genre-pill" title="Género de la película">🎭 ${window.Utils.sanitizeHTML(m.genre)}</span>` : ''}
+                ${m.imdbRating ? `<span class="movie-meta-pill">⭐ TMDb: <strong>${window.Utils.sanitizeHTML(m.imdbRating)}</strong></span>` : ''}
+                ${platformsList.map(plat => `<span class="movie-meta-pill">📺 ${window.Utils.sanitizeHTML(plat)}</span>`).join('')}
+              </div>
+
               ${m.synopsis ? `<p class="movie-synopsis">${window.Utils.sanitizeHTML(m.synopsis)}</p>` : ''}
               
-              ${platformsList.length ? `
-                <div class="movie-platforms">
-                  ${platformsList.map(plat => `<span class="platform-pill">📺 ${window.Utils.sanitizeHTML(plat)}</span>`).join('')}
-                </div>
-              ` : ''}
-
-              ${m.imdbRating ? `
-                <p class="movie-meta" style="margin-top: 0.5rem;">
-                  ⭐ IMDb: <strong>${window.Utils.sanitizeHTML(m.imdbRating)}</strong>/10 
-                  ${m.imdbUrl ? `· <a href="${window.Utils.sanitizeHTML(m.imdbUrl)}" target="_blank" rel="noopener">Ver ficha en IMDb</a>` : ''}
-                </p>
-              ` : (m.imdbUrl ? `<p class="movie-meta"><a href="${window.Utils.sanitizeHTML(m.imdbUrl)}" target="_blank" rel="noopener">⭐ Buscar en IMDb</a></p>` : '')}
+              ${m.imdbUrl ? `<p class="movie-meta" style="margin-top: 0.4rem;"><a href="${window.Utils.sanitizeHTML(m.imdbUrl)}" target="_blank" rel="noopener">⭐ Ver ficha oficial en IMDb</a></p>` : ''}
             </div>
 
             <div style="margin-top: 0.85rem;">
@@ -2224,6 +2248,7 @@
       });
 
       document.getElementById("filter-movies-status")?.addEventListener("change", () => this.renderMovies());
+      document.getElementById("filter-movies-genre")?.addEventListener("change", () => this.renderMovies());
       document.getElementById("filter-movies-rating")?.addEventListener("change", () => this.renderMovies());
     }
 
@@ -2234,6 +2259,7 @@
 
       document.getElementById("movie-id").value = m ? (m.id || "") : "";
       document.getElementById("movie-title").value = m ? (m.title || "") : "";
+      document.getElementById("movie-genre").value = m ? (m.genre || "") : "";
       document.getElementById("movie-poster").value = m ? (m.poster || "") : "";
       document.getElementById("movie-year").value = m ? (m.year || new Date().getFullYear()) : new Date().getFullYear();
       document.getElementById("movie-priority").value = m ? (m.priority || "5") : "5";
@@ -2264,6 +2290,97 @@
       }
 
       modal.classList.add("active");
+    }
+
+    async searchMovies(query) {
+      const results = document.getElementById('movie-search-results');
+      if (!results) return;
+      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold); padding: 1.5rem;">Buscando películas… 🔍🍿</div>';
+
+      try {
+        const movieList = await window.MediaService.searchMovies(query);
+        if (!movieList.length) {
+          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 1.5rem;">No se encontraron películas con ese nombre. ¡Prueba con otro título!</div>';
+          return;
+        }
+
+        results.innerHTML = `
+          <div class="search-results-header">
+            <span class="search-results-title">Películas encontradas:</span>
+            <button type="button" class="btn-secondary" id="btn-close-movie-results" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">&times; Cerrar</button>
+          </div>
+          <div class="movies-search-grid">
+            ${movieList.map((m, index) => `
+              <div class="glass-card search-movie-card">
+                ${m.poster ? `<img src="${window.Utils.sanitizeHTML(m.poster)}" alt="Póster" class="search-movie-poster" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder">🎬</div>'}
+                <div class="search-movie-info">
+                  <h4 class="search-movie-title">${window.Utils.sanitizeHTML(m.title)} <span style="font-size: 0.85rem; color: var(--color-sunflower-gold);">(${m.year || 'N/A'})</span></h4>
+                  <p class="search-movie-synopsis">${window.Utils.sanitizeHTML(m.synopsis || 'Película disponible.')}</p>
+                  <div class="search-movie-meta" style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                    ${m.genre ? `<span class="movie-meta-pill movie-genre-pill">🎭 ${window.Utils.sanitizeHTML(m.genre)}</span>` : ''}
+                    ${m.imdbRating ? `<span class="movie-meta-pill">⭐ TMDb: <strong>${window.Utils.sanitizeHTML(m.imdbRating)}</strong></span>` : ''}
+                    <span class="movie-meta-pill">🎬 Película</span>
+                  </div>
+                </div>
+                <div class="search-movie-actions">
+                  <button type="button" class="btn-primary btn-add-search-movie" data-index="${index}">
+                    <span>🍿 + Añadir a Cine</span>
+                  </button>
+                  <button type="button" class="btn-secondary btn-custom-movie" data-index="${index}" title="Personalizar antes de guardar">
+                    <span>✏️ Personalizar</span>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        document.getElementById('btn-close-movie-results')?.addEventListener('click', () => {
+          results.innerHTML = '';
+        });
+
+        results.querySelectorAll('.btn-add-search-movie').forEach(button => {
+          button.addEventListener('click', async () => {
+            const index = parseInt(button.dataset.index, 10);
+            button.disabled = true;
+            button.textContent = 'Guardando… ⏳';
+            const baseMovie = movieList[index];
+            const details = await window.MediaService.movieDetails(baseMovie);
+            const currentUser = window.storage.getCurrentUser();
+
+            window.storage.saveMovie({
+              ...details,
+              genre: details.genre || baseMovie.genre || '',
+              proposedBy: currentUser,
+              status: 'Por ver',
+              comments: []
+            });
+
+            this.renderMovies();
+            this.renderDailyDashboard();
+            results.innerHTML = '';
+            window.Utils.showToast(`¡${details.title} añadida a Nuestro Cine! 🎬🍿`, 'success');
+          });
+        });
+
+        results.querySelectorAll('.btn-custom-movie').forEach(button => {
+          button.addEventListener('click', async () => {
+            const index = parseInt(button.dataset.index, 10);
+            button.textContent = 'Cargando…';
+            const details = await window.MediaService.movieDetails(movieList[index]);
+            const currentUser = window.storage.getCurrentUser();
+            this.openMovieModal({
+              ...details,
+              genre: details.genre || movieList[index].genre || '',
+              proposedBy: currentUser,
+              status: 'Por ver'
+            });
+            button.textContent = '✏️ Personalizar';
+          });
+        });
+      } catch (error) {
+        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar películas ahora.')}</div>`;
+      }
     }
 
     // =========================================
@@ -2361,11 +2478,40 @@
     renderSeries() {
       const container = document.getElementById("series-grid-list");
       const statusFilter = document.getElementById("filter-series-status")?.value || "all";
+      const genreFilter = document.getElementById("filter-series-genre")?.value || "all";
       const ratingFilter = document.getElementById("filter-series-rating")?.value || "all";
       if (!container) return;
 
-      let list = window.storage.getSeries();
+      const allSeries = window.storage.getSeries();
       const currentUser = window.storage.getCurrentUser();
+
+      // Poblar dinámicamente las opciones del selector de género si existe
+      const genreSelect = document.getElementById("filter-series-genre");
+      if (genreSelect) {
+        const uniqueGenres = new Set();
+        allSeries.forEach(s => {
+          if (s.genre) {
+            s.genre.split(',').forEach(g => {
+              const clean = g.trim();
+              if (clean) uniqueGenres.add(clean);
+            });
+          }
+        });
+        const currentSelected = genreSelect.value;
+        let optionsHtml = `<option value="all">🎭 Todos los géneros (${uniqueGenres.size})</option>`;
+        Array.from(uniqueGenres).sort().forEach(g => {
+          const isSel = currentSelected === g ? 'selected' : '';
+          optionsHtml += `<option value="${window.Utils.sanitizeHTML(g)}" ${isSel}>${window.Utils.sanitizeHTML(g)}</option>`;
+        });
+        genreSelect.innerHTML = optionsHtml;
+      }
+
+      let list = [...allSeries];
+
+      // Filtro por Género
+      if (genreFilter !== "all") {
+        list = list.filter(s => (s.genre || '').toLowerCase().includes(genreFilter.toLowerCase()));
+      }
 
       if (statusFilter !== "all") {
         list = list.filter(s => (s.status || 'Viendo').toLowerCase() === statusFilter.toLowerCase());
@@ -2440,6 +2586,12 @@
                 ${window.Utils.sanitizeHTML(s.title)} <span style="font-size: 0.95rem; color: var(--color-sunflower-gold); font-family: var(--font-numbers);">(${s.year || ''})</span>
               </h3>
 
+              <div class="movie-meta-tags" style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                ${s.genre ? `<span class="movie-meta-pill movie-genre-pill" title="Género de la serie">🎭 ${window.Utils.sanitizeHTML(s.genre)}</span>` : ''}
+                ${s.imdbRating ? `<span class="movie-meta-pill">⭐ TMDb: <strong>${s.imdbRating}</strong></span>` : ''}
+                ${platformsList.map(plat => `<span class="movie-meta-pill">📺 ${window.Utils.sanitizeHTML(plat)}</span>`).join('')}
+              </div>
+
               ${s.synopsis ? `<p class="movie-synopsis">${window.Utils.sanitizeHTML(s.synopsis)}</p>` : ''}
 
               <!-- Barra de Progreso Conjunto -->
@@ -2454,16 +2606,9 @@
                 </div>
               </div>
 
-              ${platformsList.length ? `
-                <div class="movie-platforms" style="margin-top: 0.5rem;">
-                  ${platformsList.map(plat => `<span class="platform-pill">📺 ${window.Utils.sanitizeHTML(plat)}</span>`).join('')}
-                </div>
-              ` : ''}
-
-              ${s.imdbRating ? `
-                <p class="movie-meta" style="margin-top: 0.5rem;">
-                  ⭐ IMDb / TMDb: <strong>${window.Utils.sanitizeHTML(s.imdbRating)}</strong>/10 
-                  ${s.imdbUrl ? `· <a href="${window.Utils.sanitizeHTML(s.imdbUrl)}" target="_blank" rel="noopener">Ver ficha</a>` : ''}
+              ${s.imdbUrl ? `
+                <p class="movie-meta" style="margin-top: 0.4rem;">
+                  <a href="${window.Utils.sanitizeHTML(s.imdbUrl)}" target="_blank" rel="noopener">⭐ Ver ficha oficial</a>
                 </p>
               ` : ''}
             </div>
@@ -2509,6 +2654,7 @@
       });
 
       document.getElementById("filter-series-status")?.addEventListener("change", () => this.renderSeries());
+      document.getElementById("filter-series-genre")?.addEventListener("change", () => this.renderSeries());
       document.getElementById("filter-series-rating")?.addEventListener("change", () => this.renderSeries());
     }
 
@@ -2522,6 +2668,7 @@
       document.getElementById("series-id").value = s && s.id ? s.id : "";
       document.getElementById("series-tmdb-id").value = s && s.tmdbId ? s.tmdbId : "";
       document.getElementById("series-title").value = s && s.title ? s.title : "";
+      document.getElementById("series-genre").value = s && s.genre ? s.genre : "";
       document.getElementById("series-poster").value = s && s.poster ? s.poster : "";
       document.getElementById("series-year").value = s && s.year ? s.year : new Date().getFullYear();
       document.getElementById("series-seasons-count").value = s && s.seasonsCount ? s.seasonsCount : (s && s.seasons ? s.seasons.length : 1);
@@ -3592,6 +3739,7 @@
           id: document.getElementById("series-id").value || undefined,
           tmdbId: document.getElementById("series-tmdb-id").value || undefined,
           title: document.getElementById("series-title").value.trim(),
+          genre: document.getElementById("series-genre")?.value.trim() || '',
           poster: document.getElementById("series-poster").value.trim(),
           year: parseInt(document.getElementById("series-year").value, 10) || new Date().getFullYear(),
           seasonsCount: parseInt(document.getElementById("series-seasons-count").value, 10) || 1,
@@ -3665,6 +3813,7 @@
         const movieData = {
           id: document.getElementById("movie-id").value,
           title: document.getElementById("movie-title").value.trim(),
+          genre: document.getElementById("movie-genre")?.value.trim() || '',
           poster: document.getElementById("movie-poster").value.trim(),
           year: document.getElementById("movie-year").value,
           proposedBy: document.getElementById("movie-proposed").value || currentUser,

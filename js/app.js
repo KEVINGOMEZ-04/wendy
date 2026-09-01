@@ -505,7 +505,17 @@
       // 1. Pedir permisos nativos en Capacitor si está corriendo como APK
       if (window.Capacitor?.Plugins?.LocalNotifications) {
         try {
-          await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
+          const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+          await LocalNotifications.requestPermissions();
+          await LocalNotifications.createChannel({
+            id: 'atria_channel',
+            name: 'Notificaciones ATRIA',
+            description: 'Alertas de amor y novedades de Kevin y Wendy',
+            importance: 5,
+            visibility: 1,
+            vibration: true,
+            sound: 'default'
+          });
         } catch (err) {
           console.warn('LocalNotifications perm notice:', err);
         }
@@ -515,7 +525,20 @@
       btnAlerts?.addEventListener('click', async () => {
         try {
           if (window.Capacitor?.Plugins?.LocalNotifications) {
-            await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
+            const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+            await LocalNotifications.requestPermissions();
+            await LocalNotifications.createChannel({
+              id: 'atria_channel',
+              name: 'Notificaciones ATRIA',
+              description: 'Alertas de amor y novedades de Kevin y Wendy',
+              importance: 5,
+              visibility: 1,
+              vibration: true,
+              sound: 'default'
+            });
+            this.sendSystemNotification('🔔 Notificaciones Activadas ✨', '¡Listo! Recibirás alertas en la barra de tu teléfono cuando tu amor interactúe 💕');
+            window.Utils.showToast('¡Notificaciones en la barra de tu teléfono activadas! 🔔✨', 'success');
+            return;
           }
           if ('Notification' in window) {
             const perm = await Notification.requestPermission();
@@ -534,7 +557,19 @@
       // Solicitar permiso al primer toque o interacción
       const reqPerm = async () => {
         if (window.Capacitor?.Plugins?.LocalNotifications) {
-          try { await window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch (_) {}
+          try {
+            const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+            await LocalNotifications.requestPermissions();
+            await LocalNotifications.createChannel({
+              id: 'atria_channel',
+              name: 'Notificaciones ATRIA',
+              description: 'Alertas de amor y novedades de Kevin y Wendy',
+              importance: 5,
+              visibility: 1,
+              vibration: true,
+              sound: 'default'
+            });
+          } catch (_) {}
         }
         if ('Notification' in window && Notification.permission === 'default') {
           try {
@@ -548,16 +583,30 @@
     }
 
     async sendSystemNotification(title, body, url = './#inicio') {
-      // 1. Capacitor Native LocalNotifications (APK Android)
+      // 1. Capacitor Native LocalNotifications (APK Android - Barra de estado nativa)
       if (window.Capacitor?.Plugins?.LocalNotifications) {
         try {
-          await window.Capacitor.Plugins.LocalNotifications.schedule({
+          const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+          try {
+            await LocalNotifications.createChannel({
+              id: 'atria_channel',
+              name: 'Notificaciones ATRIA',
+              description: 'Alertas de amor y novedades de Kevin y Wendy',
+              importance: 5,
+              visibility: 1,
+              vibration: true,
+              sound: 'default'
+            });
+          } catch (_) {}
+
+          await LocalNotifications.schedule({
             notifications: [
               {
+                id: Math.floor(Math.random() * 1000000) + 1,
                 title: title,
                 body: body,
-                id: Math.floor(Math.random() * 100000),
-                schedule: { at: new Date(Date.now() + 100) },
+                channelId: 'atria_channel',
+                schedule: { at: new Date(Date.now() + 150) },
                 sound: 'default',
                 actionTypeId: '',
                 extra: { url: url }
@@ -713,55 +762,25 @@
       };
     }
 
-    async sendSystemNotification(title, body, url = './') {
-      if (!('Notification' in window)) return;
-
-      if (Notification.permission !== 'granted') {
-        try {
-          const perm = await Notification.requestPermission();
-          if (perm !== 'granted') return;
-        } catch (_) {
-          return;
-        }
-      }
-
-      const options = {
-        body: body,
-        icon: 'assets/icon.jpg',
-        badge: 'assets/icon.jpg',
-        vibrate: [200, 100, 200, 100, 200],
-        tag: 'atria-notification-' + Date.now(),
-        renotify: true,
-        data: { url: url },
-        silent: false,
-        requireInteraction: false
-      };
-
-      try {
-        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
-          const reg = await navigator.serviceWorker.ready;
-          if (reg && reg.showNotification) {
-            await reg.showNotification(title, options);
-            return;
-          }
-        }
-        new Notification(title, options);
-      } catch (err) {
-        try {
-          new Notification(title, options);
-        } catch (_) {}
-      }
-    }
-
     // --- 3. Navegación y Enrutamiento Hash ---
     initNavigation() {
       const navContainer = document.getElementById("nav-pills-container");
+      if (!navContainer) return;
       navContainer.innerHTML = window.CONFIG.sections.map(sec => `
         <a href="#${sec.id}" class="nav-pill-btn" id="tab-${sec.id}" role="tab" aria-controls="section-${sec.id}" aria-selected="false">
           <span>${sec.icon}</span>
           <span>${sec.label}</span>
         </a>
       `).join("");
+
+      navContainer.querySelectorAll('.nav-pill-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetId = btn.getAttribute('href').replace('#', '');
+          window.location.hash = targetId;
+          this.activateSection(targetId);
+        });
+      });
 
       window.addEventListener("hashchange", () => this.handleRouting());
     }
@@ -1389,105 +1408,6 @@
       }
     }
 
-    async searchMovies(query) {
-      const results = document.getElementById('movie-search-results');
-      results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-sunflower-gold); padding: 1.5rem;">Buscando películas en tiempo real… 🎬✨</div>';
-
-      try {
-        const movies = await window.MediaService.searchMovies(query);
-        if (!movies.length) {
-          results.innerHTML = '<div class="glass-card" style="text-align: center; color: var(--color-text-secondary); padding: 1.5rem;">No encontramos películas con ese nombre. ¡Intenta con otro título o franquicia!</div>';
-          return;
-        }
-
-        results.innerHTML = `
-          <div class="search-results-header">
-            <span class="search-results-title">🎬 Resultados de películas (${movies.length}):</span>
-            <button type="button" class="btn-secondary" id="btn-close-movie-results" style="padding: 0.25rem 0.7rem; font-size: 0.8rem;">✕ Cerrar resultados</button>
-          </div>
-          <div class="movie-search-grid">
-            ${movies.map((movie, index) => `
-              <div class="glass-card search-movie-card">
-                <div class="search-movie-top">
-                  ${movie.poster ? `<img src="${window.Utils.sanitizeHTML(movie.poster)}" alt="Póster" class="search-movie-poster" onerror="this.style.display='none'">` : '<div class="search-movie-poster-placeholder">🎬</div>'}
-                  <div class="search-movie-info">
-                    <h4 class="search-movie-title">${window.Utils.sanitizeHTML(movie.title)}</h4>
-                    <p class="search-movie-year">📅 ${movie.year || '—'} ${movie.genre ? `· <em>${window.Utils.sanitizeHTML(movie.genre)}</em>` : ''}</p>
-                    <p class="search-movie-synopsis">${window.Utils.sanitizeHTML(movie.synopsis)}</p>
-                    ${movie.platforms && movie.platforms.length ? `
-                      <div class="movie-platforms" style="margin-top: 0.35rem;">
-                        ${movie.platforms.slice(0, 3).map(p => `<span class="platform-pill">📺 ${window.Utils.sanitizeHTML(p)}</span>`).join('')}
-                      </div>
-                    ` : ''}
-                  </div>
-                </div>
-
-                <div class="search-movie-actions">
-                  <button type="button" class="btn-primary btn-add-search-movie" data-index="${index}">
-                    <span>🍿 + Añadir a Biblioteca</span>
-                  </button>
-                  <button type="button" class="btn-secondary btn-custom-movie" data-index="${index}" title="Personalizar antes de guardar">
-                    <span>✏️ Personalizar</span>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-
-        document.getElementById('btn-close-movie-results')?.addEventListener('click', () => {
-          results.innerHTML = '';
-        });
-
-        results.querySelectorAll('.btn-add-search-movie').forEach(button => {
-          button.addEventListener('click', async () => {
-            const index = parseInt(button.dataset.index, 10);
-            button.disabled = true;
-            button.textContent = 'Añadiendo… ⏳';
-            const baseMovie = movies[index];
-            const details = await window.MediaService.movieDetails(baseMovie);
-            const currentUser = window.storage.getCurrentUser();
-
-            window.storage.saveMovie({
-              ...details,
-              proposedBy: currentUser,
-              priority: 5,
-              status: 'Por ver',
-              kevinRating: currentUser === 'Kevin' ? 5 : 0,
-              wendyRating: currentUser === 'Wendy' ? 5 : 0,
-              rating: 5,
-              comments: []
-            });
-
-            this.renderMovies();
-            this.renderDailyDashboard();
-            results.innerHTML = '';
-            window.Utils.showToast(`¡${details.title} añadida a Nuestra Biblioteca! 🎬🍿`, 'success');
-          });
-        });
-
-        results.querySelectorAll('.btn-custom-movie').forEach(button => {
-          button.addEventListener('click', async () => {
-            const index = parseInt(button.dataset.index, 10);
-            button.textContent = 'Cargando…';
-            const details = await window.MediaService.movieDetails(movies[index]);
-            const currentUser = window.storage.getCurrentUser();
-            this.openMovieModal({
-              ...details,
-              proposedBy: currentUser,
-              priority: 5,
-              status: 'Por ver',
-              kevinRating: currentUser === 'Kevin' ? 5 : 0,
-              wendyRating: currentUser === 'Wendy' ? 5 : 0
-            });
-            button.textContent = '✏️ Personalizar';
-          });
-        });
-      } catch (error) {
-        results.innerHTML = `<div class="glass-card" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">${window.Utils.sanitizeHTML(error.message || 'No fue posible buscar películas ahora.')}</div>`;
-      }
-    }
-
     // --- 6. Recuerdos (Campo de Girasoles) ---
     // --- 6. Recuerdos y Calendario Anual 🌻 ---
     initAnnualCalendar() {
@@ -1896,19 +1816,26 @@
 
     openMemoryModal(mem = null) {
       const modal = document.getElementById("modal-memory");
+      if (!modal) return;
       const titleEl = document.getElementById("modal-memory-title");
       const currentUser = window.storage.getCurrentUser();
 
-      titleEl.textContent = mem && mem.id ? "Editar Recuerdo 🌻" : "Nuevo Recuerdo 🌻";
-      document.getElementById("mem-id").value = mem && mem.id ? mem.id : "";
-      document.getElementById("mem-date").value = mem && mem.date ? mem.date : new Date().toISOString().split("T")[0];
-      document.getElementById("mem-title").value = mem && mem.title ? mem.title : "";
-      document.getElementById("mem-desc").value = mem && mem.description ? mem.description : "";
-      document.getElementById("mem-status").value = mem && mem.status ? mem.status : "Guardado";
+      if (titleEl) titleEl.textContent = mem && mem.id ? "Editar Recuerdo 🌻" : "Nuevo Recuerdo 🌻";
+      const idInput = document.getElementById("mem-id");
+      if (idInput) idInput.value = mem && mem.id ? mem.id : "";
+      const dateInput = document.getElementById("mem-date");
+      if (dateInput) dateInput.value = mem && mem.date ? mem.date : new Date().toISOString().split("T")[0];
+      const titleInput = document.getElementById("mem-title");
+      if (titleInput) titleInput.value = mem && mem.title ? mem.title : "";
+      const descInput = document.getElementById("mem-desc");
+      if (descInput) descInput.value = mem && mem.description ? mem.description : "";
+      const statusInput = document.getElementById("mem-status");
+      if (statusInput) statusInput.value = mem && mem.status ? mem.status : "Guardado";
 
       // Autor automático
       const author = mem && mem.author ? mem.author : currentUser;
-      document.getElementById("mem-author-name").textContent = author;
+      const authorNameEl = document.getElementById("mem-author-name");
+      if (authorNameEl) authorNameEl.textContent = author;
       const authorBadge = document.getElementById("mem-author-badge");
       if (authorBadge) {
         authorBadge.textContent = author.charAt(0).toUpperCase();
@@ -1922,7 +1849,8 @@
 
       // Portada
       const coverUrl = mem && mem.coverMedia ? mem.coverMedia : "";
-      document.getElementById("mem-cover-url").value = coverUrl;
+      const coverInput = document.getElementById("mem-cover-url");
+      if (coverInput) coverInput.value = coverUrl;
       this.updateCoverPreview(coverUrl);
 
       // Galería
@@ -1943,11 +1871,12 @@
         });
         songSelect.innerHTML = optionsHtml;
 
-        document.getElementById("mem-song-id").value = mem && mem.songId ? mem.songId : "";
-        document.getElementById("mem-song-title").value = mem && mem.songTitle ? mem.songTitle : "";
-        document.getElementById("mem-song-artist").value = mem && mem.songArtist ? mem.songArtist : "";
-        document.getElementById("mem-song-cover").value = mem && mem.songCover ? mem.songCover : "";
-        document.getElementById("mem-song-audio").value = mem && mem.songAudioUrl ? mem.songAudioUrl : "";
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        setVal("mem-song-id", mem && mem.songId ? mem.songId : "");
+        setVal("mem-song-title", mem && mem.songTitle ? mem.songTitle : "");
+        setVal("mem-song-artist", mem && mem.songArtist ? mem.songArtist : "");
+        setVal("mem-song-cover", mem && mem.songCover ? mem.songCover : "");
+        setVal("mem-song-audio", mem && mem.songAudioUrl ? mem.songAudioUrl : "");
 
         if (previewBtn) {
           previewBtn.style.display = (mem && mem.songAudioUrl) ? "inline-block" : "none";
@@ -1958,12 +1887,12 @@
         songSelect.onchange = () => {
           const selectedOption = songSelect.options[songSelect.selectedIndex];
           if (selectedOption && selectedOption.value) {
-            document.getElementById("mem-song-id").value = selectedOption.value;
-            document.getElementById("mem-song-title").value = selectedOption.dataset.title || "";
-            document.getElementById("mem-song-artist").value = selectedOption.dataset.artist || "";
-            document.getElementById("mem-song-cover").value = selectedOption.dataset.cover || "";
+            setVal("mem-song-id", selectedOption.value);
+            setVal("mem-song-title", selectedOption.dataset.title || "");
+            setVal("mem-song-artist", selectedOption.dataset.artist || "");
+            setVal("mem-song-cover", selectedOption.dataset.cover || "");
             const audioUrl = selectedOption.dataset.audio || "";
-            document.getElementById("mem-song-audio").value = audioUrl;
+            setVal("mem-song-audio", audioUrl);
 
             if (previewBtn) {
               previewBtn.style.display = audioUrl ? "inline-block" : "none";
@@ -1971,11 +1900,11 @@
               previewBtn.innerHTML = "▶️";
             }
           } else {
-            document.getElementById("mem-song-id").value = "";
-            document.getElementById("mem-song-title").value = "";
-            document.getElementById("mem-song-artist").value = "";
-            document.getElementById("mem-song-cover").value = "";
-            document.getElementById("mem-song-audio").value = "";
+            setVal("mem-song-id", "");
+            setVal("mem-song-title", "");
+            setVal("mem-song-artist", "");
+            setVal("mem-song-cover", "");
+            setVal("mem-song-audio", "");
             if (previewBtn) previewBtn.style.display = "none";
           }
         };

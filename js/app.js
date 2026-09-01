@@ -3731,18 +3731,24 @@
       document.getElementById("mem-cover-file")?.addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        const previewBox = document.getElementById("mem-cover-preview");
+        if (previewBox) {
+          previewBox.style.display = "block";
+          previewBox.innerHTML = "<div style='color: var(--color-sunflower-gold); font-size: 0.85rem; padding: 0.5rem;'>Optimizando imagen... ⏳</div>";
+        }
         try {
-          // 1. Guardar original para Google Drive en máxima calidad
+          // 1. Guardar original para Google Drive
           const rawReader = new FileReader();
           rawReader.onload = (ev) => { this.driveCoverPayload = ev.target.result; };
           rawReader.readAsDataURL(file);
 
-          // 2. Comprimir copia optimizada para visualización local rápida sin saturar memoria
-          const dataUrl = await window.Utils.compressImage(file, 1600, 0.85);
+          // 2. Comprimir copia optimizada para visualización local rápida
+          const dataUrl = await window.Utils.compressImage(file, 1400, 0.82);
           document.getElementById("mem-cover-url").value = dataUrl;
           this.updateCoverPreview(dataUrl);
         } catch (err) {
           console.error("Error procesando foto de portada:", err);
+          window.Utils.showToast("Error al cargar la foto.", "error");
         }
       });
 
@@ -3762,6 +3768,8 @@
         if (!this.modalGalleryItems) this.modalGalleryItems = [];
         if (!this.driveGalleryPayloads) this.driveGalleryPayloads = [];
 
+        window.Utils.showToast(`Procesando ${files.length} archivo(s)... ⏳`, "info", 2000);
+
         for (const file of files) {
           try {
             // Guardar original para Drive
@@ -3770,7 +3778,7 @@
             rawReader.readAsDataURL(file);
 
             // Guardar optimizado para teléfono
-            const dataUrl = await window.Utils.compressImage(file, 1400, 0.82);
+            const dataUrl = await window.Utils.compressImage(file, 1200, 0.78);
             this.modalGalleryItems.push(dataUrl);
           } catch (err) {
             console.error("Error procesando foto de galería:", err);
@@ -3798,33 +3806,15 @@
         const songCover = document.getElementById("mem-song-cover").value;
         const songAudioUrl = document.getElementById("mem-song-audio").value;
 
-        // Comprimir versión local para que ocupe muy poco espacio y cargue al instante
-        let optimizedCover = coverVal;
-        if (coverVal && !isVideo && coverVal.startsWith('data:image/')) {
-          optimizedCover = await window.MediaService.compressImage(coverVal, 1400, 1400, 0.78);
-        }
-
-        const optimizedGallery = [];
-        if (Array.isArray(this.modalGalleryItems)) {
-          for (const item of this.modalGalleryItems) {
-            if (item && item.startsWith('data:image/')) {
-              const comp = await window.MediaService.compressImage(item, 1200, 1200, 0.75);
-              optimizedGallery.push(comp);
-            } else {
-              optimizedGallery.push(item);
-            }
-          }
-        }
-
         const memData = {
           id: document.getElementById("mem-id").value || undefined,
           date: document.getElementById("mem-date").value,
           title: document.getElementById("mem-title").value.trim(),
           description: document.getElementById("mem-desc").value.trim(),
           color: selectedColor,
-          coverMedia: optimizedCover,
+          coverMedia: coverVal,
           coverType: isVideo ? "video" : "image",
-          gallery: optimizedGallery,
+          gallery: this.modalGalleryItems || [],
           status: document.getElementById("mem-status").value,
           author: window.storage.getCurrentUser(),
           songId: songId || null,
@@ -3979,19 +3969,19 @@
         }
       });
 
-      notePhotoFileInput?.addEventListener("change", (e) => {
+      notePhotoFileInput?.addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const dataUrl = ev.target.result;
+        try {
+          const dataUrl = await window.Utils.compressImage(file, 1000, 0.8);
           if (notePhotoUrlInput) notePhotoUrlInput.value = dataUrl;
           if (notePhotoPreviewWrap && notePhotoPreviewImg) {
             notePhotoPreviewImg.src = dataUrl;
             notePhotoPreviewWrap.style.display = "block";
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+          console.error("Error cargando foto en nota:", err);
+        }
       });
 
       document.getElementById("form-note")?.addEventListener("submit", (e) => {
@@ -5197,23 +5187,29 @@ ${window.Utils.sanitizeHTML(c.message)}
 
       recordBtn.addEventListener('click', async () => {
         try {
+          const recorder = window.VoiceRecorder || window.MediaService?.VoiceRecorder;
+          if (!recorder) {
+            throw new Error('El servicio de grabación no está disponible en este momento.');
+          }
+
           recordBtn.style.display = 'none';
           stopBtn.style.display = 'inline-flex';
           if (deleteBtn) deleteBtn.style.display = 'none';
 
-          await window.MediaService.VoiceRecorder.startRecording((timeFormatted, sec) => {
+          await recorder.startRecording((timeFormatted, sec) => {
             if (timerEl) timerEl.textContent = timeFormatted;
           });
         } catch (err) {
           recordBtn.style.display = 'inline-flex';
           stopBtn.style.display = 'none';
-          window.Utils.showToast('No se pudo acceder al micrófono: ' + err.message, 'error');
+          window.Utils.showToast('No se pudo acceder al micrófono: ' + (err.message || err), 'error');
         }
       });
 
       stopBtn.addEventListener('click', async () => {
         try {
-          const result = await window.MediaService.VoiceRecorder.stopRecording();
+          const recorder = window.VoiceRecorder || window.MediaService?.VoiceRecorder;
+          const result = recorder ? await recorder.stopRecording() : null;
           stopBtn.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
 

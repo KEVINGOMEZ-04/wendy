@@ -799,7 +799,12 @@
         coverMedia: m.coverMedia || m.photo || '',
         coverType: m.coverType || (m.coverMedia && m.coverMedia.match(/\.(mp4|webm|ogg|mov)$/i) ? 'video' : 'image'),
         gallery: Array.isArray(m.gallery) ? m.gallery : [],
-        comments: Array.isArray(m.comments) ? m.comments : []
+        comments: Array.isArray(m.comments) ? m.comments : [],
+        songId: m.songId || null,
+        songTitle: m.songTitle || '',
+        songArtist: m.songArtist || '',
+        songCover: m.songCover || '',
+        songAudioUrl: m.songAudioUrl || ''
       }));
     }
 
@@ -820,6 +825,11 @@
             coverType: memoryData.coverType || list[index].coverType || 'image',
             gallery: Array.isArray(memoryData.gallery) ? memoryData.gallery : (list[index].gallery || []),
             comments: Array.isArray(memoryData.comments) ? memoryData.comments : (list[index].comments || []),
+            songId: memoryData.songId !== undefined ? memoryData.songId : (list[index].songId || null),
+            songTitle: memoryData.songTitle !== undefined ? memoryData.songTitle : (list[index].songTitle || ''),
+            songArtist: memoryData.songArtist !== undefined ? memoryData.songArtist : (list[index].songArtist || ''),
+            songCover: memoryData.songCover !== undefined ? memoryData.songCover : (list[index].songCover || ''),
+            songAudioUrl: memoryData.songAudioUrl !== undefined ? memoryData.songAudioUrl : (list[index].songAudioUrl || ''),
             updatedAt: now,
             isDemo: false
           };
@@ -836,6 +846,11 @@
           coverType: memoryData.coverType || 'image',
           gallery: Array.isArray(memoryData.gallery) ? memoryData.gallery : [],
           comments: Array.isArray(memoryData.comments) ? memoryData.comments : [],
+          songId: memoryData.songId || null,
+          songTitle: memoryData.songTitle || '',
+          songArtist: memoryData.songArtist || '',
+          songCover: memoryData.songCover || '',
+          songAudioUrl: memoryData.songAudioUrl || '',
           status: memoryData.status || 'Guardado',
           createdAt: now,
           updatedAt: now,

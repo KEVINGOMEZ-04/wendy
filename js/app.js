@@ -16,6 +16,7 @@
       this.initProfilesModal();
       this.initNudgeFeature();
       this.initSystemNotifications();
+      this.initUploadMonitorUI();
       this.initNavigation();
       this.initSections();
       this.initModals();
@@ -496,6 +497,21 @@
     initSystemNotifications() {
       if (!('Notification' in window)) return;
 
+      const btnAlerts = document.getElementById('btn-enable-notifications');
+      btnAlerts?.addEventListener('click', async () => {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === 'granted') {
+            this.sendSystemNotification('🔔 Notificaciones Activadas ✨', '¡Listo! Recibirás alertas en tu teléfono cuando haya actividad 💕');
+            window.Utils.showToast('¡Notificaciones en la barra de tu teléfono activadas! 🔔✨', 'success');
+          } else {
+            window.Utils.showToast('Permiso de notificaciones no concedido.', 'warning');
+          }
+        } catch (e) {
+          window.Utils.showToast('No se pudo solicitar permisos de notificación.', 'warning');
+        }
+      });
+
       // Solicitar permiso amigable al primer toque o interacción
       const reqPerm = () => {
         if (Notification.permission === 'default') {
@@ -511,6 +527,123 @@
 
       document.addEventListener('click', reqPerm, { once: true });
       document.addEventListener('touchstart', reqPerm, { once: true });
+    }
+
+    initUploadMonitorUI() {
+      const btnMonitor = document.getElementById('btn-upload-monitor');
+      const iconEl = document.getElementById('upload-monitor-icon');
+      const labelEl = document.getElementById('upload-monitor-label');
+      const pulseEl = document.getElementById('upload-monitor-indicator');
+      const modal = document.getElementById('modal-upload-monitor');
+
+      const mainStatusEl = document.getElementById('upload-monitor-main-status');
+      const percentBadgeEl = document.getElementById('upload-monitor-percent-badge');
+      const progressFillEl = document.getElementById('upload-monitor-progress-fill');
+      const detailTextEl = document.getElementById('upload-monitor-detail-text');
+      const jobsListEl = document.getElementById('upload-monitor-jobs-list');
+
+      btnMonitor?.addEventListener('click', () => {
+        modal?.classList.add('active');
+      });
+
+      if (window.GoogleDriveService?.subscribe) {
+        window.GoogleDriveService.subscribe((state) => {
+          const { isUploading, activeJob, queue, completedJobs, percent, statusSummary } = state;
+
+          if (isUploading) {
+            btnMonitor?.classList.add('uploading');
+            if (iconEl) iconEl.textContent = '⏳';
+            if (labelEl) labelEl.textContent = `${percent}%`;
+            if (pulseEl) pulseEl.style.display = 'inline-block';
+            if (mainStatusEl) mainStatusEl.textContent = statusSummary;
+            if (percentBadgeEl) percentBadgeEl.textContent = `${percent}%`;
+            if (progressFillEl) progressFillEl.style.width = `${percent}%`;
+            if (detailTextEl) detailTextEl.textContent = `Subiendo archivos a Google Drive... (${(activeJob?.uploadedCount || 0)}/${(activeJob?.files.length || 0)} fotos procesadas)`;
+          } else {
+            btnMonitor?.classList.remove('uploading');
+            if (iconEl) iconEl.textContent = '☁️';
+            if (labelEl) labelEl.textContent = 'Sincronizado';
+            if (pulseEl) pulseEl.style.display = 'none';
+            if (mainStatusEl) mainStatusEl.textContent = completedJobs.length > 0 ? 'Todo sincronizado con Google Drive ☁️' : 'Sin subidas activas';
+            if (percentBadgeEl) percentBadgeEl.textContent = '100%';
+            if (progressFillEl) progressFillEl.style.width = '100%';
+            if (detailTextEl) detailTextEl.textContent = 'Tus fotos y videos se respaldan de forma segura en Google Drive.';
+          }
+
+          // Renderizar lista de trabajos
+          if (jobsListEl) {
+            const allTasks = [];
+            if (activeJob) allTasks.push(activeJob);
+            if (queue && queue.length) allTasks.push(...queue);
+            if (completedJobs && completedJobs.length) allTasks.push(...completedJobs);
+
+            if (allTasks.length === 0) {
+              jobsListEl.innerHTML = `<div style="font-size: 0.82rem; color: var(--color-text-muted); text-align: center; padding: 1rem;">No hay tareas pendientes en la cola.</div>`;
+            } else {
+              jobsListEl.innerHTML = allTasks.map(t => {
+                const isCompleted = t.status === 'completed';
+                const isCurrent = t.status === 'uploading';
+                const isErr = t.status === 'error';
+                return `
+                  <div class="glass-card upload-task-row ${isCurrent ? 'active-upload' : ''}" style="padding: 0.6rem 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.84rem;">
+                    <div style="min-width: 0; flex: 1;">
+                      <div style="font-weight: 600; color: var(--color-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${t.type === 'dream' ? '✨ Sueño: ' : '🌻 Recuerdo: '} ${window.Utils.sanitizeHTML(t.title)}
+                      </div>
+                      <div style="font-size: 0.74rem; color: var(--color-text-secondary);">
+                        📁 ${window.Utils.sanitizeHTML(t.folderName)} (${t.uploadedCount || t.files.length}/${t.files.length} archivos)
+                      </div>
+                    </div>
+                    <div>
+                      ${isCurrent ? `<span class="badge-pill" style="background: rgba(0, 229, 255, 0.2); color: #00E5FF; font-size: 0.74rem;">Subiendo ${t.percent || 0}% ⏳</span>` : ''}
+                      ${isCompleted ? `<span class="badge-pill" style="background: rgba(76, 175, 80, 0.2); color: #81C784; font-size: 0.74rem;">Completado ✅</span>` : ''}
+                      ${isErr ? `<span class="badge-pill" style="background: rgba(244, 67, 54, 0.2); color: #EF5350; font-size: 0.74rem;">Error ⚠️</span>` : ''}
+                      ${t.status === 'pending' ? `<span class="badge-pill" style="background: rgba(185, 142, 230, 0.2); color: var(--color-lilac); font-size: 0.74rem;">En cola 🕒</span>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('');
+            }
+          }
+        });
+      }
+    }
+
+    playAudioPreview(audioUrl, triggerBtn = null) {
+      if (!audioUrl) return;
+
+      // Si ya hay un audio reproduciéndose y es el mismo, pausar
+      if (this.currentPlayingAudio && this.currentPlayingAudio.src === audioUrl && !this.currentPlayingAudio.paused) {
+        this.currentPlayingAudio.pause();
+        if (this.currentPlayBtn) this.currentPlayBtn.innerHTML = '▶️';
+        return;
+      }
+
+      // Detener cualquier audio previo
+      if (this.currentPlayingAudio) {
+        this.currentPlayingAudio.pause();
+        if (this.currentPlayBtn) this.currentPlayBtn.innerHTML = '▶️';
+      }
+
+      const audio = new Audio(audioUrl);
+      this.currentPlayingAudio = audio;
+      this.currentPlayBtn = triggerBtn;
+
+      if (triggerBtn) triggerBtn.innerHTML = '⏸️';
+
+      audio.play().catch(e => {
+        console.warn('Error al reproducir preview:', e);
+        if (triggerBtn) triggerBtn.innerHTML = '▶️';
+      });
+
+      audio.onended = () => {
+        if (triggerBtn) triggerBtn.innerHTML = '▶️';
+        this.currentPlayingAudio = null;
+      };
+
+      audio.onpause = () => {
+        if (triggerBtn) triggerBtn.innerHTML = '▶️';
+      };
     }
 
     async sendSystemNotification(title, body, url = './') {
@@ -1529,6 +1662,22 @@
 
               ${galleryHtml}
 
+              <!-- Canción enlazada si existe 🎵 -->
+              ${m.songTitle ? `
+                <div class="memory-linked-song-pill" title="Canción del recuerdo">
+                  <span class="music-note-icon">🎵</span>
+                  <div class="memory-song-info-text">
+                    <span class="memory-song-name"><strong>${window.Utils.sanitizeHTML(m.songTitle)}</strong></span>
+                    <span class="memory-song-artist">${window.Utils.sanitizeHTML(m.songArtist || '')}</span>
+                  </div>
+                  ${m.songAudioUrl ? `
+                    <button type="button" class="btn-play-memory-song" data-audio="${window.Utils.sanitizeHTML(m.songAudioUrl)}" title="Escuchar preview de 30s">
+                      ▶️
+                    </button>
+                  ` : ''}
+                </div>
+              ` : ''}
+
               <!-- Pie con Autor e Hilo de Comentarios -->
               <div class="memory-footer-bar">
                 <div class="memory-author-badge" title="Añadido por ${window.Utils.sanitizeHTML(author)}">
@@ -1577,6 +1726,17 @@
           </div>
         `;
       }).join("");
+
+      // Listener de Reproducción de Canción del Recuerdo
+      container.querySelectorAll(".btn-play-memory-song").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const audioUrl = btn.dataset.audio;
+          if (audioUrl) {
+            this.playAudioPreview(audioUrl, btn);
+          }
+        });
+      });
 
       // Listeners de comentarios
       container.querySelectorAll(".btn-toggle-comments").forEach(btn => {
@@ -1692,6 +1852,63 @@
       this.driveCoverPayload = null;
       this.driveGalleryPayloads = [];
       this.renderModalGallery();
+
+      // Canción enlazada
+      const songSelect = document.getElementById("mem-song-select");
+      const previewBtn = document.getElementById("btn-preview-mem-song");
+      if (songSelect) {
+        const savedSongs = window.storage.getSongs();
+        let optionsHtml = `<option value="">-- Sin canción enlazada --</option>`;
+        savedSongs.forEach(s => {
+          const selected = mem && mem.songId === s.id ? 'selected' : '';
+          optionsHtml += `<option value="${s.id}" ${selected} data-title="${window.Utils.sanitizeHTML(s.title)}" data-artist="${window.Utils.sanitizeHTML(s.artist)}" data-cover="${window.Utils.sanitizeHTML(s.cover || '')}" data-audio="${window.Utils.sanitizeHTML(s.previewUrl || '')}">${window.Utils.sanitizeHTML(s.title)} - ${window.Utils.sanitizeHTML(s.artist)}</option>`;
+        });
+        songSelect.innerHTML = optionsHtml;
+
+        document.getElementById("mem-song-id").value = mem && mem.songId ? mem.songId : "";
+        document.getElementById("mem-song-title").value = mem && mem.songTitle ? mem.songTitle : "";
+        document.getElementById("mem-song-artist").value = mem && mem.songArtist ? mem.songArtist : "";
+        document.getElementById("mem-song-cover").value = mem && mem.songCover ? mem.songCover : "";
+        document.getElementById("mem-song-audio").value = mem && mem.songAudioUrl ? mem.songAudioUrl : "";
+
+        if (previewBtn) {
+          previewBtn.style.display = (mem && mem.songAudioUrl) ? "inline-block" : "none";
+          previewBtn.dataset.audio = mem && mem.songAudioUrl ? mem.songAudioUrl : "";
+          previewBtn.innerHTML = "▶️";
+        }
+
+        songSelect.onchange = () => {
+          const selectedOption = songSelect.options[songSelect.selectedIndex];
+          if (selectedOption && selectedOption.value) {
+            document.getElementById("mem-song-id").value = selectedOption.value;
+            document.getElementById("mem-song-title").value = selectedOption.dataset.title || "";
+            document.getElementById("mem-song-artist").value = selectedOption.dataset.artist || "";
+            document.getElementById("mem-song-cover").value = selectedOption.dataset.cover || "";
+            const audioUrl = selectedOption.dataset.audio || "";
+            document.getElementById("mem-song-audio").value = audioUrl;
+
+            if (previewBtn) {
+              previewBtn.style.display = audioUrl ? "inline-block" : "none";
+              previewBtn.dataset.audio = audioUrl;
+              previewBtn.innerHTML = "▶️";
+            }
+          } else {
+            document.getElementById("mem-song-id").value = "";
+            document.getElementById("mem-song-title").value = "";
+            document.getElementById("mem-song-artist").value = "";
+            document.getElementById("mem-song-cover").value = "";
+            document.getElementById("mem-song-audio").value = "";
+            if (previewBtn) previewBtn.style.display = "none";
+          }
+        };
+
+        if (previewBtn) {
+          previewBtn.onclick = () => {
+            const audio = previewBtn.dataset.audio;
+            if (audio) this.playAudioPreview(audio, previewBtn);
+          };
+        }
+      }
 
       modal.classList.add("active");
     }
@@ -3289,14 +3506,42 @@
         this.renderModalGallery();
       });
 
-      document.getElementById("form-memory")?.addEventListener("submit", (e) => {
+      document.getElementById("form-memory")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : "Guardar recuerdo 🌻";
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = "Guardando recuerdo… ⏳";
+        }
 
         const coverVal = document.getElementById("mem-cover-url").value.trim();
         const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
         const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
+
+        const songId = document.getElementById("mem-song-id").value;
+        const songTitle = document.getElementById("mem-song-title").value;
+        const songArtist = document.getElementById("mem-song-artist").value;
+        const songCover = document.getElementById("mem-song-cover").value;
+        const songAudioUrl = document.getElementById("mem-song-audio").value;
+
+        // Comprimir versión local para que ocupe muy poco espacio y cargue al instante
+        let optimizedCover = coverVal;
+        if (coverVal && !isVideo && coverVal.startsWith('data:image/')) {
+          optimizedCover = await window.MediaService.compressImage(coverVal, 1400, 1400, 0.78);
+        }
+
+        const optimizedGallery = [];
+        if (Array.isArray(this.modalGalleryItems)) {
+          for (const item of this.modalGalleryItems) {
+            if (item && item.startsWith('data:image/')) {
+              const comp = await window.MediaService.compressImage(item, 1200, 1200, 0.75);
+              optimizedGallery.push(comp);
+            } else {
+              optimizedGallery.push(item);
+            }
+          }
+        }
 
         const memData = {
           id: document.getElementById("mem-id").value || undefined,
@@ -3304,11 +3549,16 @@
           title: document.getElementById("mem-title").value.trim(),
           description: document.getElementById("mem-desc").value.trim(),
           color: selectedColor,
-          coverMedia: coverVal,
+          coverMedia: optimizedCover,
           coverType: isVideo ? "video" : "image",
-          gallery: this.modalGalleryItems || [],
+          gallery: optimizedGallery,
           status: document.getElementById("mem-status").value,
-          author: window.storage.getCurrentUser()
+          author: window.storage.getCurrentUser(),
+          songId: songId || null,
+          songTitle: songTitle || '',
+          songArtist: songArtist || '',
+          songCover: songCover || '',
+          songAudioUrl: songAudioUrl || ''
         };
 
         const driveCover = this.driveCoverPayload || coverVal;
@@ -3323,20 +3573,12 @@
         }
         this.renderMemories();
         this.renderAnnualCalendar();
+        this.renderDailyDashboard();
         window.Utils.showToast("¡Recuerdo guardado! 🌻 Respaldando en Google Drive en segundo plano... ✨", "success");
 
-        // 2. Subir en segundo plano a Google Drive creando EXACTAMENTE 1 carpeta con todas sus fotos
+        // 2. Encolar subida a Google Drive en segundo plano
         if (window.GoogleDriveService && (driveCover || driveGallery.length)) {
-          (async () => {
-            try {
-              const res = await window.GoogleDriveService.uploadMemory(memData, driveCover, driveGallery);
-              if (res && res.success) {
-                window.Utils.showToast(`📁 Carpeta y ${res.filesCount || ''} fotos respaldadas en Google Drive ✨`, "success");
-              }
-            } catch (driveErr) {
-              console.warn("Aviso de subida asíncrona a Drive:", driveErr);
-            }
-          })();
+          window.GoogleDriveService.uploadMemory(memData, driveCover, driveGallery);
         }
       });
 

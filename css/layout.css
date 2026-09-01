@@ -913,3 +913,107 @@ textarea.form-control {
   z-index: 1;
   animation: gentlePulse 3s infinite ease-in-out;
 }
+
+/* =========================================
+   MONITOR DE SUBIDA EN CABECERA ☁️📊
+   ========================================= */
+.upload-monitor-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  background: rgba(30, 22, 48, 0.7);
+  border: 1px solid rgba(244, 197, 66, 0.4);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  user-select: none;
+  position: relative;
+}
+
+.upload-monitor-pill:hover {
+  background: rgba(48, 20, 56, 0.85);
+  border-color: var(--color-sunflower-gold);
+  color: var(--color-sunflower-gold);
+  transform: translateY(-1px);
+}
+
+.upload-monitor-pill.uploading {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00E5FF;
+  color: #00E5FF;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+.upload-monitor-indicator {
+  width: 7px;
+  height: 7px;
+  background: #00E5FF;
+  border-radius: 50%;
+  animation: uploadPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes uploadPulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px #00E5FF; }
+}
+
+@media (max-width: 600px) {
+  .upload-monitor-pill .upload-monitor-label {
+    display: none;
+  }
+  .upload-monitor-pill {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* =========================================
+   ESTABILIDAD EN ORIENTACIÓN HORIZONTAL 📱🔄
+   ========================================= */
+@media (orientation: landscape) and (max-height: 550px) {
+  .app-header {
+    padding: 0.35rem 1rem;
+  }
+  .header-brand {
+    font-size: 1.1rem;
+  }
+  .whatsapp-presence-bar {
+    padding: 0.25rem 0.6rem;
+  }
+  .app-nav {
+    padding: 0.25rem 0.5rem;
+  }
+  .nav-pill-btn {
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+  }
+  .modal-box {
+    max-height: 94vh;
+    padding: 1rem 1.25rem;
+  }
+  .modal-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+  }
+  .modal-box-viewer {
+    max-height: 96vh;
+    height: 96vh;
+  }
+  .lock-card {
+    padding: 1.25rem 1.5rem;
+    max-width: 480px;
+  }
+  .lock-hero-emblem {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.5rem;
+  }
+  .lock-emblem-logo-img {
+    width: 54px;
+    height: 54px;
+  }
+}

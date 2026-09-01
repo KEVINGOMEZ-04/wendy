@@ -587,14 +587,6 @@
       if (window.Capacitor?.Plugins?.LocalNotifications) {
         try {
           const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
-          
-          try {
-            const check = await LocalNotifications.checkPermissions();
-            if (check.display !== 'granted') {
-              await LocalNotifications.requestPermissions();
-            }
-          } catch (_) {}
-
           try {
             await LocalNotifications.createChannel({
               id: 'atria_channel',
@@ -610,10 +602,11 @@
           await LocalNotifications.schedule({
             notifications: [
               {
-                id: Math.floor(Math.random() * 900000) + 100000,
+                id: Math.floor(Math.random() * 1000000) + 1,
                 title: title,
                 body: body,
                 channelId: 'atria_channel',
+                schedule: { at: new Date(Date.now() + 150) },
                 sound: 'default',
                 actionTypeId: '',
                 extra: { url: url }
@@ -1942,6 +1935,13 @@
         if (voiceAudioPlayer) voiceAudioPlayer.src = '';
         if (voicePreview) voicePreview.style.display = 'none';
         if (deleteVoiceBtn) deleteVoiceBtn.style.display = 'none';
+      }
+
+      // Resetear estado del botón de submit al abrir el modal para que NUNCA quede bloqueado
+      const memSubmitBtn = modal.querySelector('button[type="submit"]');
+      if (memSubmitBtn) {
+        memSubmitBtn.disabled = false;
+        memSubmitBtn.innerHTML = "Guardar recuerdo 🌻";
       }
 
       modal.classList.add("active");
@@ -3704,7 +3704,6 @@
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           try {
-            // Comprimir de forma ultra-rápida y ligera con ObjectURL
             const dataUrl = await window.Utils.compressImage(file, 1280, 0.8);
             if (dataUrl) {
               this.driveGalleryPayloads.push(dataUrl);
@@ -3714,7 +3713,6 @@
           } catch (err) {
             console.error("Error procesando foto de galería:", err);
           }
-          // Pausa no bloqueante para mantener la UI fluida a 60fps
           await new Promise(r => setTimeout(r, 20));
         }
       });
@@ -3728,54 +3726,64 @@
           submitBtn.innerHTML = "Guardando recuerdo… ⏳";
         }
 
-        const coverVal = document.getElementById("mem-cover-url").value.trim();
-        const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
-        const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
+        try {
+          const coverVal = document.getElementById("mem-cover-url").value.trim();
+          const isVideo = coverVal.match(/\.(mp4|webm|ogg|mov)$/i) || coverVal.startsWith("data:video/");
+          const selectedColor = document.querySelector('input[name="mem-color"]:checked')?.value || "#F4C542";
 
-        const songId = document.getElementById("mem-song-id").value;
-        const songTitle = document.getElementById("mem-song-title").value;
-        const songArtist = document.getElementById("mem-song-artist").value;
-        const songCover = document.getElementById("mem-song-cover").value;
-        const songAudioUrl = document.getElementById("mem-song-audio").value;
+          const songId = document.getElementById("mem-song-id").value;
+          const songTitle = document.getElementById("mem-song-title").value;
+          const songArtist = document.getElementById("mem-song-artist").value;
+          const songCover = document.getElementById("mem-song-cover").value;
+          const songAudioUrl = document.getElementById("mem-song-audio").value;
 
-        const memData = {
-          id: document.getElementById("mem-id").value || undefined,
-          date: document.getElementById("mem-date").value,
-          title: document.getElementById("mem-title").value.trim(),
-          description: document.getElementById("mem-desc").value.trim(),
-          color: selectedColor,
-          coverMedia: coverVal,
-          coverType: isVideo ? "video" : "image",
-          gallery: this.modalGalleryItems || [],
-          status: document.getElementById("mem-status").value,
-          author: window.storage.getCurrentUser(),
-          songId: songId || null,
-          songTitle: songTitle || '',
-          songArtist: songArtist || '',
-          songCover: songCover || '',
-          songAudioUrl: songAudioUrl || '',
-          voiceNoteUrl: document.getElementById("mem-voice-url")?.value || '',
-          voiceNoteDuration: parseInt(document.getElementById("mem-voice-duration")?.value, 10) || 0
-        };
+          const memData = {
+            id: document.getElementById("mem-id").value || undefined,
+            date: document.getElementById("mem-date").value,
+            title: document.getElementById("mem-title").value.trim() || 'Recuerdo',
+            description: document.getElementById("mem-desc").value.trim(),
+            color: selectedColor,
+            coverMedia: coverVal,
+            coverType: isVideo ? "video" : "image",
+            gallery: this.modalGalleryItems || [],
+            status: document.getElementById("mem-status").value,
+            author: window.storage.getCurrentUser(),
+            songId: songId || null,
+            songTitle: songTitle || '',
+            songArtist: songArtist || '',
+            songCover: songCover || '',
+            songAudioUrl: songAudioUrl || '',
+            voiceNoteUrl: document.getElementById("mem-voice-url")?.value || '',
+            voiceNoteDuration: parseInt(document.getElementById("mem-voice-duration")?.value, 10) || 0
+          };
 
-        const driveCover = this.driveCoverPayload || coverVal;
-        const driveGallery = (this.driveGalleryPayloads && this.driveGalleryPayloads.length) ? [...this.driveGalleryPayloads] : [...(this.modalGalleryItems || [])];
+          const driveCover = this.driveCoverPayload || coverVal;
+          const driveGallery = (this.driveGalleryPayloads && this.driveGalleryPayloads.length) ? [...this.driveGalleryPayloads] : [...(this.modalGalleryItems || [])];
 
-        // 1. Guardar de inmediato en el teléfono para que aparezca en 0 segundos
-        window.storage.saveMemory(memData);
-        document.getElementById("modal-memory").classList.remove("active");
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = origBtnHtml;
-        }
-        this.renderMemories();
-        this.renderAnnualCalendar();
-        this.renderDailyDashboard();
-        window.Utils.showToast("¡Recuerdo guardado! 🌻 Respaldando en Google Drive en segundo plano... ✨", "success");
+          // 1. Guardar de inmediato en el almacenamiento
+          window.storage.saveMemory(memData);
+          document.getElementById("modal-memory").classList.remove("active");
 
-        // 2. Encolar subida a Google Drive en segundo plano
-        if (window.GoogleDriveService && (driveCover || driveGallery.length)) {
-          window.GoogleDriveService.uploadMemory(memData, driveCover, driveGallery);
+          this.renderMemories();
+          this.renderAnnualCalendar();
+          this.renderDailyDashboard();
+          window.Utils.showToast("¡Recuerdo guardado! 🌻 Respaldando en Google Drive en segundo plano... ✨", "success");
+
+          // 2. Encolar subida a Google Drive en segundo plano
+          if (window.GoogleDriveService && (driveCover || driveGallery.length)) {
+            window.GoogleDriveService.uploadMemory(memData, driveCover, driveGallery);
+          }
+
+          this.driveCoverPayload = null;
+          this.driveGalleryPayloads = [];
+        } catch (err) {
+          console.error("Error guardando recuerdo:", err);
+          window.Utils.showToast("Error al guardar el recuerdo.", "error");
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnHtml;
+          }
         }
       });
 

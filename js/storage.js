@@ -126,7 +126,7 @@
     constructor() {
       this.keys = window.CONFIG.storageKeys;
       this.listeners = [];
-      this.remoteKeys = ['memories', 'movies', 'series', 'notes', 'dreams', 'songs'];
+      this.remoteKeys = ['memories', 'movies', 'series', 'notes', 'dreams', 'songs', 'dailyPrompts', 'timeCapsules'];
       this.remoteRef = null;
       this.initDefaults();
       this.initRemoteSync();
@@ -150,6 +150,8 @@
         this.set(this.keys.dreams, INITIAL_DATA.dreams);
       }
       if (!localStorage.getItem(this.keys.songs)) this.set(this.keys.songs, INITIAL_DATA.songs);
+      if (!localStorage.getItem(this.keys.dailyPrompts)) this.set(this.keys.dailyPrompts, {});
+      if (!localStorage.getItem(this.keys.timeCapsules)) this.set(this.keys.timeCapsules, []);
       if (!localStorage.getItem(this.keys.currentUser)) {
         localStorage.setItem(this.keys.currentUser, window.CONFIG.defaultUser);
       }
@@ -804,7 +806,9 @@
         songTitle: m.songTitle || '',
         songArtist: m.songArtist || '',
         songCover: m.songCover || '',
-        songAudioUrl: m.songAudioUrl || ''
+        songAudioUrl: m.songAudioUrl || '',
+        voiceNoteUrl: m.voiceNoteUrl || '',
+        voiceNoteDuration: m.voiceNoteDuration || 0
       }));
     }
 
@@ -830,6 +834,8 @@
             songArtist: memoryData.songArtist !== undefined ? memoryData.songArtist : (list[index].songArtist || ''),
             songCover: memoryData.songCover !== undefined ? memoryData.songCover : (list[index].songCover || ''),
             songAudioUrl: memoryData.songAudioUrl !== undefined ? memoryData.songAudioUrl : (list[index].songAudioUrl || ''),
+            voiceNoteUrl: memoryData.voiceNoteUrl !== undefined ? memoryData.voiceNoteUrl : (list[index].voiceNoteUrl || ''),
+            voiceNoteDuration: memoryData.voiceNoteDuration !== undefined ? memoryData.voiceNoteDuration : (list[index].voiceNoteDuration || 0),
             updatedAt: now,
             isDemo: false
           };
@@ -851,6 +857,8 @@
           songArtist: memoryData.songArtist || '',
           songCover: memoryData.songCover || '',
           songAudioUrl: memoryData.songAudioUrl || '',
+          voiceNoteUrl: memoryData.voiceNoteUrl || '',
+          voiceNoteDuration: memoryData.voiceNoteDuration || 0,
           status: memoryData.status || 'Guardado',
           createdAt: now,
           updatedAt: now,
@@ -1209,7 +1217,11 @@
     }
 
     getNotes() {
-      return this.get(this.keys.notes, []);
+      return this.get(this.keys.notes, []).map(n => ({
+        ...n,
+        voiceNoteUrl: n.voiceNoteUrl || '',
+        voiceNoteDuration: n.voiceNoteDuration || 0
+      }));
     }
 
     saveNote(noteData) {
@@ -1232,6 +1244,8 @@
             style: noteData.style || existing.style || 'sunflower',
             sticker: noteData.sticker !== undefined ? noteData.sticker : (existing.sticker || ''),
             photoUrl: noteData.photoUrl !== undefined ? noteData.photoUrl : (existing.photoUrl || ''),
+            voiceNoteUrl: noteData.voiceNoteUrl !== undefined ? noteData.voiceNoteUrl : (existing.voiceNoteUrl || ''),
+            voiceNoteDuration: noteData.voiceNoteDuration !== undefined ? noteData.voiceNoteDuration : (existing.voiceNoteDuration || 0),
             isPinned: noteData.isPinned !== undefined ? Boolean(noteData.isPinned) : (existing.isPinned || false),
             updatedAt: now,
             isDemo: false
@@ -1245,6 +1259,8 @@
           style: noteData.style || 'sunflower',
           sticker: noteData.sticker || '',
           photoUrl: noteData.photoUrl || '',
+          voiceNoteUrl: noteData.voiceNoteUrl || '',
+          voiceNoteDuration: noteData.voiceNoteDuration || 0,
           isPinned: Boolean(noteData.isPinned),
           isRevealed: noteData.style === 'surprise' ? false : true,
           reactions: {},
@@ -1710,6 +1726,156 @@
       serie.updatedAt = new Date().toISOString();
       this.set(this.keys.series, list);
       return serie;
+    }
+
+    // =========================================
+    // MÓDULO DE LA PREGUNTA DIARIA 💌✨
+    // =========================================
+
+    getDailyPromptsMap() {
+      return this.get(this.keys.dailyPrompts, {}) || {};
+    }
+
+    getDailyPrompt(dateStr = null) {
+      if (!dateStr) {
+        dateStr = new Date().toISOString().split('T')[0];
+      }
+      const map = this.getDailyPromptsMap();
+      const existing = map[dateStr];
+
+      const defaultQuestion = window.MediaService?.DailyQuestions?.getQuestionForDate(dateStr) || '¿Qué es lo que más agradeces de nosotros hoy?';
+
+      if (existing) {
+        return {
+          date: dateStr,
+          question: existing.question || defaultQuestion,
+          kevinAnswer: existing.kevinAnswer || '',
+          wendyAnswer: existing.wendyAnswer || '',
+          kevinAnsweredAt: existing.kevinAnsweredAt || null,
+          wendyAnsweredAt: existing.wendyAnsweredAt || null,
+          revealed: !!(existing.kevinAnswer && existing.wendyAnswer) || !!existing.revealed
+        };
+      }
+
+      return {
+        date: dateStr,
+        question: defaultQuestion,
+        kevinAnswer: '',
+        wendyAnswer: '',
+        kevinAnsweredAt: null,
+        wendyAnsweredAt: null,
+        revealed: false
+      };
+    }
+
+    saveDailyAnswer(dateStr, author, answerText) {
+      if (!dateStr) dateStr = new Date().toISOString().split('T')[0];
+      const map = this.getDailyPromptsMap();
+      const current = this.getDailyPrompt(dateStr);
+      const now = new Date().toISOString();
+
+      const isWendy = (author || this.getCurrentUser()).toLowerCase() === 'wendy';
+
+      if (isWendy) {
+        current.wendyAnswer = (answerText || '').trim();
+        current.wendyAnsweredAt = now;
+      } else {
+        current.kevinAnswer = (answerText || '').trim();
+        current.kevinAnsweredAt = now;
+      }
+
+      const isBothAnswered = Boolean(current.kevinAnswer && current.wendyAnswer);
+      current.revealed = isBothAnswered;
+
+      map[dateStr] = current;
+      this.set(this.keys.dailyPrompts, map);
+
+      if (isBothAnswered) {
+        this.broadcastActivity('pregunta', '¡Ambos han respondido la pregunta de hoy!', 'reveló que');
+      } else {
+        this.broadcastActivity('pregunta', 'respondió la pregunta del día. ¡Faltas tú!', 'ya');
+      }
+
+      return current;
+    }
+
+    getDailyPromptsHistory() {
+      const map = this.getDailyPromptsMap();
+      const list = Object.keys(map).map(dateStr => map[dateStr]);
+      // Ordenar por fecha descendente
+      return list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }
+
+    // =========================================
+    // MÓDULO DE CÁPSULAS DEL TIEMPO ⏳💎
+    // =========================================
+
+    getTimeCapsules() {
+      return this.get(this.keys.timeCapsules, []).map(c => ({
+        ...c,
+        photos: Array.isArray(c.photos) ? c.photos : (c.photoUrl ? [c.photoUrl] : []),
+        voiceNoteUrl: c.voiceNoteUrl || '',
+        voiceNoteDuration: c.voiceNoteDuration || 0,
+        isOpened: Boolean(c.isOpened)
+      }));
+    }
+
+    saveTimeCapsule(capsuleData) {
+      const list = this.getTimeCapsules();
+      const now = new Date().toISOString();
+      const currentUser = this.getCurrentUser();
+
+      if (capsuleData.id) {
+        const index = list.findIndex(c => c.id === capsuleData.id);
+        if (index !== -1) {
+          list[index] = {
+            ...list[index],
+            ...capsuleData,
+            updatedAt: now
+          };
+        }
+      } else {
+        const newCapsule = {
+          id: window.Utils.generateUUID(),
+          title: (capsuleData.title || '').trim() || 'Cápsula de Amor Secreta ✨',
+          message: (capsuleData.message || '').trim(),
+          unlockDate: capsuleData.unlockDate, // ISO o YYYY-MM-DD
+          creator: capsuleData.creator || currentUser,
+          photoUrl: capsuleData.photoUrl || '',
+          photos: Array.isArray(capsuleData.photos) ? capsuleData.photos : [],
+          voiceNoteUrl: capsuleData.voiceNoteUrl || '',
+          voiceNoteDuration: capsuleData.voiceNoteDuration || 0,
+          theme: capsuleData.theme || 'gold', // gold, galaxy, rose
+          isOpened: false,
+          openedAt: null,
+          createdAt: now,
+          updatedAt: now
+        };
+        list.push(newCapsule);
+      }
+
+      this.set(this.keys.timeCapsules, list);
+      this.broadcastActivity('cápsula', capsuleData.title || 'una cápsula del tiempo', capsuleData.id ? 'actualizó la' : 'selló');
+      return list;
+    }
+
+    deleteTimeCapsule(id) {
+      const list = this.getTimeCapsules().filter(c => c.id !== id);
+      this.set(this.keys.timeCapsules, list);
+      return list;
+    }
+
+    openTimeCapsule(id) {
+      const list = this.getTimeCapsules();
+      const capsule = list.find(c => c.id === id);
+      if (!capsule) return null;
+
+      capsule.isOpened = true;
+      capsule.openedAt = new Date().toISOString();
+      capsule.updatedAt = new Date().toISOString();
+      this.set(this.keys.timeCapsules, list);
+      this.broadcastActivity('cápsula', capsule.title, 'abrió la');
+      return capsule;
     }
   }
 

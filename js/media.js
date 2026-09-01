@@ -178,6 +178,17 @@ window.MediaService = {
   /**
    * Búsqueda de películas con soporte TMDB y fallback universal
    */
+  TMDB_GENRES: {
+    // Películas
+    28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia', 80: 'Crimen', 99: 'Documental',
+    18: 'Drama', 10751: 'Familiar', 14: 'Fantasía', 36: 'Historia', 27: 'Terror', 10402: 'Música',
+    9648: 'Misterio', 10749: 'Romance', 878: 'Ciencia Ficción', 10770: 'Película de TV',
+    53: 'Suspenso', 10752: 'Bélica', 37: 'Western',
+    // Series & Anime
+    10759: 'Acción y Aventura', 10762: 'Infantil', 10763: 'Noticias', 10764: 'Reality',
+    10765: 'Ciencia Ficción y Fantasía', 10766: 'Telenovela', 10767: 'Talk Show', 10768: 'Guerra y Política'
+  },
+
   async searchMovies(query) {
     if (!query || !query.trim()) return [];
     const q = query.trim();
@@ -195,11 +206,15 @@ window.MediaService = {
             return sortedResults.slice(0, 10).map(movie => {
               const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
               const year = (movie.release_date || '').slice(0, 4) || new Date().getFullYear();
+              const genreNames = (movie.genre_ids || []).map(id => this.TMDB_GENRES[id]).filter(Boolean);
+              const genre = genreNames.length ? genreNames.slice(0, 3).join(', ') : 'Cine';
+
               return {
                 tmdbId: movie.id,
                 title: movie.title || movie.original_title,
                 year,
                 poster,
+                genre,
                 synopsis: movie.overview || 'Película disponible en catálogo oficial.',
                 imdbRating: movie.vote_average ? movie.vote_average.toFixed(1) : '',
                 platforms: ['Cine', 'Streaming'],
@@ -376,12 +391,16 @@ window.MediaService = {
             return sortedResults.slice(0, 10).map(show => {
               const poster = show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : '';
               const year = (show.first_air_date || '').slice(0, 4) || new Date().getFullYear();
+              const genreNames = (show.genre_ids || []).map(id => this.TMDB_GENRES[id]).filter(Boolean);
+              const genre = genreNames.length ? genreNames.slice(0, 3).join(', ') : 'Serie / Anime';
+
               return {
                 tmdbId: show.id,
                 title: show.name || show.original_name,
                 originalTitle: show.original_name,
                 year,
                 poster,
+                genre,
                 synopsis: show.overview || 'Serie/Anime disponible en catálogo oficial.',
                 imdbRating: show.vote_average ? show.vote_average.toFixed(1) : '',
                 platforms: ['Streaming'],
@@ -413,6 +432,7 @@ window.MediaService = {
               title: cleanTitle,
               year,
               poster,
+              genre: s.primaryGenreName || 'Serie',
               synopsis: s.longDescription || s.shortDescription || 'Serie de televisión.',
               imdbRating: '',
               platforms: ['Apple TV', 'Streaming'],
@@ -448,6 +468,9 @@ window.MediaService = {
             enriched.poster = `https://image.tmdb.org/t/p/w500${details.poster_path}`;
           }
           enriched.synopsis = details.overview || enriched.synopsis;
+          if (details.genres && details.genres.length) {
+            enriched.genre = details.genres.map(g => g.name).join(', ');
+          }
           enriched.seasonsCount = details.number_of_seasons || 1;
           enriched.episodesCount = details.number_of_episodes || 0;
           if (details.vote_average) {

@@ -22,6 +22,9 @@
       this.initModals();
       this.initLightbox();
       this.initWrappedSystem();
+      this.initDailyPrompt();
+      this.initTimeCapsules();
+      this.initVoiceRecorders();
       
       // Registro de PWA Service Worker
       if ('serviceWorker' in navigator) {
@@ -40,6 +43,8 @@
         if (key === window.CONFIG.storageKeys.songs) this.renderSongs();
         if (key === window.CONFIG.storageKeys.notes) this.renderNotes();
         if (key === window.CONFIG.storageKeys.dreams) this.renderDreams();
+        if (key === window.CONFIG.storageKeys.dailyPrompts) this.renderDailyPromptWidget();
+        if (key === window.CONFIG.storageKeys.timeCapsules) this.renderTimeCapsules();
         if (key === window.CONFIG.storageKeys.profiles) {
           this.initWhatsAppPresenceUI();
           this.renderDailyDashboard();
@@ -55,6 +60,8 @@
         this.renderSongs();
         this.renderNotes();
         this.renderDreams();
+        this.renderDailyPromptWidget();
+        this.renderTimeCapsules();
         this.renderDailyDashboard();
         this.initWhatsAppPresenceUI();
       };
@@ -1678,6 +1685,17 @@
                 </div>
               ` : ''}
 
+              <!-- Nota de voz grabada si existe 🎙️ -->
+              ${m.voiceNoteUrl ? `
+                <div class="memory-voice-note-pill" style="margin-top: 0.6rem; background: rgba(224, 64, 251, 0.12); border: 1px solid rgba(224, 64, 251, 0.35); border-radius: 12px; padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.6rem;">
+                  <span style="font-size: 1.15rem;">🎙️</span>
+                  <div style="flex: 1; overflow: hidden;">
+                    <div style="font-size: 0.78rem; color: #F8BBD0; font-weight: 600; margin-bottom: 0.2rem;">Nota de voz del recuerdo</div>
+                    <audio controls src="${window.Utils.sanitizeHTML(m.voiceNoteUrl)}" style="width: 100%; height: 32px;"></audio>
+                  </div>
+                </div>
+              ` : ''}
+
               <!-- Pie con Autor e Hilo de Comentarios -->
               <div class="memory-footer-bar">
                 <div class="memory-author-badge" title="Añadido por ${window.Utils.sanitizeHTML(author)}">
@@ -1908,6 +1926,26 @@
             if (audio) this.playAudioPreview(audio, previewBtn);
           };
         }
+      }
+
+      // Nota de voz
+      const voiceUrl = mem && mem.voiceNoteUrl ? mem.voiceNoteUrl : '';
+      const voiceDuration = mem && mem.voiceNoteDuration ? mem.voiceNoteDuration : 0;
+      const memVoiceUrlInput = document.getElementById('mem-voice-url');
+      const memVoiceDurInput = document.getElementById('mem-voice-duration');
+      if (memVoiceUrlInput) memVoiceUrlInput.value = voiceUrl;
+      if (memVoiceDurInput) memVoiceDurInput.value = voiceDuration;
+      const voicePreview = document.getElementById('mem-voice-preview');
+      const voiceAudioPlayer = document.getElementById('mem-voice-audio-player');
+      const deleteVoiceBtn = document.getElementById('btn-mem-delete-audio');
+      if (voiceUrl) {
+        if (voiceAudioPlayer) voiceAudioPlayer.src = voiceUrl;
+        if (voicePreview) voicePreview.style.display = 'block';
+        if (deleteVoiceBtn) deleteVoiceBtn.style.display = 'inline-block';
+      } else {
+        if (voiceAudioPlayer) voiceAudioPlayer.src = '';
+        if (voicePreview) voicePreview.style.display = 'none';
+        if (deleteVoiceBtn) deleteVoiceBtn.style.display = 'none';
       }
 
       modal.classList.add("active");
@@ -3099,6 +3137,14 @@
               </div>
             ` : ''}
 
+            <!-- Nota de Voz Adjunta si existe 🎙️ -->
+            ${n.voiceNoteUrl ? `
+              <div class="note-voice-attachment" style="margin: 0.6rem 0; background: rgba(0,0,0,0.18); border-radius: 8px; padding: 0.35rem 0.6rem; display: flex; align-items: center; gap: 0.5rem; border: 1px solid rgba(255,255,255,0.1);">
+                <span style="font-size: 1rem;">🎙️</span>
+                <audio controls src="${window.Utils.sanitizeHTML(n.voiceNoteUrl)}" style="width: 100%; height: 30px;"></audio>
+              </div>
+            ` : ''}
+
             <!-- Barra de Reacciones Interactivas -->
             <div class="note-reactions-bar">
               ${availableReactions.map(emoji => {
@@ -3234,6 +3280,26 @@
       // Pin
       const pinCheckbox = document.getElementById("note-is-pinned");
       if (pinCheckbox) pinCheckbox.checked = n && n.isPinned === true;
+
+      // Nota de voz
+      const voiceUrl = n && n.voiceNoteUrl ? n.voiceNoteUrl : "";
+      const voiceDuration = n && n.voiceNoteDuration ? n.voiceNoteDuration : 0;
+      const noteVoiceUrlInput = document.getElementById("note-voice-url");
+      const noteVoiceDurInput = document.getElementById("note-voice-duration");
+      if (noteVoiceUrlInput) noteVoiceUrlInput.value = voiceUrl;
+      if (noteVoiceDurInput) noteVoiceDurInput.value = voiceDuration;
+      const voicePreview = document.getElementById("note-voice-preview");
+      const voiceAudioPlayer = document.getElementById("note-voice-audio-player");
+      const deleteVoiceBtn = document.getElementById("btn-note-delete-audio");
+      if (voiceUrl) {
+        if (voiceAudioPlayer) voiceAudioPlayer.src = voiceUrl;
+        if (voicePreview) voicePreview.style.display = "block";
+        if (deleteVoiceBtn) deleteVoiceBtn.style.display = "inline-block";
+      } else {
+        if (voiceAudioPlayer) voiceAudioPlayer.src = "";
+        if (voicePreview) voicePreview.style.display = "none";
+        if (deleteVoiceBtn) deleteVoiceBtn.style.display = "none";
+      }
 
       modal.classList.add("active");
     }
@@ -3705,7 +3771,9 @@
           songTitle: songTitle || '',
           songArtist: songArtist || '',
           songCover: songCover || '',
-          songAudioUrl: songAudioUrl || ''
+          songAudioUrl: songAudioUrl || '',
+          voiceNoteUrl: document.getElementById("mem-voice-url")?.value || '',
+          voiceNoteDuration: parseInt(document.getElementById("mem-voice-duration")?.value, 10) || 0
         };
 
         const driveCover = this.driveCoverPayload || coverVal;
@@ -3880,7 +3948,9 @@
           style: selectedStyle,
           sticker: selectedSticker,
           photoUrl: photoUrl,
-          isPinned: isPinned
+          isPinned: isPinned,
+          voiceNoteUrl: document.getElementById("note-voice-url")?.value || "",
+          voiceNoteDuration: parseInt(document.getElementById("note-voice-duration")?.value, 10) || 0
         };
 
         try {
@@ -4561,6 +4631,559 @@
         btnPrev.style.display = this.lightboxItems.length > 1 ? "flex" : "none";
         btnNext.style.display = this.lightboxItems.length > 1 ? "flex" : "none";
       }
+    }
+
+    // ========================================================
+    // --- 10. PREGUNTA DIARIA DE PAREJA CON CANDADO 💌✨ ---
+    // ========================================================
+
+    initDailyPrompt() {
+      this.renderDailyPromptWidget();
+    }
+
+    renderDailyPromptWidget() {
+      const container = document.getElementById('daily-prompt-card');
+      if (!container) return;
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const prompt = window.storage.getDailyPrompt(todayStr);
+      const currentUser = window.storage.getCurrentUser();
+      const isWendy = currentUser.toLowerCase() === 'wendy';
+      const myAnswer = isWendy ? prompt.wendyAnswer : prompt.kevinAnswer;
+      const partnerAnswer = isWendy ? prompt.kevinAnswer : prompt.wendyAnswer;
+      const partnerName = isWendy ? 'Kevin' : 'Wendy';
+      const partnerInitial = partnerName.charAt(0);
+      const partnerClass = partnerName.toLowerCase();
+      const myInitial = currentUser.charAt(0).toUpperCase();
+      const myClass = currentUser.toLowerCase();
+
+      const isBothAnswered = Boolean(prompt.kevinAnswer && prompt.wendyAnswer);
+
+      let contentHtml = '';
+
+      if (isBothAnswered) {
+        // AMBOS RESPONDIERON -> REVELADO TOTAL CON CONFETI
+        contentHtml = `
+          <div class="daily-prompt-revealed-wrap">
+            <div class="daily-prompt-header">
+              <div class="daily-prompt-badge">
+                <span class="prompt-star">✨</span>
+                <span>Pregunta del Día · ¡Ambos Respondieron! 💖</span>
+              </div>
+              <button type="button" class="btn-secondary btn-open-prompts-history" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+                📖 Álbum de Preguntas
+              </button>
+            </div>
+
+            <h3 class="daily-prompt-question-title">«${window.Utils.sanitizeHTML(prompt.question)}»</h3>
+
+            <div class="daily-prompt-answers-grid">
+              <!-- Respuesta Kevin -->
+              <div class="prompt-answer-card kevin-card">
+                <div class="prompt-answer-header">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="author-badge-circle kevin">K</span>
+                    <strong>Kevin 👦🏻</strong>
+                  </div>
+                  <small style="color: var(--color-text-muted); font-size: 0.75rem;">${prompt.kevinAnsweredAt ? window.Utils.formatDateTimeES(prompt.kevinAnsweredAt) : 'Hoy'}</small>
+                </div>
+                <div class="prompt-answer-text">
+                  ${window.Utils.sanitizeHTML(prompt.kevinAnswer)}
+                </div>
+              </div>
+
+              <!-- Respuesta Wendy -->
+              <div class="prompt-answer-card wendy-card">
+                <div class="prompt-answer-header">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="author-badge-circle wendy">W</span>
+                    <strong>Wendy 👧🏻 (Patico ♥️)</strong>
+                  </div>
+                  <small style="color: var(--color-text-muted); font-size: 0.75rem;">${prompt.wendyAnsweredAt ? window.Utils.formatDateTimeES(prompt.wendyAnsweredAt) : 'Hoy'}</small>
+                </div>
+                <div class="prompt-answer-text">
+                  ${window.Utils.sanitizeHTML(prompt.wendyAnswer)}
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 0.85rem;">
+              <span style="font-size: 0.82rem; color: var(--color-sunflower-gold);">🎉 ¡Conexión del día completada! Mañana a las 00:00 se desbloqueará una nueva pregunta.</span>
+            </div>
+          </div>
+        `;
+      } else if (myAnswer) {
+        // YO YA RESPONDÍ, ESPERANDO A MI PAREJA
+        contentHtml = `
+          <div class="daily-prompt-waiting-wrap">
+            <div class="daily-prompt-header">
+              <div class="daily-prompt-badge">
+                <span class="prompt-star">🔒</span>
+                <span>Pregunta del Día · Respuesta Bajo Llave</span>
+              </div>
+              <button type="button" class="btn-secondary btn-open-prompts-history" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+                📖 Álbum
+              </button>
+            </div>
+
+            <h3 class="daily-prompt-question-title">«${window.Utils.sanitizeHTML(prompt.question)}»</h3>
+
+            <div class="daily-prompt-secret-box">
+              <div class="secret-box-icon">🔒</div>
+              <div style="flex: 1;">
+                <h4 style="margin: 0; color: var(--color-sunflower-gold); font-size: 0.95rem;">Tu respuesta ha sido sellada con éxito 💌</h4>
+                <p style="margin: 0.3rem 0 0; font-size: 0.84rem; color: var(--color-text-secondary); line-height: 1.4;">
+                  Escribiste: <em>«${window.Utils.sanitizeHTML(myAnswer)}»</em>
+                </p>
+                <div class="secret-partner-status" style="margin-top: 0.6rem; font-size: 0.82rem; color: #E040FB;">
+                  ${partnerAnswer ? `✨ ${partnerName} también respondió. ¡Actualizando...!` : `⏳ Esperando a que <strong>${partnerName}</strong> responda para desbloquear ambas respuestas simultáneamente.`}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // YO NO HE RESPONDIDO AÚN
+        contentHtml = `
+          <div class="daily-prompt-pending-wrap">
+            <div class="daily-prompt-header">
+              <div class="daily-prompt-badge">
+                <span class="prompt-star">💌</span>
+                <span>Pregunta Diaria de Pareja</span>
+              </div>
+              <button type="button" class="btn-secondary btn-open-prompts-history" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+                📖 Álbum
+              </button>
+            </div>
+
+            <div class="daily-prompt-hero-box">
+              <h3 class="daily-prompt-question-title" style="margin-bottom: 0.75rem;">«${window.Utils.sanitizeHTML(prompt.question)}»</h3>
+              
+              ${partnerAnswer ? `
+                <div class="partner-answered-hint-pill" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: var(--radius-full); background: rgba(224, 64, 251, 0.18); border: 1px solid rgba(224, 64, 251, 0.4); color: #F8BBD0; font-size: 0.82rem; margin-bottom: 0.75rem;">
+                  <span>🔒</span>
+                  <span><strong>${partnerName}</strong> ya respondió. ¡Escribe tu respuesta para descubrir lo que dijo!</span>
+                </div>
+              ` : `
+                <p style="font-size: 0.84rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">
+                  Tu respuesta permanecerá secreta y se revelará al mismo tiempo que la de ${partnerName}.
+                </p>
+              `}
+
+              <form id="form-daily-prompt" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                <textarea id="daily-prompt-input" class="form-control" rows="3" placeholder="Escribe tu respuesta sincera como ${currentUser}..." required style="resize: vertical;"></textarea>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn-primary" style="padding: 0.5rem 1.4rem; font-size: 0.9rem;">
+                    <span>Enviar mi respuesta 💌</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = contentHtml;
+
+      // Listeners
+      container.querySelector('#form-daily-prompt')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('daily-prompt-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) return;
+
+        const updated = window.storage.saveDailyAnswer(todayStr, currentUser, text);
+        this.renderDailyPromptWidget();
+
+        if (updated.revealed) {
+          if (window.confetti) {
+            window.confetti({ particleCount: 80, spread: 90, origin: { y: 0.3 } });
+          }
+          window.Utils.showToast('🎉 ¡Ambos han respondido! Respuestas reveladas 💖✨', 'success');
+        } else {
+          window.Utils.showToast('¡Tu respuesta quedó sellada bajo llave! 🔒 Esperando a tu amor...', 'success');
+        }
+      });
+
+      container.querySelectorAll('.btn-open-prompts-history').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.renderDailyPromptsHistory();
+          document.getElementById('modal-daily-prompts-history')?.classList.add('active');
+        });
+      });
+    }
+
+    renderDailyPromptsHistory() {
+      const container = document.getElementById('daily-prompts-history-list');
+      if (!container) return;
+
+      const history = window.storage.getDailyPromptsHistory();
+      if (!history.length) {
+        container.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 2rem;">Aún no hay preguntas respondidas. ¡Empiecen respondiendo la de hoy! 💌</div>';
+        return;
+      }
+
+      container.innerHTML = history.map(item => {
+        const isBoth = item.kevinAnswer && item.wendyAnswer;
+        return `
+          <div class="glass-card prompt-history-card" style="padding: 1.1rem; border-color: ${isBoth ? 'rgba(244, 197, 66, 0.4)' : 'rgba(255, 255, 255, 0.1)'};">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+              <span style="font-size: 0.78rem; color: var(--color-sunflower-gold); font-weight: 700; background: rgba(244, 197, 66, 0.15); padding: 0.2rem 0.6rem; border-radius: var(--radius-full);">📅 ${window.Utils.formatDateES(item.date)}</span>
+              <span style="font-size: 0.78rem; color: ${isBoth ? '#00E5FF' : '#FFB74D'}; font-weight: 600;">${isBoth ? '✨ Completada por ambos' : '⏳ Pendiente'}</span>
+            </div>
+            <h4 style="font-size: 1.05rem; color: var(--color-text-main); margin-bottom: 0.75rem; font-family: var(--font-heading);">«${window.Utils.sanitizeHTML(item.question)}»</h4>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="background: rgba(109, 74, 153, 0.2); padding: 0.6rem 0.85rem; border-radius: 8px; border-left: 3px solid #7092FD;">
+                <strong style="font-size: 0.82rem; color: #7092FD;">👦🏻 Kevin:</strong>
+                <p style="margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--color-text-secondary);">${item.kevinAnswer ? window.Utils.sanitizeHTML(item.kevinAnswer) : '<em>(Aún no respondió)</em>'}</p>
+              </div>
+              <div style="background: rgba(224, 64, 251, 0.15); padding: 0.6rem 0.85rem; border-radius: 8px; border-left: 3px solid #E040FB;">
+                <strong style="font-size: 0.82rem; color: #E040FB;">👧🏻 Wendy:</strong>
+                <p style="margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--color-text-secondary);">${item.wendyAnswer ? window.Utils.sanitizeHTML(item.wendyAnswer) : '<em>(Aún no respondió)</em>'}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========================================================
+    // --- 11. CÁPSULAS DEL TIEMPO ⏳💎 ---
+    // ========================================================
+
+    initTimeCapsules() {
+      this.renderTimeCapsules();
+
+      if (!this.timeCapsuleInterval) {
+        this.timeCapsuleInterval = setInterval(() => {
+          this.updateTimeCapsuleCountdowns();
+        }, 1000);
+      }
+
+      document.getElementById('btn-new-capsule')?.addEventListener('click', () => {
+        this.openNewCapsuleModal();
+      });
+
+      document.getElementById('form-time-capsule')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('capsule-title').value.trim();
+        const unlockDate = document.getElementById('capsule-unlock-date').value;
+        const theme = document.getElementById('capsule-theme').value;
+        const message = document.getElementById('capsule-message').value.trim();
+        const photoUrl = document.getElementById('capsule-photo-url').value.trim();
+        const voiceNoteUrl = document.getElementById('capsule-voice-url').value;
+        const voiceNoteDuration = parseInt(document.getElementById('capsule-voice-duration').value, 10) || 0;
+        const currentUser = window.storage.getCurrentUser();
+
+        window.storage.saveTimeCapsule({
+          title,
+          unlockDate,
+          theme,
+          message,
+          photoUrl,
+          voiceNoteUrl,
+          voiceNoteDuration,
+          creator: currentUser
+        });
+
+        document.getElementById('modal-time-capsule').classList.remove('active');
+        e.currentTarget.reset();
+        this.renderTimeCapsules();
+        window.Utils.showToast('¡Cápsula sellada con éxito! ⏳🔒✨', 'success');
+      });
+    }
+
+    openNewCapsuleModal() {
+      const modal = document.getElementById('modal-time-capsule');
+      const form = document.getElementById('form-time-capsule');
+      if (form) form.reset();
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const minDateStr = tomorrow.toISOString().split('T')[0];
+      const unlockDateInput = document.getElementById('capsule-unlock-date');
+      if (unlockDateInput) {
+        unlockDateInput.min = minDateStr;
+        unlockDateInput.value = minDateStr;
+      }
+
+      const voicePreview = document.getElementById('capsule-voice-preview');
+      const voiceAudioPlayer = document.getElementById('capsule-voice-audio-player');
+      const deleteVoiceBtn = document.getElementById('btn-capsule-delete-audio');
+      if (voiceAudioPlayer) voiceAudioPlayer.src = '';
+      if (voicePreview) voicePreview.style.display = 'none';
+      if (deleteVoiceBtn) deleteVoiceBtn.style.display = 'none';
+
+      modal?.classList.add('active');
+    }
+
+    renderTimeCapsules() {
+      const container = document.getElementById('time-capsules-grid');
+      if (!container) return;
+
+      const capsules = window.storage.getTimeCapsules();
+      if (!capsules.length) {
+        container.innerHTML = `
+          <div class="glass-card" style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary); padding: 1.5rem; font-size: 0.88rem;">
+            Aún no tienen cápsulas del tiempo selladas. ¡Crea una para abrir en su próximo aniversario, cumpleaños o fecha especial! ⏳✨
+          </div>
+        `;
+        return;
+      }
+
+      const now = Date.now();
+
+      container.innerHTML = capsules.map(c => {
+        const unlockMs = new Date(c.unlockDate).getTime();
+        const isReady = unlockMs <= now || c.isOpened;
+        const creator = c.creator || 'Kevin';
+        const creatorInitial = creator.charAt(0).toUpperCase();
+        const creatorClass = creator.toLowerCase() === 'wendy' ? 'wendy' : 'kevin';
+
+        return `
+          <div class="glass-card time-capsule-card ${c.theme || 'gold'} ${isReady ? 'capsule-unlocked' : 'capsule-locked'}" data-id="${c.id}">
+            <div class="capsule-card-top">
+              <span class="capsule-status-badge ${isReady ? 'unlocked' : 'locked'}">
+                ${isReady ? '🔓 Lista para abrir' : '🔒 Sellada bajo llave'}
+              </span>
+              <div class="song-author-badge" style="margin: 0;" title="Sellada por ${window.Utils.sanitizeHTML(creator)}">
+                <span class="author-badge-circle ${creatorClass}" style="width: 24px; height: 24px; font-size: 0.75rem;">${creatorInitial}</span>
+                <span style="font-size: 0.75rem;">Por <strong>${window.Utils.sanitizeHTML(creator)}</strong></span>
+              </div>
+            </div>
+
+            <div class="capsule-visual-chest">
+              <span class="chest-emoji">${isReady ? '💎' : '⏳'}</span>
+            </div>
+
+            <h4 class="capsule-card-title">${window.Utils.sanitizeHTML(c.title)}</h4>
+            <p class="capsule-card-date">Fecha de apertura: <strong>${window.Utils.formatDateES(c.unlockDate)}</strong></p>
+
+            <div class="capsule-countdown-box" id="capsule-timer-${c.id}">
+              ${this.getCapsuleRemainingText(c.unlockDate, c.isOpened)}
+            </div>
+
+            <div class="capsule-actions" style="margin-top: 0.85rem; display: flex; gap: 0.5rem; justify-content: space-between;">
+              ${isReady ? `
+                <button type="button" class="btn-primary btn-open-capsule" data-id="${c.id}" style="flex: 1; padding: 0.45rem 0.8rem; font-size: 0.85rem;">
+                  <span>💎 Abrir Cofre</span>
+                </button>
+              ` : `
+                <button type="button" class="btn-secondary btn-inspect-locked-capsule" data-id="${c.id}" style="flex: 1; padding: 0.45rem 0.8rem; font-size: 0.82rem;">
+                  <span>🔒 Ver Candado</span>
+                </button>
+              `}
+              <button type="button" class="btn-secondary btn-del-capsule" data-id="${c.id}" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; color: var(--color-danger);" title="Eliminar cápsula">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.btn-open-capsule').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          this.viewOpenedCapsule(id);
+        });
+      });
+
+      container.querySelectorAll('.btn-inspect-locked-capsule').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const c = window.storage.getTimeCapsules().find(item => item.id === id);
+          if (c) {
+            window.Utils.showToast(`🔒 Esta cápsula está sellada. Se desbloqueará el ${window.Utils.formatDateES(c.unlockDate)} ✨`, 'info');
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-del-capsule').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          if (confirm('¿Eliminar esta cápsula del tiempo?')) {
+            window.storage.deleteTimeCapsule(id);
+            this.renderTimeCapsules();
+            window.Utils.showToast('Cápsula eliminada', 'info');
+          }
+        });
+      });
+    }
+
+    getCapsuleRemainingText(unlockDateStr, isOpened) {
+      if (isOpened) return '<span style="color: #00E5FF; font-weight: 600;">✨ Abierta & Revelada</span>';
+      const unlockMs = new Date(unlockDateStr).getTime();
+      const now = Date.now();
+      const diffMs = unlockMs - now;
+      if (diffMs <= 0) return '<span style="color: #69F0AE; font-weight: 700;">🎉 ¡EL TIEMPO LLEGÓ! Abre el cofre</span>';
+
+      const totalSec = Math.floor(diffMs / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hours = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      return `<span>⏳ ${days}d ${hours}h ${mins}m ${secs}s</span>`;
+    }
+
+    updateTimeCapsuleCountdowns() {
+      const capsules = window.storage.getTimeCapsules();
+      capsules.forEach(c => {
+        const el = document.getElementById(`capsule-timer-${c.id}`);
+        if (el) {
+          el.innerHTML = this.getCapsuleRemainingText(c.unlockDate, c.isOpened);
+        }
+      });
+    }
+
+    viewOpenedCapsule(id) {
+      const c = window.storage.openTimeCapsule(id);
+      if (!c) return;
+
+      const modal = document.getElementById('modal-capsule-viewer');
+      const titleEl = document.getElementById('modal-capsule-viewer-title');
+      const dateEl = document.getElementById('modal-capsule-viewer-date');
+      const bodyEl = document.getElementById('modal-capsule-viewer-body');
+
+      titleEl.textContent = c.title;
+      dateEl.textContent = `Sellada el ${window.Utils.formatDateES(c.createdAt || c.unlockDate)} por ${c.creator}`;
+
+      let photoHtml = '';
+      if (c.photoUrl) {
+        photoHtml = `<div style="text-align: center; margin-bottom: 1.25rem;"><img src="${window.Utils.sanitizeHTML(c.photoUrl)}" alt="Foto de cápsula" style="max-height: 250px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);" /></div>`;
+      }
+
+      let voiceHtml = '';
+      if (c.voiceNoteUrl) {
+        voiceHtml = `
+          <div class="capsule-voice-player-wrap" style="background: rgba(224, 64, 251, 0.15); border: 1px solid rgba(224, 64, 251, 0.4); border-radius: 12px; padding: 0.85rem; margin-top: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <span>🎙️</span>
+              <strong style="color: #F8BBD0; font-size: 0.9rem;">Nota de voz del pasado grabada por ${window.Utils.sanitizeHTML(c.creator)}:</strong>
+            </div>
+            <audio controls src="${c.voiceNoteUrl}" style="width: 100%; height: 38px;"></audio>
+          </div>
+        `;
+      }
+
+      bodyEl.innerHTML = `
+        ${photoHtml}
+        <div class="capsule-letter-box" style="background: rgba(26, 18, 42, 0.8); border: 1px solid rgba(244, 197, 66, 0.4); border-radius: 12px; padding: 1.25rem; font-family: var(--font-heading); font-size: 1.15rem; line-height: 1.6; color: var(--color-light-yellow); white-space: pre-wrap;">
+${window.Utils.sanitizeHTML(c.message)}
+        </div>
+        ${voiceHtml}
+      `;
+
+      if (window.confetti) {
+        window.confetti({ particleCount: 100, spread: 100, origin: { y: 0.3 } });
+      }
+
+      modal.classList.add('active');
+      this.renderTimeCapsules();
+    }
+
+    // ========================================================
+    // --- 12. NOTAS DE VOZ & GRABADORA (MEDIARECORDER) 🎙️ ---
+    // ========================================================
+
+    initVoiceRecorders() {
+      // 1. Grabadora en Recuerdos
+      this.setupVoiceRecorderInstance({
+        recordBtnId: 'btn-mem-record',
+        stopBtnId: 'btn-mem-stop',
+        deleteBtnId: 'btn-mem-delete-audio',
+        timerId: 'mem-record-timer',
+        previewId: 'mem-voice-preview',
+        audioPlayerId: 'mem-voice-audio-player',
+        urlInputId: 'mem-voice-url',
+        durationInputId: 'mem-voice-duration'
+      });
+
+      // 2. Grabadora en Notas del Muro
+      this.setupVoiceRecorderInstance({
+        recordBtnId: 'btn-note-record',
+        stopBtnId: 'btn-note-stop',
+        deleteBtnId: 'btn-note-delete-audio',
+        timerId: 'note-record-timer',
+        previewId: 'note-voice-preview',
+        audioPlayerId: 'note-voice-audio-player',
+        urlInputId: 'note-voice-url',
+        durationInputId: 'note-voice-duration'
+      });
+
+      // 3. Grabadora en Cápsulas del Tiempo
+      this.setupVoiceRecorderInstance({
+        recordBtnId: 'btn-capsule-record',
+        stopBtnId: 'btn-capsule-stop',
+        deleteBtnId: 'btn-capsule-delete-audio',
+        timerId: 'capsule-record-timer',
+        previewId: 'capsule-voice-preview',
+        audioPlayerId: 'capsule-voice-audio-player',
+        urlInputId: 'capsule-voice-url',
+        durationInputId: 'capsule-voice-duration'
+      });
+    }
+
+    setupVoiceRecorderInstance(cfg) {
+      const recordBtn = document.getElementById(cfg.recordBtnId);
+      const stopBtn = document.getElementById(cfg.stopBtnId);
+      const deleteBtn = document.getElementById(cfg.deleteBtnId);
+      const timerEl = document.getElementById(cfg.timerId);
+      const previewEl = document.getElementById(cfg.previewId);
+      const audioPlayer = document.getElementById(cfg.audioPlayerId);
+      const urlInput = document.getElementById(cfg.urlInputId);
+      const durationInput = document.getElementById(cfg.durationInputId);
+
+      if (!recordBtn || !stopBtn) return;
+
+      recordBtn.addEventListener('click', async () => {
+        try {
+          recordBtn.style.display = 'none';
+          stopBtn.style.display = 'inline-flex';
+          if (deleteBtn) deleteBtn.style.display = 'none';
+
+          await window.MediaService.VoiceRecorder.startRecording((timeFormatted, sec) => {
+            if (timerEl) timerEl.textContent = timeFormatted;
+          });
+        } catch (err) {
+          recordBtn.style.display = 'inline-flex';
+          stopBtn.style.display = 'none';
+          window.Utils.showToast('No se pudo acceder al micrófono: ' + err.message, 'error');
+        }
+      });
+
+      stopBtn.addEventListener('click', async () => {
+        try {
+          const result = await window.MediaService.VoiceRecorder.stopRecording();
+          stopBtn.style.display = 'none';
+          recordBtn.style.display = 'inline-flex';
+
+          if (result && result.dataUrl) {
+            if (urlInput) urlInput.value = result.dataUrl;
+            if (durationInput) durationInput.value = result.durationSec;
+            if (audioPlayer) {
+              audioPlayer.src = result.dataUrl;
+            }
+            if (previewEl) previewEl.style.display = 'block';
+            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+            window.Utils.showToast(`¡Audio grabado (${result.durationSec}s)! 🎙️✨`, 'success');
+          }
+        } catch (err) {
+          stopBtn.style.display = 'none';
+          recordBtn.style.display = 'inline-flex';
+          console.error(err);
+        }
+      });
+
+      deleteBtn?.addEventListener('click', () => {
+        if (urlInput) urlInput.value = '';
+        if (durationInput) durationInput.value = '0';
+        if (audioPlayer) {
+          audioPlayer.src = '';
+        }
+        if (previewEl) previewEl.style.display = 'none';
+        deleteBtn.style.display = 'none';
+        window.Utils.showToast('Nota de voz eliminada', 'info');
+      });
     }
 
     initCounterAnimations() {

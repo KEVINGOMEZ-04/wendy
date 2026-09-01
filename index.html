@@ -631,6 +631,9 @@
               <option value="Vista">🍿 Vistas</option>
               <option value="Por ver">🌱 Por ver</option>
             </select>
+            <select id="filter-movies-genre" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">🎭 Todos los géneros</option>
+            </select>
             <select id="filter-movies-rating" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
               <option value="all">⭐ Calificación (Todas)</option>
               <option value="10">⭐⭐⭐⭐⭐ (10 / 10)</option>
@@ -662,6 +665,9 @@
               <option value="Viendo">🍿 Viendo actualmente</option>
               <option value="Completada">✨ Completadas</option>
               <option value="Por ver">🌱 Por ver</option>
+            </select>
+            <select id="filter-series-genre" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <option value="all">🎭 Todos los géneros</option>
             </select>
             <select id="filter-series-rating" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
               <option value="all">⭐ Calificación (Todas)</option>
@@ -990,6 +996,7 @@
       <form id="form-movie">
         <input type="hidden" id="movie-id" />
         <div class="form-group"><label for="movie-title">Título de la película *</label><input type="text" id="movie-title" class="form-control" placeholder="Ej. Elementos" required /></div>
+        <div class="form-group"><label for="movie-genre">Género(s) de la película</label><input type="text" id="movie-genre" class="form-control" placeholder="Ej. Romance, Comedia, Animación, Aventura" /></div>
         <div class="form-group"><label for="movie-poster">Enlace del póster (URL)</label><input type="url" id="movie-poster" class="form-control" placeholder="https://image.tmdb.org/..." /></div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -1060,6 +1067,7 @@
         <input type="hidden" id="series-id" />
         <input type="hidden" id="series-tmdb-id" />
         <div class="form-group"><label for="series-title">Título de la serie o anime *</label><input type="text" id="series-title" class="form-control" placeholder="Ej. Arcane, Stranger Things" required /></div>
+        <div class="form-group"><label for="series-genre">Género(s) de la serie o anime</label><input type="text" id="series-genre" class="form-control" placeholder="Ej. Anime, Romance, Misterio, Fantasía" /></div>
         <div class="form-group"><label for="series-poster">Enlace del póster (URL)</label><input type="url" id="series-poster" class="form-control" placeholder="https://image.tmdb.org/..." /></div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

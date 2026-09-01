@@ -4739,6 +4739,77 @@ img:not([src]), img[src=""] {
   border-radius: var(--radius-sm);
 }
 
+/* =========================================
+   CANCIÓN ENLAZADA AL RECUERDO 🎵🌻
+   ========================================= */
+.memory-linked-song-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, rgba(109, 74, 153, 0.25) 0%, rgba(244, 197, 66, 0.12) 100%);
+  border: 1px solid rgba(244, 197, 66, 0.35);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.memory-linked-song-pill .music-note-icon {
+  font-size: 1.1rem;
+  animation: gentlePulse 2s infinite ease-in-out;
+}
+
+.memory-song-info-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.memory-song-name {
+  font-size: 0.88rem;
+  color: var(--color-sunflower-gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-song-artist {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-play-memory-song {
+  background: rgba(244, 197, 66, 0.2);
+  border: 1px solid rgba(244, 197, 66, 0.5);
+  color: var(--color-sunflower-gold);
+  border-radius: var(--radius-full);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.btn-play-memory-song:hover {
+  background: var(--color-sunflower-gold);
+  color: #120E1C;
+  transform: scale(1.05);
+}
+
+/* Tareas en el Monitor de Carga */
+.upload-task-row.active-upload {
+  border-color: #00E5FF !important;
+  background: rgba(0, 229, 255, 0.08) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
 @media (max-width: 600px) {
   .jar-hero-visual {
     flex-direction: column;

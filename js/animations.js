@@ -46,17 +46,17 @@
       const currentWidth = window.innerWidth;
       const currentHeight = window.innerHeight;
 
-      // Evitar redimensionar el canvas en móvil cuando solo cambia la barra de direcciones
-      if (this.lastWidth && Math.abs(currentWidth - this.lastWidth) < 25 && Math.abs(currentHeight - this.lastHeight) < 120) {
+      if (this.lastWidth === currentWidth && this.lastHeight === currentHeight) {
         return;
       }
 
       this.lastWidth = currentWidth;
       this.lastHeight = currentHeight;
       this.isMobile = currentWidth <= 768;
-      this.numStars = this.isMobile ? 25 : 75;
-      this.numParticles = this.isMobile ? 4 : 12;
-      this.canvas.width = Math.min(currentWidth, 1920);
+      this.numStars = this.isMobile ? 30 : 80;
+      this.numParticles = this.isMobile ? 6 : 14;
+      
+      this.canvas.width = currentWidth;
       this.canvas.height = currentHeight;
       this.createElements();
     }

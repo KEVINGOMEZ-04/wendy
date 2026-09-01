@@ -4824,3 +4824,11 @@ img:not([src]), img[src=""] {
     grid-template-columns: 1fr;
   }
 }
+
+.movie-genre-pill {
+  background: rgba(109, 74, 153, 0.3) !important;
+  border-color: rgba(224, 64, 251, 0.4) !important;
+  color: #F8BBD0 !important;
+  font-weight: 600;
+}
+

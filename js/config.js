@@ -16,6 +16,8 @@ window.CONFIG = {
     notes: 'patico_notes_v1',
     dreams: 'patico_dreams_v1',
     songs: 'patico_songs_v1',
+    dailyPrompts: 'patico_daily_prompts_v1',
+    timeCapsules: 'patico_time_capsules_v1',
     credentials: 'patico_credentials_v1',
     profiles: 'patico_profiles_v1',
     localPresence: 'patico_presence_local_v1',

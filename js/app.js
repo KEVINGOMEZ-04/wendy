@@ -501,39 +501,99 @@
     }
 
     // --- Sistema de Notificaciones del Sistema / Barra de Estado (WhatsApp / YouTube style) ---
-    initSystemNotifications() {
-      if (!('Notification' in window)) return;
+    async initSystemNotifications() {
+      // 1. Pedir permisos nativos en Capacitor si está corriendo como APK
+      if (window.Capacitor?.Plugins?.LocalNotifications) {
+        try {
+          await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
+        } catch (err) {
+          console.warn('LocalNotifications perm notice:', err);
+        }
+      }
 
       const btnAlerts = document.getElementById('btn-enable-notifications');
       btnAlerts?.addEventListener('click', async () => {
         try {
-          const perm = await Notification.requestPermission();
-          if (perm === 'granted') {
-            this.sendSystemNotification('🔔 Notificaciones Activadas ✨', '¡Listo! Recibirás alertas en tu teléfono cuando haya actividad 💕');
-            window.Utils.showToast('¡Notificaciones en la barra de tu teléfono activadas! 🔔✨', 'success');
-          } else {
-            window.Utils.showToast('Permiso de notificaciones no concedido.', 'warning');
+          if (window.Capacitor?.Plugins?.LocalNotifications) {
+            await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
           }
+          if ('Notification' in window) {
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+              this.sendSystemNotification('🔔 Notificaciones Activadas ✨', '¡Listo! Recibirás alertas en la barra de tu teléfono cuando tu amor interactúe 💕');
+              window.Utils.showToast('¡Notificaciones en la barra de tu teléfono activadas! 🔔✨', 'success');
+              return;
+            }
+          }
+          window.Utils.showToast('¡Notificaciones configuradas! ✨', 'success');
         } catch (e) {
-          window.Utils.showToast('No se pudo solicitar permisos de notificación.', 'warning');
+          window.Utils.showToast('No se pudo activar permisos de notificación.', 'warning');
         }
       });
 
-      // Solicitar permiso amigable al primer toque o interacción
-      const reqPerm = () => {
-        if (Notification.permission === 'default') {
+      // Solicitar permiso al primer toque o interacción
+      const reqPerm = async () => {
+        if (window.Capacitor?.Plugins?.LocalNotifications) {
+          try { await window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch (_) {}
+        }
+        if ('Notification' in window && Notification.permission === 'default') {
           try {
-            Notification.requestPermission().then(perm => {
-              if (perm === 'granted') {
-                console.log('Permiso de notificaciones del sistema concedido ✨');
-              }
-            });
+            await Notification.requestPermission();
           } catch (_) {}
         }
       };
 
       document.addEventListener('click', reqPerm, { once: true });
       document.addEventListener('touchstart', reqPerm, { once: true });
+    }
+
+    async sendSystemNotification(title, body, url = './#inicio') {
+      // 1. Capacitor Native LocalNotifications (APK Android)
+      if (window.Capacitor?.Plugins?.LocalNotifications) {
+        try {
+          await window.Capacitor.Plugins.LocalNotifications.schedule({
+            notifications: [
+              {
+                title: title,
+                body: body,
+                id: Math.floor(Math.random() * 100000),
+                schedule: { at: new Date(Date.now() + 100) },
+                sound: 'default',
+                actionTypeId: '',
+                extra: { url: url }
+              }
+            ]
+          });
+          return;
+        } catch (err) {
+          console.warn('Capacitor notification error:', err);
+        }
+      }
+
+      // 2. Web / ServiceWorker Notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.ready;
+            if (reg && reg.showNotification) {
+              reg.showNotification(title, {
+                body: body,
+                icon: 'assets/icon.jpg',
+                badge: 'assets/icon.jpg',
+                vibrate: [200, 100, 200],
+                data: { url: url }
+              });
+              return;
+            }
+          }
+          new Notification(title, {
+            body: body,
+            icon: 'assets/icon.jpg'
+          });
+        } catch (e) {
+          console.warn('Web notification notice:', e);
+        }
+      }
     }
 
     initUploadMonitorUI() {

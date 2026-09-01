@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 console.log('--- Configurando permisos nativos de Android y WebView ---');
@@ -15,6 +15,8 @@ if (fs.existsSync(manifestPath)) {
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
@@ -32,12 +34,12 @@ if (fs.existsSync(manifestPath)) {
   }
 
   fs.writeFileSync(manifestPath, manifest, 'utf8');
-  console.log('âœ… AndroidManifest.xml actualizado exitosamente con XML vÃ¡lido.');
+  console.log('✅ AndroidManifest.xml actualizado exitosamente con XML válido.');
 } else {
-  console.warn('âš ï¸ No se encontrÃ³ AndroidManifest.xml en:', manifestPath);
+  console.warn('⚠️ No se encontró AndroidManifest.xml en:', manifestPath);
 }
 
-// 2. Personalizar MainActivity.java para solicitar permisos y habilitar WebRTC / getUserMedia
+// 2. Personalizar MainActivity.java para solicitar permisos y habilitar WebRTC / getUserMedia manteniendo el selector de archivos nativo
 const mainActivityPath = path.join(process.cwd(), 'android/app/src/main/java/com/kevinwendy/atria/MainActivity.java');
 if (fs.existsSync(mainActivityPath)) {
   const javaContent = `package com.kevinwendy.atria;
@@ -47,12 +49,12 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,6 +88,9 @@ public class MainActivity extends BridgeActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 listPermissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
             }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(Manifest.permission.READ_MEDIA_VIDEO);
+            }
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 listPermissionsNeeded.add(Manifest.permission.READ_MEDIA_AUDIO);
             }
@@ -118,7 +123,9 @@ public class MainActivity extends BridgeActivity {
                     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                 }
 
-                webView.setWebChromeClient(new WebChromeClient() {
+                // Extender BridgeWebChromeClient para preservar onShowFileChooser (selector de archivos nativo)
+                // y conceder acceso a micrófono/cámara en WebRTC
+                webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
                     @Override
                     public void onPermissionRequest(final PermissionRequest request) {
                         runOnUiThread(new Runnable() {
@@ -137,7 +144,7 @@ public class MainActivity extends BridgeActivity {
 }
 `;
   fs.writeFileSync(mainActivityPath, javaContent, 'utf8');
-  console.log('âœ… MainActivity.java configurado exitosamente.');
+  console.log('✅ MainActivity.java configurado con BridgeWebChromeClient (soporte completo para subida de fotos/archivos).');
 } else {
-  console.warn('âš ï¸ No se encontrÃ³ MainActivity.java en:', mainActivityPath);
+  console.warn('⚠️ No se encontró MainActivity.java en:', mainActivityPath);
 }

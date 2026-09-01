@@ -924,6 +924,7 @@
 
         return {
           ...m,
+          genre: m.genre || '',
           status: m.status === 'Favorita' ? 'Me encantó' : (m.status || 'Por ver'),
           platforms: Array.isArray(m.platforms) ? m.platforms : (typeof m.platforms === 'string' && m.platforms ? m.platforms.split(',').map(s => s.trim()).filter(Boolean) : []),
           kevinRating: kRating,
@@ -960,6 +961,7 @@
           list[index] = {
             ...existing,
             title: movieData.title.trim(),
+            genre: movieData.genre !== undefined ? movieData.genre : (existing.genre || ''),
             year: parseInt(movieData.year, 10) || existing.year || new Date().getFullYear(),
             proposedBy: movieData.proposedBy || existing.proposedBy || this.getCurrentUser() || 'Kevin',
             priority: parseInt(movieData.priority, 10) || existing.priority || 5,
@@ -984,6 +986,7 @@
         const newMovie = {
           id: window.Utils.generateUUID(),
           title: movieData.title.trim(),
+          genre: movieData.genre || '',
           year: parseInt(movieData.year, 10) || new Date().getFullYear(),
           proposedBy: movieData.proposedBy || this.getCurrentUser() || 'Kevin',
           priority: parseInt(movieData.priority, 10) || 5,
@@ -1413,7 +1416,10 @@
     // =========================================
 
     getSeries() {
-      return this.get(this.keys.series, []);
+      return this.get(this.keys.series, []).map(s => ({
+        ...s,
+        genre: s.genre || ''
+      }));
     }
 
     saveSeries(serieData) {
@@ -1427,6 +1433,7 @@
           list[index] = {
             ...existing,
             ...serieData,
+            genre: serieData.genre !== undefined ? serieData.genre : (existing.genre || ''),
             updatedAt: now
           };
           this.recalculateSeriesCompletion(list[index]);
@@ -1437,6 +1444,7 @@
           tmdbId: serieData.tmdbId || null,
           title: (serieData.title || '').trim(),
           originalTitle: (serieData.originalTitle || serieData.title || '').trim(),
+          genre: serieData.genre || '',
           year: serieData.year || new Date().getFullYear(),
           poster: serieData.poster || '',
           synopsis: serieData.synopsis || '',

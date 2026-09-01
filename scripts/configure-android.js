@@ -3,7 +3,7 @@ const path = require('path');
 
 console.log('--- Configurando permisos nativos de Android y WebView ---');
 
-// 1. Inyectar permisos en AndroidManifest.xml
+// 1. Inyectar permisos en AndroidManifest.xml justo antes de <application
 const manifestPath = path.join(process.cwd(), 'android/app/src/main/AndroidManifest.xml');
 if (fs.existsSync(manifestPath)) {
   let manifest = fs.readFileSync(manifestPath, 'utf8');
@@ -24,7 +24,7 @@ if (fs.existsSync(manifestPath)) {
   `;
 
   if (!manifest.includes('android.permission.RECORD_AUDIO')) {
-    manifest = manifest.replace('<manifest', '<manifest\n' + permissions);
+    manifest = manifest.replace('<application', permissions + '\n    <application');
   }
 
   if (!manifest.includes('usesCleartextTraffic')) {
@@ -32,7 +32,7 @@ if (fs.existsSync(manifestPath)) {
   }
 
   fs.writeFileSync(manifestPath, manifest, 'utf8');
-  console.log('âœ… AndroidManifest.xml actualizado exitosamente.');
+  console.log('âœ… AndroidManifest.xml actualizado exitosamente con XML vÃ¡lido.');
 } else {
   console.warn('âš ï¸ No se encontrÃ³ AndroidManifest.xml en:', manifestPath);
 }

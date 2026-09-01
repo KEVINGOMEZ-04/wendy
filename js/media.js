@@ -144,35 +144,45 @@ window.MediaService = {
   async searchMusic(query) {
     if (!query || !query.trim()) return [];
     
-    const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query.trim())}&entity=song&limit=8`);
-    if (!response.ok) throw new Error('Error al conectar con el servicio de música');
-    
-    const data = await response.json();
-    if (!data.results || !data.results.length) return [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query.trim())}&entity=song&limit=10`, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
-    return data.results.map(song => {
-      const title = song.trackName || 'Canción desconocida';
-      const artist = song.artistName || 'Artista';
-      const album = song.collectionName || '';
-      const year = song.releaseDate ? new Date(song.releaseDate).getFullYear() : '';
-      let cover = song.artworkUrl100 || '';
-      if (cover) {
-        cover = cover.replace('100x100bb.jpg', '600x600bb.jpg').replace('100x100', '600x600');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && data.results.length) {
+          return data.results.map(song => {
+            const title = song.trackName || 'Canción desconocida';
+            const artist = song.artistName || 'Artista';
+            const album = song.collectionName || '';
+            const year = song.releaseDate ? new Date(song.releaseDate).getFullYear() : '';
+            let cover = song.artworkUrl100 || '';
+            if (cover) {
+              cover = cover.replace('100x100bb.jpg', '600x600bb.jpg').replace('100x100', '600x600');
+            }
+
+            return {
+              title,
+              artist,
+              album,
+              year,
+              cover,
+              spotifyUrl: this.spotifyUrl(title, artist),
+              youtubeUrl: this.youtubeUrl(title, artist),
+              lyricsUrl: this.geniusUrl(title, artist),
+              previewUrl: song.previewUrl || '',
+              lyrics: ''
+            };
+          });
+        }
       }
+    } catch (err) {
+      console.warn('Error en búsqueda de música:', err);
+    }
 
-      return {
-        title,
-        artist,
-        album,
-        year,
-        cover,
-        spotifyUrl: this.spotifyUrl(title, artist),
-        youtubeUrl: this.youtubeUrl(title, artist),
-        lyricsUrl: this.geniusUrl(title, artist),
-        previewUrl: song.previewUrl || '',
-        lyrics: ''
-      };
-    });
+    return [];
   },
 
   /**
@@ -794,6 +804,7 @@ window.GoogleDriveService = {
         setTimeout(() => this.processQueue(), 500);
       }
     }
+  }
 };
 
 /**
